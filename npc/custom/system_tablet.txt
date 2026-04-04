@@ -1,0 +1,127 @@
+function	script	System_Tablet	{
+	doevent "System_Tablet_NPC::OnUse";
+	end;
+}
+
+-	script	System_Tablet_NPC	-1,{
+OnUse:
+	mes "[System Tablet]";
+	mes "Welcome to the central system.";
+	mes "Please select an app to launch:";
+	switch(select("Progression Guide:Monster Intel App:Cancel")) {
+		case 1:
+			mes "[System Tablet]";
+			mes "Solo-Centric Global Enhancements:";
+			mes "^0000FF1.^000000 Your Storage holds up to 800 slots.";
+			mes "^0000FF2.^000000 Card Drops are flat 2x (MvP excluded).";
+			mes "^0000FF3.^000000 Kafra Warp fees are slashed by 50%.";
+			mes "^0000FF4.^000000 Death penalty is reduced to 0.5%.";
+			mes " ";
+			mes "Progression Note: Once you reach ^0000FFLevel 30^000000, your EXP rate is natively boosted to ^0000FF5x^000000 automatically.";
+			close;
+		case 2:
+			mes "[Monster Intel App]";
+			mes "Loading Hunters Guild Database...";
+			mes "Please input the exact ^0000FFMonster Name^000000 or ^0000FFID^000000 you wish to research.";
+			next;
+			input .@mob$;
+			
+			// Determine if input is ID or Name
+			if (atoi(.@mob$) > 0 && getmonsterinfo(atoi(.@mob$), MOB_NAME) != "null") {
+				.@mob_id = atoi(.@mob$);
+			} else if (getmonsterinfo(.@mob$, MOB_ID) > 0) {
+				.@mob_id = getmonsterinfo(.@mob$, MOB_ID);
+			} else {
+				mes "[Monster Intel App]";
+				mes "Error: That monster does not exist in the database.";
+				close;
+			}
+			
+			.@mob_lv = getmonsterinfo(.@mob_id, MOB_LV);
+			.@price_basic = .@mob_lv * 100;
+			.@price_deep = .@mob_lv * 500;
+			
+			// Fetch Unlock Status (0 = Not Unlocked, 1 = Basic, 2 = Deep)
+			.@intel_lv = getd("MobIntel_" + .@mob_id);
+			
+			mes "[Monster Intel App]";
+			mes "Target Acquired: ^0000FF" + getmonsterinfo(.@mob_id, MOB_NAME) + "^000000 (Lv " + .@mob_lv + ")";
+			
+			if (.@intel_lv == 0) mes "Status: ^FF0000[No Intel Unlocked]^000000";
+			else if (.@intel_lv == 1) mes "Status: ^FF8800[Basic Intel Unlocked]^000000";
+			else mes "Status: ^00FF00[Deep Intel Unlocked]^000000";
+			next;
+			
+			// Dynamic Menu Array builder
+			if (.@intel_lv == 0) {
+				.@menu$ = "Purchase Basic Intel ("+.@price_basic+"z):Purchase Direct Full Intel ("+(.@price_basic+.@price_deep)+"z):Cancel";
+			} else if (.@intel_lv == 1) {
+				.@menu$ = "View Basic Intel:Purchase Deep Intel ("+.@price_deep+"z):Cancel";
+			} else {
+				.@menu$ = "View Basic Intel:View Deep Intel:Cancel";
+			}
+			
+			switch(select(.@menu$)) {
+				case 1:
+					if (.@intel_lv == 0) {
+						if (Zeny < .@price_basic) {
+							mes "[System Tablet]";
+							mes "Error: Insufficient funds.";
+							close;
+						}
+						Zeny -= .@price_basic;
+						setd "MobIntel_" + .@mob_id, 1;
+						mes "[System Tablet]";
+						mes "Basic Intel package permanently unlocked!";
+						next;
+					}
+					mes "[Basic Intel]";
+					mes "Name: " + getmonsterinfo(.@mob_id, MOB_NAME);
+					mes "HP: " + getmonsterinfo(.@mob_id, MOB_MAXHP);
+					mes "Level: " + getmonsterinfo(.@mob_id, MOB_LV);
+					mes "Element Lv: " + getmonsterinfo(.@mob_id, MOB_ELEMENTLV) + " (Type " + getmonsterinfo(.@mob_id, MOB_ELEMENT) + ")";
+					mes "Size: " + getmonsterinfo(.@mob_id, MOB_SIZE);
+					mes "Base EXP: " + getmonsterinfo(.@mob_id, MOB_BASEEXP) + " | Job EXP: " + getmonsterinfo(.@mob_id, MOB_JOBEXP);
+					close;
+					
+				case 2:
+					if (.@intel_lv == 0) {
+						if (Zeny < (.@price_basic + .@price_deep)) {
+							mes "[System Tablet]";
+							mes "Error: Insufficient funds.";
+							close;
+						}
+						Zeny -= (.@price_basic + .@price_deep);
+						setd "MobIntel_" + .@mob_id, 2;
+						mes "[System Tablet]";
+						mes "Deep Intel completely unlocked!";
+						next;
+					} else if (.@intel_lv == 1) {
+						if (Zeny < .@price_deep) {
+							mes "[System Tablet]";
+							mes "Error: Insufficient funds.";
+							close;
+						}
+						Zeny -= .@price_deep;
+						setd "MobIntel_" + .@mob_id, 2;
+						mes "[System Tablet]";
+						mes "Upgraded to Deep Intel package!";
+						next;
+					}
+					
+					mes "[Deep Intel]";
+					mes "ATK: " + getmonsterinfo(.@mob_id, MOB_ATKMIN) + " ~ " + getmonsterinfo(.@mob_id, MOB_ATKMAX);
+					mes "DEF: " + getmonsterinfo(.@mob_id, MOB_DEF) + " | MDEF: " + getmonsterinfo(.@mob_id, MOB_MDEF);
+					mes "---";
+					mes "STR: " + getmonsterinfo(.@mob_id, MOB_STR) + " AGI: " + getmonsterinfo(.@mob_id, MOB_AGI);
+					mes "VIT: " + getmonsterinfo(.@mob_id, MOB_VIT) + " INT: " + getmonsterinfo(.@mob_id, MOB_INT);
+					mes "DEX: " + getmonsterinfo(.@mob_id, MOB_DEX) + " LUK: " + getmonsterinfo(.@mob_id, MOB_LUK);
+					close;
+				case 3:
+					close;
+			}
+		case 3:
+			close;
+	}
+	end;
+}

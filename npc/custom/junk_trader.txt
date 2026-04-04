@@ -1,0 +1,87 @@
+// --------------------------------------------------------------
+// Photonic Singularity: Daily Junk Trader (STABLE v4)
+// --------------------------------------------------------------
+
+prontera,143,172,4	script	Daily Junk Merchant	101,{
+	// Every time the NPC is clicked, check if the day has changed
+	if ($LastRotationDay != gettime(4)) {
+		set $LastRotationDay, gettime(4);
+		
+		// Randomly pick 3 simple items from the "Wanted" list
+		// Using 10 items for the random pool
+		// 909: Jellopy, 910: Sticky Mucus, 912: Fluff, 913: Porcupine Quill, 
+		// 916: Feather of Birds, 923: Scorpion Tail, 925: Empty Bottle
+		set .@rnd1, rand(1, 4);
+		set .@rnd2, rand(5, 7);
+		set .@rnd3, rand(8, 10);
+		
+		if (.@rnd1 == 1) set $TodayJunk1, 909; 
+		if (.@rnd1 == 2) set $TodayJunk1, 910;
+		if (.@rnd1 == 3) set $TodayJunk1, 912;
+		if (.@rnd1 == 4) set $TodayJunk1, 913;
+		
+		if (.@rnd2 == 5) set $TodayJunk2, 916;
+		if (.@rnd2 == 6) set $TodayJunk2, 919;
+		if (.@rnd2 == 7) set $TodayJunk2, 920;
+		
+		if (.@rnd3 == 8) set $TodayJunk3, 923;
+		if (.@rnd3 == 9) set $TodayJunk3, 925;
+		if (.@rnd3 == 10) set $TodayJunk3, 1021; // Chrysoberyl
+		
+		// Set premium payouts (10-20x normal price)
+		set $JunkPrice1, rand(500, 1000);
+		set $JunkPrice2, rand(1200, 2500);
+		set $JunkPrice3, rand(5000, 15000);
+	}
+
+	// Reset player's daily sell limit at midnight
+	if (gettime(4) != #LastJunkDay) {
+		set #DailyJunkSold, 0;
+		set #LastJunkDay, gettime(4);
+	}
+
+	mes "[Daily Junk Merchant]";
+	mes "I'm looking for monster materials for the guild.";
+	mes "I'll pay a premium for these three items today:";
+	mes "- ^0000FF"+getitemname($TodayJunk1)+"^000000: ^00FF00"+$JunkPrice1+"z^000000";
+	mes "- ^0000FF"+getitemname($TodayJunk2)+"^000000: ^00FF00"+$JunkPrice2+"z^000000";
+	mes "- ^0000FF"+getitemname($TodayJunk3)+"^000000: ^00FF00"+$JunkPrice3+"z^000000";
+	next;
+	
+	mes "[Daily Junk Merchant]";
+	mes "Quota: ^0000FF"+#DailyJunkSold+"/50 Items^000000 sold today.";
+	next;
+
+	if (#DailyJunkSold >= 50) {
+		mes "My budget is spent for today. Come back tomorrow!";
+		close;
+	}
+
+	switch(select("Sell "+getitemname($TodayJunk1)+":Sell "+getitemname($TodayJunk2)+":Sell "+getitemname($TodayJunk3)+":Cancel")) {
+		case 1: set .@id, $TodayJunk1; set .@price, $JunkPrice1; break;
+		case 2: set .@id, $TodayJunk2; set .@price, $JunkPrice2; break;
+		case 3: set .@id, $TodayJunk3; set .@price, $JunkPrice3; break;
+		default: close;
+	}
+
+	mes "How many " + getitemname(.@id) + " do you want to sell?";
+	input .@qty;
+
+	if (.@qty <= 0) close;
+	if (.@qty > (50 - #DailyJunkSold)) {
+		mes "I can only take " + (50 - #DailyJunkSold) + " more items today.";
+		close;
+	}
+
+	if (countitem(.@id) < .@qty) {
+		mes "You don't have that many " + getitemname(.@id) + "!";
+		close;
+	}
+
+	delitem .@id, .@qty;
+	set Zeny, Zeny + (.@price * .@qty);
+	set #DailyJunkSold, #DailyJunkSold + .@qty;
+	
+	mes "Business is good. Here's your payment of " + (.@price * .@qty) + " Zeny.";
+	close;
+}

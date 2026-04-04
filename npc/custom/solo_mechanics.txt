@@ -1,0 +1,35 @@
+-	script	SoloMechanics	-1,{
+OnPCLoginEvent:
+	if (BaseLevel >= 30) {
+		if (ReachedExpBoost == 0) {
+			ReachedExpBoost = 1;
+			dispbottom "You have reached Level 30! Enjoy the journey, your EXP rate is now 5x permanently!";
+		} else {
+			dispbottom "Your 5x EXP rate is active.";
+		}
+		sc_start SC_EXPBOOST, 2000000000, 400; 
+		sc_start SC_JEXPBOOST, 2000000000, 400;
+	}
+	end;
+	
+OnPCBaseLvUpEvent:
+	if (BaseLevel >= 30 && ReachedExpBoost == 0) {
+		ReachedExpBoost = 1;
+		dispbottom "You have reached Level 30! Enjoy the journey, your EXP rate is now 5x permanently!";
+		sc_start SC_EXPBOOST, 2000000000, 400;
+		sc_start SC_JEXPBOOST, 2000000000, 400;
+	}
+	end;
+
+OnNPCKillEvent:
+	.@mob_lvl = getmonsterinfo(killedrid, MOB_LV);
+	
+	if (.@mob_lvl < 50) {
+		heal 50, 10;   // Weak mobs (momentum)
+	} else if (.@mob_lvl < 100) {
+		heal 100, 20;  // Challenge mobs
+	} else {
+		heal 150, 30;  // Elite/Boss mobs
+	}
+	end;
+}

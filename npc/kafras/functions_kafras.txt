@@ -666,8 +666,10 @@ function	script	F_KafSet	{
 			@wrpP[.@i] *= 2;
 	}
 
-	for ( .@i = 0; .@i < .@warp_size; .@i++ )
+	for ( .@i = 0; .@i < .@warp_size; .@i++ ) {
+		@wrpP[.@i] /= 2; // Solo-centric half price
 		@wrpC$[.@i] = @wrpD$[.@i] + " -> " + @wrpP[.@i] + " z";
+	}
 	@wrpC$[ .@warp_size ] = "Cancel";
 	return;
 }
