@@ -1,0 +1,2 @@
+description = "Slash command to generate new Gemini components (commands, skills, agents) using the Component Creator agent"
+prompt = "@creator research, draft, and generate a new component based on: {{args}}"
