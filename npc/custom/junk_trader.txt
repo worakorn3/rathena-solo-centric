@@ -1,24 +1,61 @@
 // --------------------------------------------------------------
-// Photonic Singularity: Daily Junk Merchant (STABLE v7 - FULL LIST)
+// Photonic Singularity: Daily Junk Merchant (TRUE STABLE v9)
 // --------------------------------------------------------------
 
-// --- City Representatives --- 
-prontera,143,172,4	script	Junk Merchant#prt	101,{ callfunc "F_JunkTraderMain"; close; end; }
-geffen,120,110,4	script	Junk Merchant#geff	101,{ callfunc "F_JunkTraderMain"; close; end; }
-morroc,156,97,4	script	Junk Merchant#morr	101,{ callfunc "F_JunkTraderMain"; close; end; }
-payon,152,233,4	script	Junk Merchant#payo	101,{ callfunc "F_JunkTraderMain"; close; end; }
-alberta,116,61,4	script	Junk Merchant#albe	101,{ callfunc "F_JunkTraderMain"; close; end; }
+// --- City Merchants (Classic OnInit Balloons) ---
+prontera,143,172,4	script	Junk Merchant#prt	101,{ 
+	callfunc "F_JunkTraderMain"; 
+	close; 
+	end; 
+OnInit:
+	waitingroom "Daily Junk Bounty", 0;
+	end;
+}
+geffen,120,110,4	script	Junk Merchant#geff	107,{ 
+	callfunc "F_JunkTraderMain"; 
+	close; 
+	end; 
+OnInit:
+	waitingroom "Mage Guild Bounties", 0;
+	end;
+}
+morroc,156,97,4	script	Junk Merchant#morr	104,{ 
+	callfunc "F_JunkTraderMain"; 
+	close; 
+	end; 
+OnInit:
+	waitingroom "Desert Scrap Buying", 0;
+	end;
+}
+payon,152,233,4	script	Junk Merchant#payo	103,{ 
+	callfunc "F_JunkTraderMain"; 
+	close; 
+	end; 
+OnInit:
+	waitingroom "Forest Scavenger List", 0;
+	end;
+}
+alberta,116,61,4	script	Junk Merchant#albe	4005,{ 
+	callfunc "F_JunkTraderMain"; 
+	close; 
+	end; 
+OnInit:
+	waitingroom "Shipwreck Junk Deals", 0;
+	end;
+}
 
-// --- Centralized Logic ---
+// --- Global Logic ---
 function	script	F_JunkTraderMain	{
 	if ($LastRotationDay != gettime(4)) {
 		set $LastRotationDay, gettime(4);
-		set $TodayJunk1, 909; // Jellopy
-		set $TodayJunk2, 912; // Fluff
-		set $TodayJunk3, 916; // Feather
+		setarray .@pool[0], 909, 912, 916, 919, 920, 921, 922, 923, 924, 925, 926, 927;
+		set $TodayJunk1, .@pool[rand(0, 3)];
+		set $TodayJunk2, .@pool[rand(4, 7)];
+		set $TodayJunk3, .@pool[rand(8, 11)];
 		set $JunkPrice1, rand(800, 1500);
 		set $JunkPrice2, rand(3500, 5500);
 		set $JunkPrice3, rand(9000, 18000);
+		announce "MARKET NEWS: Daily Junk Merchants have updated their bounties!", bc_all;
 	}
 
 	if (gettime(4) != #LastJunkDay) {
@@ -26,19 +63,18 @@ function	script	F_JunkTraderMain	{
 		set #LastJunkDay, gettime(4);
 	}
 
-	mes "[Daily Junk Merchant]";
-	mes "Materials I am buying premium today:";
+	mes "[Daily Merchant]";
+	mes "Welcome. High-value junk for today:";
 	mes "- ^0000FF"+getitemname($TodayJunk1)+"^000000: ^00FF00"+$JunkPrice1+"z^000000";
 	mes "- ^0000FF"+getitemname($TodayJunk2)+"^000000: ^00FF00"+$JunkPrice2+"z^000000";
 	mes "- ^0000FF"+getitemname($TodayJunk3)+"^000000: ^00FF00"+$JunkPrice3+"z^000000";
 	next;
-	
-	mes "[Daily Junk Merchant]";
-	mes "Your Quota: ^0000FF"+#DailyJunkSold+"/50 Items Today^000000";
+	mes "[Daily Merchant]";
+	mes "Your Daily Quota: ^0000FF"+#DailyJunkSold+"/50 Items^000000";
 	next;
 
 	if (#DailyJunkSold >= 50) {
-		mes "My budget is spent. See you tomorrow!";
+		mes "Sorry, I've bought enough today!";
 		return;
 	}
 
@@ -49,24 +85,15 @@ function	script	F_JunkTraderMain	{
 		default: return;
 	}
 
-	mes "How many " + getitemname(.@id) + " do you have to provide?";
+	mes "Selling " + getitemname(.@id) + ". How many?";
 	input .@qty;
-
 	if (.@qty <= 0) return;
-	if (.@qty > (50 - #DailyJunkSold)) {
-		mes "I can only take " + (50 - #DailyJunkSold) + " more items today.";
-		return;
-	}
-
-	if (countitem(.@id) < .@qty) {
-		mes "You don't have that many " + getitemname(.@id) + "!";
-		return;
-	}
+	if (.@qty > (50 - #DailyJunkSold)) { mes "Exceeds daily sell limit."; return; }
+	if (countitem(.@id) < .@qty) { mes "You don't have that many!"; return; }
 
 	delitem .@id, .@qty;
 	set Zeny, Zeny + (.@price * .@qty);
 	set #DailyJunkSold, #DailyJunkSold + .@qty;
-	
-	mes "Excellent. Here is your " + (.@price * .@qty) + " Zeny payment.";
+	mes "Transaction complete. Here is " + (.@price * .@qty) + "z.";
 	return; 
 }

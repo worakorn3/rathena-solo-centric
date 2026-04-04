@@ -1,0 +1,238 @@
+// --------------------------------------------------------------
+// Photonic Singularity: Midgard Stock Exchange (v23.4 STABLE-BALLOON)
+// --------------------------------------------------------------
+
+// --- City Brokers (Classic OnInit Balloons) ---
+prontera,145,178,4	script	Stock Broker#prt	101,{ 
+	callfunc "F_StockExchangeMain"; 
+	end; 
+OnInit: 
+	waitingroom "Midgard Stock Index", 0; 
+	end; 
+}
+geffen,115,115,4	script	Stock Broker#gef	107,{ 
+	callfunc "F_StockExchangeMain"; 
+	end; 
+OnInit: 
+	waitingroom "Geffen Magical Equities", 0; 
+	end; 
+}
+morroc,160,105,4	script	Stock Broker#mor	104,{ 
+	callfunc "F_StockExchangeMain"; 
+	end; 
+OnInit: 
+	waitingroom "Morroc Expansion Bonds", 0; 
+	end; 
+}
+payon,158,230,4	script	Stock Broker#pay	103,{ 
+	callfunc "F_StockExchangeMain"; 
+	end; 
+OnInit: 
+	waitingroom "Payon Forest Interests", 0; 
+	end; 
+}
+alberta,110,65,4	script	Stock Broker#alb	4005,{ 
+	callfunc "F_StockExchangeMain"; 
+	end; 
+OnInit: 
+	waitingroom "Alberta Shipping Corp", 0; 
+	end; 
+}
+
+// --- Global Market Logic ---
+-	script	StockExchangeSetup	-1,{
+OnOnInit:
+	setarray $StockCities$[0],"PRT","GEF","MOR","PAY","ALB";
+	end;
+
+OnClock0000:
+	setarray .@names$[0],"PRT","GEF","MOR","PAY","ALB";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { setd "$Price_"+.@names$[.@i]+"_Old", getd("$Price_"+.@names$[.@i]); }
+	set $MarketDrift, rand(-5, 5);
+	callsub L_MidnightProc;
+	set $StockLastUpdate, gettime(4);
+OnClock0300:
+OnClock0600:
+OnClock0900:
+OnClock1200:
+OnClock1500:
+OnClock1800:
+OnClock2100:
+	callsub L_ShiftProc;
+	end;
+
+L_ShiftProc:
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	set .@u, 0;
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$);
+		set .@f, $MarketDrift + rand(-10, 10);
+		if ($MarketMood == 1) set .@f, .@f + 4;
+		if ($MarketMood == 2) set .@f, .@f - 4;
+		if ($MarketMood == 3) set .@f, .@f + rand(-25, 25);
+		set .@new, .@p + (.@p * .@f / 100);
+		if (.@new < 50) set .@new, 50; 
+		if (.@new >= 20000) {
+			set .@new, .@new / 10;
+			setd "$Price_"+.@cn$+"_Old", getd("$Price_"+.@cn$+"_Old")/10;
+			setd "$Div_"+.@cn$, getd("$Div_"+.@cn$)/10;
+			setd "$SplitCount_"+.@cn$, getd("$SplitCount_"+.@cn$)+1;
+			announce "MARKET NEWS: Successful 10:1 Stock Split for "+.@cn$+"!", bc_all;
+		}
+		setd "$Price_"+.@cn$, .@new;
+		if (.@new > .@p) set .@u, .@u + 1;
+	}
+	if (rand(1, 10) == 1) set $MarketMood, 3; else if (.@u >= 3) set $MarketMood, 1; else set $MarketMood, 2;
+	announce "MARKET NEWS: Stock shift complete. Trend: " + callfunc("F_MoodNameStr") + ".", bc_all;
+	return;
+
+L_MidnightProc:
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@div, getd("$Div_"+.@cn$);
+		if (rand(1, 10) == 1) {
+			if ($MarketMood == 1) { set .@div, .@div + 1; announce "CORPORATE NEWS: "+.@cn$+" dividend hike!", bc_all; }
+			if ($MarketMood == 2 && .@div > 1) { set .@div, .@div - 1; announce "CORPORATE NEWS: "+.@cn$+" dividend cut.", bc_all; }
+		}
+		if ($MarketMood == 3) set .@div, 0; else if (.@div == 0) set .@div, 1;
+		if (.@div > 500) set .@div, 500;
+		setd "$Div_"+.@cn$, .@div; setd "$DivAcc_"+.@cn$, getd("$DivAcc_"+.@cn$) + .@div;
+	}
+	return;
+
+OnShiftManual: 
+	callsub L_ShiftProc;
+	end;
+}
+
+function	script	F_StockExchangeMain	{
+	if ($Price_PRT <= 0) {
+		set $Price_PRT, 1000; set $Price_GEF, 1000; set $Price_MOR, 1000; set $Price_PAY, 1000; set $Price_ALB, 1000;
+		set $Price_PRT_Old, 1000; set $Price_GEF_Old, 1000; set $Price_MOR_Old, 1000; set $Price_PAY_Old, 1000; set $Price_ALB_Old, 1000;
+		set $Div_PRT, 3; set $Div_GEF, 3; set $Div_MOR, 3; set $Div_PAY, 3; set $Div_ALB, 3;
+		set $MarketMood, 1; set $StockLastUpdate, gettime(4);
+	}
+
+L_MenuMain:
+	clear;
+	mes "[Midgard Stock Exchange]";
+	mes "Standard Index (Trends Today):";
+	mes "---------------------------";
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$); set .@diff, .@p - getd("$Price_"+.@cn$+"_Old");
+		if (.@diff > 0) { set .@clr$, "^00FF00"; set .@d$, "(+"+.@diff+"z)"; }
+		else if (.@diff < 0) { set .@clr$, "^FF0000"; set .@d$, "("+.@diff+"z)"; }
+		else { set .@clr$, "^000000"; set .@d$, "(0z)"; }
+		mes "- " + .@cn$ + ": " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Div: "+getd("$Div_"+.@cn$)+"z]";
+	}
+	next;
+
+	if (getgmlevel() >= 99) {
+		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:^FF0000[Admin Tools]^000000:Exit")) {
+			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_Admin; default: return;
+		}
+	} else {
+		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:Exit")) {
+			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; default: return;
+		}
+	}
+
+L_ClaimDiv:
+	set .@total, 0; setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@s, getd("#Stock_"+.@cn$);
+		if (.@s > 0) {
+			set .@total, .@total + (.@s * (getd("$DivAcc_"+.@cn$) - getd("#LastClaim_"+.@cn$)));
+			setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
+		}
+	}
+	if (.@total <= 0) { mes "No dividends to collect."; next; goto L_MenuMain; }
+	set Zeny, Zeny + .@total; mes "Collected ^00FF00" + .@total + " Zeny^000000."; next; goto L_MenuMain;
+
+L_Admin:
+	mes "[GM Admin Console]";
+	switch(select("Trigger Manual Shift:Reset My Portfolio:Reset Global Index:Back")) {
+		case 1: doevent "StockExchangeSetup::OnShiftManual"; close;
+		case 2:
+			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { setd "#Stock_"+.@c$[.@i], 0; setd "#Stock_"+.@c$[.@i]+"_Z", 0; }
+			mes "Portfolio wiped."; next; goto L_MenuMain;
+		case 3: set $Price_PRT, 0; return;
+		default: goto L_MenuMain;
+	}
+
+L_MenuBuy:
+	mes "[Buy Stocks]";
+	set .@city, select("PRT:GEF:MOR:PAY:ALB");
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	set .@cn$, .@c$[.@city - 1]; set .@p, getd("$Price_"+.@cn$);
+	mes "Price: " + .@p + "z";
+	input .@qty;
+	if (.@qty <= 0) goto L_MenuMain;
+	set .@total, (.@p * .@qty) + ((.@p * .@qty)/100);
+	mes "Total Cost (incl. 1% fee): " + .@total + "z";
+	next;
+	if (select("Purchase:Cancel") == 2) goto L_MenuMain;
+	if (Zeny < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
+	setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
+	set Zeny, Zeny - .@total; 
+	setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) + .@qty; 
+	setd "#Stock_"+.@cn$+"_Z", getd("#Stock_"+.@cn$+"_Z") + (.@p * .@qty);
+	goto L_MenuMain;
+
+L_MenuSell:
+	mes "[Sell Stocks]";
+	set .@city, select("PRT("+#Stock_PRT+"):GEF("+#Stock_GEF+"):MOR("+#Stock_MOR+"):PAY("+#Stock_PAY+"):ALB("+#Stock_ALB+")");
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	set .@cn$, .@c$[.@city - 1]; set .@p, getd("$Price_"+.@cn$); set .@s, getd("#Stock_"+.@cn$);
+	if (.@s <= 0) { mes "No shares."; next; goto L_MenuMain; }
+	next;
+	switch(select("Amount:Liquidate All:Back")) {
+		case 1: mes "Amount?"; input .@qty; break;
+		case 2: set .@qty, .@s; break;
+		default: goto L_MenuMain;
+	}
+	if (.@qty <= 0 || .@qty > .@s) goto L_MenuMain;
+	set .@net, (.@p * .@qty) - ((.@p * .@qty)/100);
+	mes "Net Received: " + .@net + "z";
+	next;
+	if (select("Confirm:Cancel") == 2) goto L_MenuMain;
+	setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
+	set .@redCost, (getd("#Stock_"+.@cn$+"_Z") * .@qty) / .@s;
+	setd "#Stock_"+.@cn$+"_Z", getd("#Stock_"+.@cn$+"_Z") - .@redCost;
+	setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) - .@qty;
+	set Zeny, Zeny + .@net;
+	goto L_MenuMain;
+
+L_MenuPort:
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@gs, getd("$SplitCount_"+.@cn$); set .@ps, getd("#SplitCount_"+.@cn$);
+		if (.@gs > .@ps) {
+			if (getd("#Stock_"+.@cn$) > 0) {
+				set .@diff, .@gs - .@ps;
+				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) * 10; }
+				dispbottom "Split applied to "+.@cn$+"!";
+			}
+			setd "#SplitCount_"+.@cn$, .@gs;
+		}
+	}
+	mes "[My Portfolio]";
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i]; set .@s, getd("#Stock_"+.@cn$);
+		if (.@s > 0) {
+			set .@avg, getd("#Stock_"+.@cn$+"_Z") / .@s; set .@p, getd("$Price_"+.@cn$); set .@pl, .@p - .@avg;
+			if (.@pl > 0) set .@pl$, "^00FF00+" + .@pl + "z^000000"; else if (.@pl < 0) set .@pl$, "^FF0000" + .@pl + "z^000000"; else set .@pl$, "0z";
+			if (.@avg > 0) set .@yoc, (getd("$Div_"+.@cn$)*100) / .@avg; else set .@yoc, 0;
+			mes "- " + .@cn$ + ": " + .@s + " shares";
+			mes "  Avg: " + .@avg + "z | Market: " + .@p + "z | P/L: " + .@pl$ + " [YoC: "+.@yoc+"%]";
+		}
+	}
+	next;
+	goto L_MenuMain;
+}
+
+function	script	F_MoodNameStr	{
+	if ($MarketMood == 1) return "Bullish"; if ($MarketMood == 2) return "Bearish"; if ($MarketMood == 3) return "Chaos"; return "Neutral";
+}
