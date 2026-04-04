@@ -1,87 +1,72 @@
 // --------------------------------------------------------------
-// Photonic Singularity: Daily Junk Trader (STABLE v4)
+// Photonic Singularity: Daily Junk Merchant (STABLE v7 - FULL LIST)
 // --------------------------------------------------------------
 
-prontera,143,172,4	script	Daily Junk Merchant	101,{
-	// Every time the NPC is clicked, check if the day has changed
+// --- City Representatives --- 
+prontera,143,172,4	script	Junk Merchant#prt	101,{ callfunc "F_JunkTraderMain"; close; end; }
+geffen,120,110,4	script	Junk Merchant#geff	101,{ callfunc "F_JunkTraderMain"; close; end; }
+morroc,156,97,4	script	Junk Merchant#morr	101,{ callfunc "F_JunkTraderMain"; close; end; }
+payon,152,233,4	script	Junk Merchant#payo	101,{ callfunc "F_JunkTraderMain"; close; end; }
+alberta,116,61,4	script	Junk Merchant#albe	101,{ callfunc "F_JunkTraderMain"; close; end; }
+
+// --- Centralized Logic ---
+function	script	F_JunkTraderMain	{
 	if ($LastRotationDay != gettime(4)) {
 		set $LastRotationDay, gettime(4);
-		
-		// Randomly pick 3 simple items from the "Wanted" list
-		// Using 10 items for the random pool
-		// 909: Jellopy, 910: Sticky Mucus, 912: Fluff, 913: Porcupine Quill, 
-		// 916: Feather of Birds, 923: Scorpion Tail, 925: Empty Bottle
-		set .@rnd1, rand(1, 4);
-		set .@rnd2, rand(5, 7);
-		set .@rnd3, rand(8, 10);
-		
-		if (.@rnd1 == 1) set $TodayJunk1, 909; 
-		if (.@rnd1 == 2) set $TodayJunk1, 910;
-		if (.@rnd1 == 3) set $TodayJunk1, 912;
-		if (.@rnd1 == 4) set $TodayJunk1, 913;
-		
-		if (.@rnd2 == 5) set $TodayJunk2, 916;
-		if (.@rnd2 == 6) set $TodayJunk2, 919;
-		if (.@rnd2 == 7) set $TodayJunk2, 920;
-		
-		if (.@rnd3 == 8) set $TodayJunk3, 923;
-		if (.@rnd3 == 9) set $TodayJunk3, 925;
-		if (.@rnd3 == 10) set $TodayJunk3, 1021; // Chrysoberyl
-		
-		// Set premium payouts (10-20x normal price)
-		set $JunkPrice1, rand(500, 1000);
-		set $JunkPrice2, rand(1200, 2500);
-		set $JunkPrice3, rand(5000, 15000);
+		set $TodayJunk1, 909; // Jellopy
+		set $TodayJunk2, 912; // Fluff
+		set $TodayJunk3, 916; // Feather
+		set $JunkPrice1, rand(800, 1500);
+		set $JunkPrice2, rand(3500, 5500);
+		set $JunkPrice3, rand(9000, 18000);
 	}
 
-	// Reset player's daily sell limit at midnight
 	if (gettime(4) != #LastJunkDay) {
 		set #DailyJunkSold, 0;
 		set #LastJunkDay, gettime(4);
 	}
 
 	mes "[Daily Junk Merchant]";
-	mes "I'm looking for monster materials for the guild.";
-	mes "I'll pay a premium for these three items today:";
+	mes "Materials I am buying premium today:";
 	mes "- ^0000FF"+getitemname($TodayJunk1)+"^000000: ^00FF00"+$JunkPrice1+"z^000000";
 	mes "- ^0000FF"+getitemname($TodayJunk2)+"^000000: ^00FF00"+$JunkPrice2+"z^000000";
 	mes "- ^0000FF"+getitemname($TodayJunk3)+"^000000: ^00FF00"+$JunkPrice3+"z^000000";
 	next;
 	
 	mes "[Daily Junk Merchant]";
-	mes "Quota: ^0000FF"+#DailyJunkSold+"/50 Items^000000 sold today.";
+	mes "Your Quota: ^0000FF"+#DailyJunkSold+"/50 Items Today^000000";
 	next;
 
 	if (#DailyJunkSold >= 50) {
-		mes "My budget is spent for today. Come back tomorrow!";
-		close;
+		mes "My budget is spent. See you tomorrow!";
+		return;
 	}
 
 	switch(select("Sell "+getitemname($TodayJunk1)+":Sell "+getitemname($TodayJunk2)+":Sell "+getitemname($TodayJunk3)+":Cancel")) {
 		case 1: set .@id, $TodayJunk1; set .@price, $JunkPrice1; break;
 		case 2: set .@id, $TodayJunk2; set .@price, $JunkPrice2; break;
 		case 3: set .@id, $TodayJunk3; set .@price, $JunkPrice3; break;
-		default: close;
+		default: return;
 	}
 
-	mes "How many " + getitemname(.@id) + " do you want to sell?";
+	mes "How many " + getitemname(.@id) + " do you have to provide?";
 	input .@qty;
 
-	if (.@qty <= 0) close;
+	if (.@qty <= 0) return;
 	if (.@qty > (50 - #DailyJunkSold)) {
 		mes "I can only take " + (50 - #DailyJunkSold) + " more items today.";
-		close;
+		return;
 	}
 
 	if (countitem(.@id) < .@qty) {
 		mes "You don't have that many " + getitemname(.@id) + "!";
-		close;
+		return;
 	}
 
 	delitem .@id, .@qty;
 	set Zeny, Zeny + (.@price * .@qty);
 	set #DailyJunkSold, #DailyJunkSold + .@qty;
 	
-	mes "Business is good. Here's your payment of " + (.@price * .@qty) + " Zeny.";
-	close;
+	mes "Excellent. Here is your " + (.@price * .@qty) + " Zeny payment.";
+	return; 
 }
