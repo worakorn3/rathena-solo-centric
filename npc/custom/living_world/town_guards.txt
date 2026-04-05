@@ -1,0 +1,41 @@
+//============================================================
+//= Town Guards
+//= Ambient life: Guard patrols in major cities
+//============================================================
+
+// --- Prontera Patrol ---
+prontera,150,150,4	script	Guard#prt_patrol_1	124,{
+	mes "[Prontera Guard]";
+	mes "Move along, citizen. The city is safe under our watch.";
+	close;
+}
+
+prontera,152,150,4	script	Guard#prt_patrol_2	124,{
+	mes "[Prontera Guard]";
+	mes "Seen anything suspicious lately? Report it to the Captain.";
+	close;
+}
+
+// --- Patrol Logic ---
+-	script	Guard_AI	-1,{
+OnTimer15000:
+	// Patrol Route: South Gate to Fountain
+	.@route = rand(1, 3);
+	switch(.@route) {
+		case 1: // South Gate Area
+			.@x = rand(140, 160); .@y = rand(50, 70); break;
+		case 2: // Fountain Area (Center)
+			.@x = rand(140, 160); .@y = rand(140, 160); break;
+		case 3: // North Area (Castle entrance)
+			.@x = rand(140, 160); .@y = rand(270, 290); break;
+	}
+	npcwalkto .@x, .@y, "Guard#prt_patrol_1";
+	npcwalkto .@x+rand(-2,2), .@y+rand(-2,2), "Guard#prt_patrol_2";
+	
+	initnpctimer;
+	end;
+
+OnInit:
+	initnpctimer;
+	end;
+}

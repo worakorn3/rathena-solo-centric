@@ -1,0 +1,55 @@
+//============================================================
+//= Global Collector Quest
+//= Earn Everything: Collect regional materials for premium gear
+//============================================================
+yuno,150,150,4	script	Master Collector#quest	73,{
+	mes "[Master Collector]";
+	mes "Ah, an adventurer! Do you have what it takes to travel the world and collect its finest common goods?";
+	if (GlobalCollectorState == 1) {
+		mes "You have already completed my grand request. Thank you!";
+		close;
+	}
+	next;
+	mes "[Master Collector]";
+	mes "I need proof of your travels to Prontera, Geffen, Payon, Morroc, and Alberta.";
+	mes "Bring me:";
+	mes "100x Jellopy (Prontera)";
+	mes "100x Fluff (Geffen)";
+	mes "100x Tree Root (Payon)";
+	mes "100x Venom Canine (Morroc)";
+	mes "100x Nipper (Alberta)";
+	next;
+	
+	if (select("I have them.:Not yet.") == 2) {
+		mes "[Master Collector]";
+		mes "Return when your journey is complete.";
+		close;
+	}
+	
+	if (countitem("Jellopy") >= 100 && countitem("Fluff") >= 100 && countitem("Tree_Root") >= 100 && countitem("Posionous_Canine") >= 100 && countitem("Nipper") >= 100) {
+		// Example premium gear reward (2285 is generally a cute headgear, using standard ID)
+		if (checkweight(2285, 1) == 0) {
+			mes "[Master Collector]";
+			mes "You are carrying too much weight! Make some room in your inventory.";
+			close;
+		}
+		
+		delitem "Jellopy", 100;
+		delitem "Fluff", 100;
+		delitem "Tree_Root", 100;
+		delitem "Posionous_Canine", 100;
+		delitem "Nipper", 100;
+		
+		getitem 2285, 1;
+		GlobalCollectorState = 1;
+		
+		mes "[Master Collector]";
+		mes "Magnificent! You truly are a worldly traveler. Take this premium reward as a token of my esteem.";
+		close;
+	} else {
+		mes "[Master Collector]";
+		mes "You don't have all the items yet. Please check your inventory and gather them all.";
+		close;
+	}
+	end;
+}

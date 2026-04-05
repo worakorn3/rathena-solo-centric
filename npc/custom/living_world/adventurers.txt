@@ -1,0 +1,69 @@
+//============================================================
+//= Adventurer Parties
+//= Ambient life: NPCs that look like players and "hunt"
+//============================================================
+
+// --- Prontera Field Party ---
+prt_fild08,150,150,4	script	Knight#adv_prt	7,{
+	mes "[Valerius]";
+	mes "Halt, traveler! We're currently clearing this sector of slime threats.";
+	next;
+	mes "[Valerius]";
+	mes "Actually, it's just Porings, but one must stay vigilant!";
+	close;
+}
+
+prt_fild08,152,150,4	script	Priest#adv_prt	8,{
+	mes "[Elowen]";
+	mes "Blessings upon you, adventurer.";
+	if (HP < MaxHP) {
+		percentheal 20, 10;
+		specialeffect2 EF_HEAL;
+		mes "[Elowen]";
+		mes "You look a bit weary. There, that should help.";
+	}
+	close;
+}
+
+prt_fild08,148,150,4	script	Hunter#adv_prt	11,{
+	mes "[Kael]";
+	mes "Quiet! You'll scare away the Lunatics.";
+	close;
+}
+
+// --- Payon Field Party ---
+pay_fild01,150,150,4	script	Assassin#adv_pay	12,{
+	mes "[Shadow]";
+	mes "The forest has many secrets... and many targets.";
+	close;
+}
+
+pay_fild01,152,150,4	script	Wizard#adv_pay	9,{
+	mes "[Archibald]";
+	mes "The ley lines in Payon are fascinatingly stable today.";
+	close;
+}
+
+// --- Logic Controller ---
+-	script	Adventurer_AI	-1,{
+OnTimer10000:
+	// Move Prontera Party
+	.@x = rand(100, 250);
+	.@y = rand(100, 250);
+	npcwalkto .@x, .@y, "Knight#adv_prt";
+	npcwalkto .@x+rand(-2,2), .@y+rand(-2,2), "Priest#adv_prt";
+	npcwalkto .@x+rand(-3,3), .@y+rand(-3,3), "Hunter#adv_prt";
+
+	// Move Payon Party
+	.@x = rand(150, 300);
+	.@y = rand(150, 300);
+	npcwalkto .@x, .@y, "Assassin#adv_pay";
+	npcwalkto .@x+rand(-2,2), .@y+rand(-2,2), "Wizard#adv_pay";
+
+	initnpctimer;
+	end;
+
+OnInit:
+	initnpctimer;
+	end;
+}

@@ -1,0 +1,80 @@
+//============================================================
+//= Town Criers
+//= Broadcast ambient news and market pulse locally.
+//============================================================
+function	script	Town_Crier_News	{
+	.@news = rand(1, 5);
+	switch(.@news) {
+		case 1:
+			if ($LastMvpName$ != "") {
+				npctalk "Hear ye! The adventurer " + $LastMvpKiller$ + " recently defeated the mighty " + $LastMvpName$ + "!";
+			} else {
+				npctalk "Hear ye! The roads are relatively safe today. No major MvP sightings recently.";
+			}
+			break;
+		case 2:
+			npctalk "Hear ye! A traveling merchant named Marcus was spotted on the roads between towns!";
+			break;
+		case 3:
+			npctalk "Hear ye! Check the System Tablet for market sentiment and progression guides!";
+			break;
+		case 4:
+			// Rumors
+			.@rumor = rand(1, 3);
+			switch(.@rumor) {
+				case 1: npctalk "Rumor has it a Lost Child is looking for something sweet in the fields..."; break;
+				case 2: npctalk "The Old Sage in Payon cave seeks the true meaning of power."; break;
+				case 3: npctalk "I heard a Ghost Knight appears in Glast Heim only at the stroke of midnight!"; break;
+			}
+			break;
+		case 5:
+			npctalk "Hear ye! The Master Collector in Yuno is looking for common goods from all over!";
+			break;
+	}
+	return;
+}
+
+prontera,150,100,4	script	Town Crier#prt	89,{
+	mes "[Town Crier]";
+	mes "Read the System Tablet for market sentiment and progression guides!";
+	close;
+	
+OnTimer600000:
+	initnpctimer;
+	callfunc "Town_Crier_News";
+	end;
+	
+OnInit:
+	initnpctimer;
+	end;
+}
+
+geffen,115,50,4	script	Town Crier#gef	89,{
+	mes "[Town Crier]";
+	mes "The magic anomalies in the west are subsiding. Safe travels!";
+	close;
+
+OnTimer600000:
+	initnpctimer;
+	callfunc "Town_Crier_News";
+	end;
+	
+OnInit:
+	initnpctimer;
+	end;
+}
+
+payon,155,100,4	script	Town Crier#pay	89,{
+	mes "[Town Crier]";
+	mes "The Elders advise all new adventurers to hunt safely.";
+	close;
+
+OnTimer600000:
+	initnpctimer;
+	callfunc "Town_Crier_News";
+	end;
+	
+OnInit:
+	initnpctimer;
+	end;
+}

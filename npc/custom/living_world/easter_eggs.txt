@@ -1,0 +1,66 @@
+//============================================================
+//= Easter Egg NPCs
+//= Rare discovery moments with premium rewards
+//============================================================
+
+// --- Lost Child ---
+// Randomly spawns in various fields. Reset daily.
+-	script	LostChild#egg	45,{
+	if (#LostChildDone == gettime(DT_DAYOFYEAR)) {
+		mes "[Lost Child]";
+		mes "Thanks again for the candy!";
+		close;
+	}
+
+	mes "[Lost Child]";
+	mes "I'm so hungry... and lost...";
+	next;
+	
+	if (countitem(512) > 0) { // 512 = Apple (using Apple as a simple food for now, plan said Candy but Apple is common)
+		mes "[Lost Child]";
+		mes "Is that an Apple? Could I have it?";
+		next;
+		if (select("Give Apple:Sorry, no.") == 1) {
+			delitem 512, 1;
+			#LostChildDone = gettime(DT_DAYOFYEAR);
+			getitem 6075, 1; // Lucky Charm (Premium reward)
+			mes "[Lost Child]";
+			mes "Thank you! Here, I found this shiny thing earlier. You can have it!";
+			close;
+		}
+	}
+	mes "[Lost Child]";
+	mes "*sob*";
+	close;
+
+OnInit:
+	// Randomly spawn in one of these fields
+	setarray .maps$[0], "prt_fild08", "pay_fild01", "moc_fild01";
+	.@map$ = .maps$[rand(0, 2)];
+	unitwarp getnpcid(0), .@map$, rand(50, 250), rand(50, 250);
+	end;
+}
+
+// --- Old Sage ---
+pay_arche,85,125,4	script	Old Sage#egg	73,{
+	mes "[Old Sage]";
+	mes "Greetings, seeker. Tell me... what is the true meaning of power?";
+	next;
+	
+	set .@ans, select("To crush one's enemies.:To protect others.:To gain wealth.:To be feared.");
+	if (.@ans == 2) {
+		if (#OldSageDone == 0) {
+			#OldSageDone = 1;
+			getitem 2285, 1; // Costume reward
+			mes "[Old Sage]";
+			mes "A wise answer. You understand the heart of a true hero. Wear this with pride.";
+		} else {
+			mes "[Old Sage]";
+			mes "You have already found your answer. Go forth and protect.";
+		}
+	} else {
+		mes "[Old Sage]";
+		mes "A common perspective, but not the one I seek.";
+	}
+	close;
+}

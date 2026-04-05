@@ -1,0 +1,69 @@
+//============================================================
+//= The Traveling Merchant (Marcus)
+//= Rotates between Prontera, Geffen, and Payon using timers.
+//============================================================
+-	script	Marcus_Controller	-1,{
+OnClock0600:
+OnClock1800:
+	enablenpc "Marcus#prt";
+	disablenpc "Marcus#gef";
+	disablenpc "Marcus#pay";
+	end;
+
+OnClock1000:
+OnClock2200:
+	disablenpc "Marcus#prt";
+	enablenpc "Marcus#gef";
+	disablenpc "Marcus#pay";
+	end;
+
+OnClock1400:
+OnClock0200:
+	disablenpc "Marcus#prt";
+	disablenpc "Marcus#gef";
+	enablenpc "Marcus#pay";
+	end;
+
+OnInit:
+	enablenpc "Marcus#prt";
+	disablenpc "Marcus#gef";
+	disablenpc "Marcus#pay";
+	end;
+}
+
+prontera,156,100,4	script	Marcus#prt	47,{
+	callfunc "Marcus_Logic";
+	end;
+}
+
+geffen,120,50,4	script	Marcus#gef	47,{
+	callfunc "Marcus_Logic";
+	end;
+}
+
+payon,160,100,4	script	Marcus#pay	47,{
+	callfunc "Marcus_Logic";
+	end;
+}
+
+function	script	Marcus_Logic	{
+	mes "[Marcus]";
+	mes "I travel all over Rune Midgard to bring you the best goods!";
+	next;
+	switch(select("Buy Utility Items:Buy Region Specials:Cancel")) {
+		case 1:
+			callshop "Marcus_Utility", 1;
+			end;
+		case 2:
+			callshop "Marcus_Region", 1;
+			end;
+		case 3:
+			mes "[Marcus]";
+			mes "Safe travels!";
+			close;
+	}
+	end;
+}
+
+-	shop	Marcus_Utility	-1,501:50,502:50,503:180
+-	shop	Marcus_Region	-1,512:100,513:100,514:200
