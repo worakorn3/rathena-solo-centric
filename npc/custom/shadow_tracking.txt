@@ -1,0 +1,67 @@
+//============================================================
+//= Shadow Tracking Persistence Layer
+//= Silently records player milestones (kills) to SQL.
+//= Batches writes to prevent DB lag during AoE multi-kills.
+//============================================================
+
+-	script	ShadowTracker	FAKE_NPC,{
+
+OnForceFlush:
+	callsub L_FlushKills;
+	end;
+
+OnPCLogoutEvent:
+	deltimer "ShadowTracker::OnTimerFlush";
+	callsub L_FlushKills;
+	end;
+
+OnPCDieEvent:
+	callsub L_FlushKills;
+	end;
+
+OnPCStatCalcEvent:
+	// StatCalc triggers on map load, death, and stat changes.
+	// It's the most reliable way to catch map changes without mapflags.
+	callsub L_FlushKills;
+	end;
+
+OnTimerFlush:
+	callsub L_FlushKills;
+	addtimer 300000, "ShadowTracker::OnTimerFlush";
+	end;
+
+OnPCLoginEvent:
+	addtimer 300000, "ShadowTracker::OnTimerFlush";
+	end;
+
+L_FlushKills:
+	if (#dirty_kill_count == 0) return;
+
+	.@account_id = getcharid(3);
+	if (.@account_id == 0) {
+		debugmes "[ShadowTracker] ERROR: No RID found during flush!";
+		return;
+	}
+
+	// dispbottom "^00FF00[ShadowTracker]^000000 Saving " + #dirty_kill_count + " milestones...";
+
+	for (.@i = 0; .@i < #dirty_kill_count; .@i++) {
+		.@mob_id = getd("#dirty_kill_id_" + .@i);
+		.@count = getd("#kill_count_" + .@mob_id);
+		
+		if (.@count > 0) {
+			query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'KILL', " + .@mob_id + ", " + .@count + ") ON DUPLICATE KEY UPDATE `value` = `value` + " + .@count;
+			setd "#kill_count_" + .@mob_id, 0; 
+		}
+		setd "#dirty_kill_id_" + .@i, 0; // Clear index
+	}
+
+	#dirty_kill_count = 0;
+	#total_unflushed_kills = 0;
+	return;
+
+OnInit:
+	// Create table if it doesn't exist (failsafe for setup)
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_persistence_log` (`account_id` INT(11) UNSIGNED NOT NULL, `category` VARCHAR(32) NOT NULL, `target_id` INT(11) NOT NULL, `value` INT(11) DEFAULT '0', `tstamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (`account_id`, `category`, `target_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+	end;
+}
