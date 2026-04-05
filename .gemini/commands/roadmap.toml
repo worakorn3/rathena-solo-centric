@@ -1,0 +1,2 @@
+description = "View progress and next steps for the Photonic Singularity grand plan"
+prompt = "@planner audit the current npc/ and db/ directories against ai/implementation_plan.md and suggest the next 3 tasks."
