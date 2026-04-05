@@ -2,7 +2,7 @@
 name: creator
 description: Meta-agent for creating and managing Gemini CLI components (commands, skills, agents).
 tools: [glob, grep_search, read_file, write_file, replace, run_shell_command, activate_skill]
-model: gemini-2.0-flash
+model: inherit
 ---
 
 # Creator Sub-Agent

@@ -11,7 +11,7 @@ This skill provides the workflow and references needed to debug and fix broken r
 
 1.  **Retrieve Map Server Logs:**
     If the user hasn't provided the error log snippet directly, execute the included script to fetch recent NPC script-related errors from the Docker container:
-    `sh scripts/fetch_docker_logs.sh` (Requires the user's environment to be running Docker).
+    `.\scripts\fetch_docker_logs.ps1` (Requires the user's environment to be running Docker).
 
 2.  **Analyze the Log:**
     Read the output carefully. Look for `[Error]` or `[Warning]` tags. Note the file name (e.g., `npc/custom/solo_mechanics.txt`), the specific script command failing, and any line number or length indicator (e.g., `@ 45` or `source:... / length:40`). See [error-formats.md](references/error-formats.md) to understand common error messages.

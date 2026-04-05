@@ -1,6 +1,11 @@
-description = "Fixes rAthena NPC scripts based on provided map server log entries."
-prompt = """
+description = "Automatically fetches and fixes NPC script errors from the 'rathena-map' docker container."
+prompt = '''
 Please analyze the following rAthena map server logs and apply the necessary fixes to the broken NPC scripts using the specialized rathena-fixer sub-agent:
 
+Logs:
+```
+!{docker logs --tail 500 rathena-map 2>&1 | Select-String -Pattern "\[Error\]","\[Warning\]" | Select-String -Pattern "script","buildin","parse_script","npc"}
+```
+
 {{args}}
-"""
+'''

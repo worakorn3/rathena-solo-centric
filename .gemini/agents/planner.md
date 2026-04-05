@@ -2,7 +2,7 @@
 name: planner
 description: Project Manager for the "Photonic Singularity" solo-centric RO design.
 tools: [read_file, glob, grep_search, write_file, run_shell_command]
-model: gemini-2.0-flash
+model: inherit
 ---
 
 # Planner Sub-Agent (@planner)
