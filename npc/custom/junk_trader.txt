@@ -19,7 +19,7 @@ OnInit:
 	waitingroom "Mage Guild Bounties", 0;
 	end;
 }
-morroc,156,97,4	script	Junk Merchant#morr	104,{ 
+morocc,156,97,4	script	Junk Merchant#morr	104,{ 
 	callfunc "F_JunkTraderMain"; 
 	close; 
 	end; 

@@ -5,7 +5,7 @@
 // --- City Brokers (Classic OnInit Balloons) ---
 prontera,145,178,4	script	Stock Broker#prt	101,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Midgard Stock Index", 0; end; }
 geffen,115,115,4	script	Stock Broker#gef	107,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Geffen Magical Equities", 0; end; }
-morroc,160,105,4	script	Stock Broker#mor	104,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Morroc Expansion Bonds", 0; end; }
+morocc,160,105,4	script	Stock Broker#mor	104,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Morroc Expansion Bonds", 0; end; }
 payon,158,230,4	script	Stock Broker#pay	103,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Payon Forest Interests", 0; end; }
 alberta,110,65,4	script	Stock Broker#alb	4005,{ callfunc "F_StockExchangeMain"; end; OnInit: waitingroom "Alberta Shipping Corp", 0; end; }
 
