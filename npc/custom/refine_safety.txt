@@ -1,0 +1,87 @@
+// =============================================================
+// Refine Insurer - Blacksmith's Blessing Service
+// =============================================================
+// Allows players to "register" an item to insure it, then
+// buy Blacksmith Blessings specifically for that purpose.
+// =============================================================
+
+prt_in,65,60,4	script	Refine Insurer	100,{
+	mes "[Refine Insurer]";
+	mes "Welcome to the Insurance Guild.";
+	mes "I provide ^0000FFBlacksmith Blessings^000000 for your precious equipment.";
+	next;
+
+	// --- Step 1: Registration ---
+	mes "[Refine Insurer]";
+	mes "Which item do you want to protect today?";
+	next;
+
+	setarray .@indices[1], EQI_HEAD_TOP, EQI_ARMOR, EQI_HAND_L, EQI_HAND_R, EQI_GARMENT, EQI_SHOES, EQI_ACC_L, EQI_ACC_R, EQI_HEAD_MID, EQI_HEAD_LOW;
+	for(.@i = 1; .@i<=10; ++.@i) {
+		if (getequipisequiped(.@indices[.@i])) {
+			.@menu$ = .@menu$ + F_getpositionname(.@indices[.@i]) + "-[" + getequipname(.@indices[.@i]) + "]";
+			.@equipped = 1;
+		}
+		.@menu$ = .@menu$ + ":";
+	}
+
+	if (.@equipped == 0) {
+		mes "[Refine Insurer]";
+		mes "You aren't wearing anything I can insure!";
+		close;
+	}
+
+	.@part = .@indices[select(.@menu$)];
+	
+	if (!getequipisenableref(.@part)) {
+		mes "[Refine Insurer]";
+		mes "That item cannot be refined, so it needs no insurance.";
+		close;
+	}
+
+	.@id = getequipid(.@part);
+	.@refine = getequiprefinerycnt(.@part);
+
+	mes "[Refine Insurer]";
+	mes "Ah, your ^FF0000+" + .@refine + " " + getitemname(.@id) + "^000000. Excellent choice.";
+	mes "To protect this item during refinement, you'll need ^0000FFBlacksmith Blessings^000000.";
+	next;
+
+	// --- Step 2: Sale ---
+	// Price logic: Solo-Centric rate (500k each)
+	.@price = 500000;
+	
+	mes "[Refine Insurer]";
+	mes "I sell Blacksmith Blessings for ^00FF00" + .@price + " Zeny^000000 each.";
+	mes "How many do you want to purchase for your " + getitemname(.@id) + "?";
+	next;
+
+	input .@amount;
+
+	if (.@amount <= 0) {
+		mes "[Refine Insurer]";
+		mes "Changed your mind? Come back anytime.";
+		close;
+	}
+
+	if (.@amount > 10) {
+		mes "[Refine Insurer]";
+		mes "I can only sell you up to 10 at a time.";
+		close;
+	}
+
+	.@total = .@price * .@amount;
+
+	if (Zeny < .@total) {
+		mes "[Refine Insurer]";
+		mes "You don't have enough Zeny. You need " + .@total + " Zeny.";
+		close;
+	}
+
+	Zeny -= .@total;
+	getitem 6635, .@amount; // Blacksmith Blessing
+	
+	mes "[Refine Insurer]";
+	mes "Here are your blessings. Good luck with the refinement!";
+	close;
+}

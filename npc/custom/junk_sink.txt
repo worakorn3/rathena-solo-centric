@@ -1,0 +1,62 @@
+//============================================================
+//= Daily Junk Sink
+//= Money sink: Overpriced "junk" items with utility
+//============================================================
+
+prontera,146,172,4	script	Junk Merchant#sink	100,{
+	if (#LastJunkSinkDay != gettime(DT_DAYOFYEAR)) {
+		#LastJunkSinkDay = gettime(DT_DAYOFYEAR);
+		#DailyJunkSinkBought = 0;
+	}
+
+	mes "[Daily Junk Merchant]";
+	mes "I have some... 'exotic' goods for sale today.";
+	mes "Limited to 10 purchases per day per account.";
+	mes "All items are ^FF0000Account-Bound^000000.";
+	next;
+	mes "[Daily Junk Merchant]";
+	mes "Your Daily Limit: ^0000FF"+#DailyJunkSinkBought+"/10 Items^000000";
+	next;
+
+	if (#DailyJunkSinkBought >= 10) {
+		mes "[Daily Junk Merchant]";
+		mes "Sorry, I've sold my quota for today! Come back tomorrow.";
+		close;
+	}
+
+	switch(select("Mystery Potion (50,000z):Lucky Charm (100,000z):Repair Kit (25,000z):Warp Scroll (10,000z):Cosmetic Dye (200,000z):Cancel")) {
+		case 1: .@id = 12015; .@price = 50000; break;
+		case 2: .@id = 6075; .@price = 100000; break;
+		case 3: .@id = 2307; .@price = 25000; break;
+		case 4: .@id = 6023; .@price = 10000; break;
+		case 5: .@id = 12022; .@price = 200000; break;
+		default: 
+			mes "[Daily Junk Merchant]";
+			mes "No? Fine. More for me.";
+			close;
+	}
+
+	if (Zeny < .@price) {
+		mes "[Daily Junk Merchant]";
+		mes "You don't have enough Zeny for this premium junk!";
+		close;
+	}
+
+	if (checkweight(.@id, 1) == 0) {
+		mes "[Daily Junk Merchant]";
+		mes "You're carrying too much stuff. Clear some space first.";
+		close;
+	}
+
+	Zeny -= .@price;
+	getitembound .@id, 1, 2; // Bound to Account
+	#DailyJunkSinkBought++;
+	
+	mes "[Daily Junk Merchant]";
+	mes "Here's your " + getitemname(.@id) + ". Don't tell anyone where you got it!";
+	close;
+
+OnInit:
+	waitingroom "Exotic Junk Deals", 0;
+	end;
+}

@@ -8,7 +8,7 @@ OnUse:
 	mes "[System Tablet]";
 	mes "Welcome to the central system.";
 	mes "Please select an app to launch:";
-	switch(select("Progression Guide:Monster Intel App:Cancel")) {
+	switch(select("Progression Guide:Monster Intel App:Market Pulse App:Cancel")) {
 		case 1:
 			mes "[System Tablet]";
 			mes "Solo-Centric Global Enhancements:";
@@ -17,7 +17,12 @@ OnUse:
 			mes "^0000FF3.^000000 Kafra Warp fees are slashed by 50%.";
 			mes "^0000FF4.^000000 Death penalty is reduced to 0.5%.";
 			mes " ";
-			mes "Progression Note: Once you reach ^0000FFLevel 30^000000, your EXP rate is natively boosted to ^0000FF5x^000000 automatically.";
+			mes "Progression Note: Experience rates are ^0000FFtiered^000000:";
+			mes "- Lv 1-30: 1x";
+			mes "- Lv 31-60: 2x";
+			mes "- Lv 61-99: 3x";
+			mes "- Lv 100-150: 4x";
+			mes "- Lv 151+: 5x";
 			close;
 		case 2:
 			mes "[Monster Intel App]";
@@ -112,16 +117,40 @@ OnUse:
 					mes "[Deep Intel]";
 					mes "ATK: " + getmonsterinfo(.@mob_id, MOB_ATKMIN) + " ~ " + getmonsterinfo(.@mob_id, MOB_ATKMAX);
 					mes "DEF: " + getmonsterinfo(.@mob_id, MOB_DEF) + " | MDEF: " + getmonsterinfo(.@mob_id, MOB_MDEF);
-					mes "---";
-					mes "STR: " + getmonsterinfo(.@mob_id, MOB_STR) + " AGI: " + getmonsterinfo(.@mob_id, MOB_AGI);
-					mes "VIT: " + getmonsterinfo(.@mob_id, MOB_VIT) + " INT: " + getmonsterinfo(.@mob_id, MOB_INT);
-					mes "DEX: " + getmonsterinfo(.@mob_id, MOB_DEX) + " LUK: " + getmonsterinfo(.@mob_id, MOB_LUK);
+					mes "--- Drops ---";
+					
+					// Clear previous results to avoid leakage
+					deletearray $@MobDrop_item[0], getarraysize($@MobDrop_item);
+					deletearray $@MobDrop_rate[0], getarraysize($@MobDrop_rate);
+					
+					if (getmobdrops(.@mob_id)) {
+						.@count = getarraysize($@MobDrop_item);
+						for (.@i = 0; .@i < .@count; .@i++) {
+							mes "- " + getitemname($@MobDrop_item[.@i]) + " (" + ($@MobDrop_rate[.@i]/100) + "." + ($@MobDrop_rate[.@i]%100) + "%)";
+						}
+					} else {
+						mes "No drops found for this monster.";
+					}
 					close;
 				case 3:
 					close;
 			}
+			break;
 		case 3:
+			mes "[Market Pulse App]";
+			mes "Global Equity Index Trends:";
+			mes "Market Sentiment: ^0000FF" + callfunc("F_MoodNameStr") + "^000000";
+			mes "---------------------------";
+			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+				set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$); set .@diff, .@p - getd("$Price_"+.@cn$+"_Old");
+				if (.@diff > 0) { set .@clr$, "^00FF00"; set .@d$, "(+"+.@diff+"z)"; }
+				else if (.@diff < 0) { set .@clr$, "^FF0000"; set .@d$, "("+.@diff+"z)"; }
+				else { set .@clr$, "^000000"; set .@d$, "(0z)"; }
+				mes "- " + .@cn$ + ": " + .@clr$ + .@p + "z^000000 " + .@d$;
+			}
+			close;
+		case 4:
 			close;
 	}
-	end;
 }
