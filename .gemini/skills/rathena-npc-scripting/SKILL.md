@@ -28,6 +28,8 @@ Choose the narrowest scope possible to prevent memory leaks and database bloat:
 - **Reuse:** Use `callsub` for internal labels and `callfunc` for global functions.
 - **Safety:** Use `playerattached()` in `OnInit` or timer-based labels to ensure a valid RID exists before character-specific commands.
 - **Menus:** Use dynamic menus with arrays for scalable interfaces.
+- **Command Syntax:** Always verify the argument order for non-standard commands. For example, `npcwalkto` requires `<x>, <y>` *before* the NPC name. Incorrectly passing the name first is a common cause of "non-existing NPC" errors.
+- **Map Names:** Double-check map spelling in `db/map_index.txt`. Common pitfalls include `morroc` (should be `morocc`).
 
 ## 4. Common Commands Reference
 - `mes "[Name]";` - Display a message box.

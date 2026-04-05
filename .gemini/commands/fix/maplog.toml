@@ -1,0 +1,6 @@
+description = "Fixes rAthena NPC scripts based on provided map server log entries."
+prompt = """
+Please analyze the following rAthena map server logs and apply the necessary fixes to the broken NPC scripts using the specialized rathena-fixer sub-agent:
+
+{{args}}
+"""
