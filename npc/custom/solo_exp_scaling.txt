@@ -1,0 +1,27 @@
+//============================================================
+//= Solo EXP Scaling
+//= Automatically updates server rates based on player level.
+//============================================================
+
+-	script	SoloExpScaling	-1,{
+OnPCLoginEvent:
+OnPCLoadMapEvent:
+OnPCBaseLvUpEvent:
+	// Scaling Solo-Centric EXP Rates
+	.@boost = 100; // Baseline 2x EXP from Level 1
+	if (BaseLevel > 150) .@boost = 500;
+	else if (BaseLevel > 99) .@boost = 400;
+	else if (BaseLevel > 60) .@boost = 300;
+	else if (BaseLevel > 30) .@boost = 200;
+
+	// Check if boost has changed to avoid spamming messages
+	if (CurrentExpBoost != .@boost) {
+		CurrentExpBoost = .@boost;
+		dispbottom "Solo-Centric EXP Boost Updated: " + ((100 + .@boost)/100) + "x (" + .@boost + "%)";
+	}
+
+	// Apply infinite duration (using 2B ms as rAthena's max)
+	sc_start SC_EXPBOOST, 2000000000, .@boost; 
+	sc_start SC_JEXPBOOST, 2000000000, .@boost;
+	end;
+}

@@ -1,0 +1,38 @@
+//============================================================
+//= Solo Kill Watcher
+//= Central hub for all actions triggered by monster kills.
+//= Consolidates Shadow Tracking, Combat Heals, and Boss Tracking.
+//============================================================
+
+-	script	SoloKillWatcher	-1,{
+
+OnNPCKillEvent:
+	.@mob_id = killedrid;
+	.@mob_lvl = getmonsterinfo(.@mob_id, MOB_LV);
+
+	// 1. Shadow Tracking (Milestones)
+	// Increment Account-level counter
+	setd "#kill_count_" + .@mob_id, getd("#kill_count_" + .@mob_id) + 1;
+	
+	if (getd("#kill_count_" + .@mob_id) == 1) {
+		if (#dirty_kill_count >= 127) {
+			donpcevent "ShadowTracker::OnForceFlush";
+		}
+		setd "#dirty_kill_id_" + #dirty_kill_count, .@mob_id;
+		#dirty_kill_count++;
+	}
+	#total_unflushed_kills++;
+
+	// 2. Combat Heals
+	if (.@mob_lvl < 50) heal 50, 10;
+	else if (.@mob_lvl < 100) heal 100, 20;
+	else heal 150, 30;
+
+	// 3. Boss Tracking
+	if (getmonsterinfo(.@mob_id, MOB_MVPEXP) > 0) {
+		$LastMvpKiller$ = strcharinfo(0);
+		$LastMvpName$ = getmonsterinfo(.@mob_id, MOB_NAME);
+		$LastMvpTime = gettimetick(2);
+	}
+	end;
+}

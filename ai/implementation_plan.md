@@ -4,6 +4,71 @@
 
 ---
 
+## 🚀 Master Feature Tracking
+
+### Phase 0: Shadow Tracking Persistence
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Kill Tracking** | ✅ [DONE] | [Kill Tracking Architecture](shadow_tracking/kill_tracking.md) |
+| **Loot Tracking** | ⏳ [PENDING] | [Loot Tracking Architecture](shadow_tracking/loot_tracking.md) |
+| **Economy Tracking** | ⏳ [PENDING] | [Economy Tracking Architecture](shadow_tracking/economy_tracking.md) |
+| **System Architecture** | ✅ [DONE] | [Core Persistence DB Schema](shadow_tracking_plan.md) |
+
+### Phase 1: Core Mechanics & Solo QoL
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Tiered EXP Rates** | ✅ [DONE] | 1x (1-30), 2x (31-60), 3x (61-99), 4x (100-150), 5x (151+) |
+| **Starter Kit** | ✅ [DONE] | Potions, Wings, Meat, 5k Zeny on first login |
+| **Kill Recovery** | ✅ [DONE] | Flat HP/SP heal on kill based on mob level |
+| **Support Class Viability** | ⏳ [PENDING] | Solo damage buffs & free mercs for Priests/Bards |
+| **Refine Safety Nets** | ⏳ [PENDING] | Blacksmith Blessing & Insurance scripts |
+| **Boss/Mob Tuning** | ⏳ [PENDING] | Config changes for density and respawn times |
+| **Dual-Client Policy** | ⏳ [PENDING] | Config change to allow 2 clients per IP |
+
+### Phase 2: Living World & Discovery
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Town Criers** | ✅ [DONE] | Dynamic news: MvP kills, merchants, rumors |
+| **Adventurer Parties** | ✅ [DONE] | Wandering player-like NPCs in fields |
+| **Town Guards** | ✅ [DONE] | Patrol paths in Prontera |
+| **MvP Tracking** | ✅ [DONE] | Global tracking of last MvP killer/name |
+| **Easter Eggs (Basic)** | ✅ [DONE] | Lost Child (random spawn), Old Sage (Payon) |
+| **Easter Eggs (Advanced)** | ⏳ [PENDING] | Riddler (daily rotation), Ghost Knight (Glast Heim) |
+| **Wandering Merchants** | ✅ [DONE] | Traveling Merchant Marcus logic |
+
+### Phase 3: Systems & Economy
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Daily Junk Sink** | ✅ [DONE] | Merchant selling overpriced account-bound utility |
+| **System Tablet (Basic)** | ✅ [DONE] | Progression Guide, Market Pulse, Monster Intel |
+| **System Tablet (Deep)** | ✅ [DONE] | Added monster drops/rates to Intel App |
+| **Investment Bank** | ⏳ [PENDING] | 1% daily interest, 2% deposit fee, 10% cap |
+| **Bill Notes** | ⏳ [PENDING] | FIFO decaying currency (Silver/Gold/Platinum) |
+| **Item Gacha** | ⏳ [PENDING] | Token-based gambling for cosmetics/consumables |
+| **Stock Momentum** | ⏳ [PENDING] | Advanced trend logic for the Stock Exchange |
+
+### Phase 4: Mastery & Endgame
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Instance Scaling** | ⏳ [PENDING] | Solo/Duo/Trio difficulty variants for bosses |
+| **Mastery System** | ⏳ [PENDING] | Post-max level growth (infinite prestige stats) |
+| **Collection Log** | ⏳ [PENDING] | Zone-based item collection tracking |
+| **Global Collector Enhancement** | ⏳ [PENDING] | Randomize collection requirements & rewards (Web-assignable) |
+| **Junk Sink Enhancement** | ⏳ [PENDING] | Randomize stock & read from dynamic pool (Web-assignable) |
+| **Junk Trader Enhancement** | ⏳ [PENDING] | Expand junk pools & read from dynamic pool (Web-assignable) |
+| **Stock Exchange SQL Migration** | ⏳ [PENDING] | Move price/dividend data to SQL for history & web-admin access |
+| **Achievement Tiers** | ⏳ [PENDING] | Repeating kill/refine thresholds with rewards |
+| **Reputation Factions** | ⏳ [PENDING] | Daily quests and rep-locked rewards |
+| **Challenge Modes** | ⏳ [PENDING] | Roguelike dungeon runs with modifiers |
+
+### Phase 5: Infrastructure (Admin)
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Web Admin Panel** | ⏳ [PENDING] | Economic & Player data dashboard (React/Node) |
+| **Encyclopedia NPC** | ⏳ [PENDING] | Central info guide for all custom systems |
+
+---
+
 ## Core Philosophy (Revised)
 
 ### The Four Pillars

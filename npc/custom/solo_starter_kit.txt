@@ -1,0 +1,25 @@
+//============================================================
+//= Solo Starter Kit
+//= Provides a baseline starter kit to every new character.
+//============================================================
+
+-	script	SoloStarterKit	-1,{
+OnPCLoginEvent:
+	if (Char_StarterKit == 0) {
+		Char_StarterKit = 1;
+		getitem 501, 50;    // Red Potion
+		getitem 602, 10;    // Butterfly Wing
+		getitem 601, 20;    // Fly Wing
+		getitem 517, 30;    // Meat
+		Zeny += 5000;
+		dispbottom "Welcome! You've received a Starter Kit.";
+
+		// Support Class Mercenary Boost
+		// Acolyte (4), Bard (19), Dancer (20)
+		if (Class == 4 || Class == 19 || Class == 20) {
+			getitem 12194, 3; // Lancer Scroll 10
+			dispbottom "Support Soul: You've received 3 Mercenary Scrolls.";
+		}
+	}
+	end;
+}

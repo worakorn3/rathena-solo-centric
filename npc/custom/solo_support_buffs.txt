@@ -1,0 +1,18 @@
+//============================================================
+//= Solo Support Buffs
+//= Increases damage for Acolyte/Bard/Dancer classes.
+//============================================================
+
+-	script	SoloSupportBuffs	-1,{
+OnPCStatCalcEvent:
+	// Acolyte (4) -> Holy Light (28)
+	if (Class == 4) {
+		bonus2 bSkillAtk, 28, 200;
+	}
+	// Bard (19) / Dancer (20) -> Musical Strike (315) / Throw Arrow (321)
+	if (Class == 19 || Class == 20) {
+		bonus2 bSkillAtk, 315, 200;
+		bonus2 bSkillAtk, 321, 200;
+	}
+	end;
+}
