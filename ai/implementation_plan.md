@@ -1,5 +1,10 @@
 # Photonic Singularity: Solo-Centric RO Game Loop Design
 
+> [!IMPORTANT]
+> This grand plan and all associated sub-systems are designed specifically for the **Renewal** version of rAthena.
+
+🔗 **Detailed Task Breakdown:** [Phase 1 & Phase 4 Breakdown](plans/phase_1_and_4_breakdown.md)
+
 > A solo-centric experience with couch co-op vibes — designed for 1-3 players, script-only implementation, and a living world that never feels empty.
 
 ---
@@ -10,8 +15,8 @@
 | Feature | Status | Details |
 |---------|--------|---------|
 | **Kill Tracking** | ✅ [DONE] | [Kill Tracking Architecture](shadow_tracking/kill_tracking.md) |
-| **Loot Tracking** | ⏳ [PENDING] | [Loot Tracking Architecture](shadow_tracking/loot_tracking.md) |
-| **Economy Tracking** | ⏳ [PENDING] | [Economy Tracking Architecture](shadow_tracking/economy_tracking.md) |
+| **Loot Tracking** | ✅ [DONE] | [Loot Tracking Architecture](shadow_tracking/loot_tracking.md) |
+| **Economy Tracking** | ✅ [DONE] | [Economy Tracking Architecture](shadow_tracking/economy_tracking.md) |
 | **System Architecture** | ✅ [DONE] | [Core Persistence DB Schema](shadow_tracking_plan.md) |
 
 ### Phase 1: Core Mechanics & Solo QoL
@@ -42,8 +47,8 @@
 | **Daily Junk Sink** | ✅ [DONE] | Merchant selling overpriced account-bound utility |
 | **System Tablet (Basic)** | ✅ [DONE] | Progression Guide, Market Pulse, Monster Intel |
 | **System Tablet (Deep)** | ✅ [DONE] | Added monster drops/rates to Intel App |
-| **Investment Bank** | ⏳ [PENDING] | 1% daily interest, 2% deposit fee, 10% cap |
-| **Bill Notes** | ⏳ [PENDING] | FIFO decaying currency (Silver/Gold/Platinum) |
+| **Investment Bank** | ✅ [DONE] | 1% daily interest, 2% deposit fee, 10% cap |
+| **Bill Notes** | ⏳ [POSTPONED] | Replaced by existing Diamond trade (500m store of value) |
 | **Item Gacha** | ⏳ [PENDING] | Token-based gambling for cosmetics/consumables |
 | **Stock Momentum** | ⏳ [PENDING] | Advanced trend logic for the Stock Exchange |
 
@@ -52,11 +57,11 @@
 |---------|--------|---------|
 | **Instance Scaling** | ⏳ [PENDING] | Solo/Duo/Trio difficulty variants for bosses |
 | **Mastery System** | ⏳ [PENDING] | Post-max level growth (infinite prestige stats) |
-| **Collection Log** | ⏳ [PENDING] | Zone-based item collection tracking |
+| **Collection Log** | ✅ [DONE] | Zone-based item collection tracking |
 | **Global Collector Enhancement** | ⏳ [PENDING] | Randomize collection requirements & rewards (Web-assignable) |
 | **Junk Sink Enhancement** | ⏳ [PENDING] | Randomize stock & read from dynamic pool (Web-assignable) |
 | **Junk Trader Enhancement** | ⏳ [PENDING] | Expand junk pools & read from dynamic pool (Web-assignable) |
-| **Stock Exchange SQL Migration** | ⏳ [PENDING] | Move price/dividend data to SQL for history & web-admin access |
+| **Stock Exchange SQL Migration** | ✅ [DONE] | Move price/dividend data to SQL for history & web-admin access |
 | **Achievement Tiers** | ⏳ [PENDING] | Repeating kill/refine thresholds with rewards |
 | **Reputation Factions** | ⏳ [PENDING] | Daily quests and rep-locked rewards |
 | **Challenge Modes** | ⏳ [PENDING] | Roguelike dungeon runs with modifiers |

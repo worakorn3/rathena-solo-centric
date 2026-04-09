@@ -1,0 +1,124 @@
+// =============================================================
+// Solo-Centric Collection Log & Testing NPC
+// =============================================================
+// Tracks regional items and registers them via bitmask.
+// Players are rewarded for collecting unique drops per region.
+// =============================================================
+
+// --- The Collection Manager ---
+prontera,155,185,4	script	Collection Manager	100,{
+    mes "[Collection Manager]";
+    mes "Welcome to the Regional Collection Log.";
+    next;
+    mes "[Collection Manager]";
+    mes "Register your unique monster drops here to earn permanent rewards.";
+    next;
+    
+    // Define the Prontera Collection Pool
+    setarray .@prt_items[0], 909, 914, 706, 949, 938; // Jellopy, Fluff, Clover, Feather, Sticky Mucus
+    setarray .@prt_names$[0], "Jellopy", "Fluff", "Clover", "Feather", "Sticky Mucus";
+    .@prt_total = getarraysize(.@prt_items);
+    
+    // Count how many are registered using a bitmask
+    .@registered = 0;
+    for(.@i = 0; .@i < .@prt_total; .@i++) {
+        if (#COLLECT_PRT_FIELD & (1 << .@i)) {
+            .@registered++;
+        }
+    }
+    
+    mes "[Prontera Region] (" + .@registered + "/" + .@prt_total + ")";
+    
+    switch(select("Register Items in Inventory:View Prontera Log:Claim Reward:Cancel")) {
+        case 1:
+            mes "[Collection Manager]";
+            .@added = 0;
+            for(.@i = 0; .@i < .@prt_total; .@i++) {
+                // If not already registered
+                if (!(#COLLECT_PRT_FIELD & (1 << .@i))) {
+                    // If player has the item in inventory
+                    if (countitem(.@prt_items[.@i]) > 0) {
+                        // Register it (bitmask)
+                        #COLLECT_PRT_FIELD |= (1 << .@i);
+                        // Consume the item
+                        delitem .@prt_items[.@i], 1;
+                        mes "^00FF00Registered: " + .@prt_names$[.@i] + "^000000";
+                        .@added++;
+                    }
+                }
+            }
+            if (.@added == 0) {
+                mes "You have no new items for the Prontera log in your inventory.";
+            } else {
+                next;
+                mes "[Collection Manager]";
+                mes "You registered " + .@added + " new item(s)!";
+            }
+            close;
+            
+        case 2:
+            mes "[Prontera Log]";
+            for(.@i = 0; .@i < .@prt_total; .@i++) {
+                if (#COLLECT_PRT_FIELD & (1 << .@i)) {
+                    mes "^00FF00[X] " + .@prt_names$[.@i] + "^000000";
+                } else {
+                    mes "^FF0000[ ] " + .@prt_names$[.@i] + "^000000";
+                }
+            }
+            close;
+            
+        case 3:
+            if (.@registered < .@prt_total) {
+                mes "[Collection Manager]";
+                mes "You have not completed the Prontera log yet.";
+                close;
+            }
+            if (#REWARD_PRT_FIELD) {
+                mes "[Collection Manager]";
+                mes "You have already claimed the Prontera collection reward.";
+                close;
+            }
+            
+            // Mark as claimed
+            #REWARD_PRT_FIELD = 1;
+            // Reward them with a nice hat (e.g. Costume: Prontera Hat, ID 2285 is typical custom headgear, or just a known premium like an Old Purple Box 617)
+            getitem 617, 5; // 5x Old Purple Box
+            mes "[Collection Manager]";
+            mes "Congratulations on completing the Prontera Collection!";
+            mes "Please accept these Old Purple Boxes as a reward.";
+            close;
+            
+        case 4:
+            close;
+    }
+}
+
+// --- Testing NPC ---
+prontera,157,185,4	script	Collection Tester	100,{
+    mes "[Collection Tester]";
+    mes "I can give you the items needed for the Prontera Collection Log, or clear your progress.";
+    next;
+    
+    switch(select("Give Me Prontera Items:Clear My Collection Log:Cancel")) {
+        case 1:
+            getitem 909, 1; // Jellopy
+            getitem 914, 1; // Fluff
+            getitem 706, 1; // Clover
+            getitem 949, 1; // Feather
+            getitem 938, 1; // Sticky Mucus
+            mes "[Collection Tester]";
+            mes "Items added to your inventory! Go talk to the Collection Manager.";
+            close;
+            
+        case 2:
+            // Wipe progress variables
+            #COLLECT_PRT_FIELD = 0;
+            #REWARD_PRT_FIELD = 0;
+            mes "[Collection Tester]";
+            mes "Your Prontera collection progress has been completely wiped.";
+            close;
+            
+        case 3:
+            close;
+    }
+}

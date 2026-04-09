@@ -17,4 +17,7 @@ Instead, we use native rAthena permanent account variables (`#var`). These are f
 - `#TotalJunkSold`: Incremented via the Daily Junk Trader script.
 - `#InvestmentBalance`: Managed directly by the Investment Bank NPC.
 
-Using `#variables` keeps the implementation simple, script-only, and extremely fast.
+Using `#variables` keeps the implementation simple, script-only, and extremely fast for in-game displays. 
+
+For long-term milestones (SQL persistence), the `F_RecordEconomy(type, value)` function in `npc/custom/shadow_tracking.txt` is used to persist these values to the `solo_persistence_log` table under the `ECONOMY` category.
+

@@ -92,8 +92,16 @@ function	script	F_JunkTraderMain	{
 	if (countitem(.@id) < .@qty) { mes "You don't have that many!"; return; }
 
 	delitem .@id, .@qty;
-	set Zeny, Zeny + (.@price * .@qty);
+	.@payout = .@price * .@qty;
+	set Zeny, Zeny + .@payout;
 	set #DailyJunkSold, #DailyJunkSold + .@qty;
-	mes "Transaction complete. Here is " + (.@price * .@qty) + "z.";
+	
+	// --- Persistence Updates ---
+	set #TotalJunkSold, #TotalJunkSold + .@qty;
+	set #LifetimeZenyEarned, #LifetimeZenyEarned + .@payout;
+	callfunc "F_RecordEconomy", 1, .@qty;   // 1: Total Junk Sold
+	callfunc "F_RecordEconomy", 2, .@payout; // 2: Total Zeny Earned
+
+	mes "Transaction complete. Here is " + .@payout + "z.";
 	return; 
 }

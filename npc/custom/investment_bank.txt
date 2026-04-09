@@ -1,0 +1,100 @@
+// ==============================================================
+// Solo-Centric Investment Bank
+// ===============================================================
+// Provides an alternative to Kafra Storage with a deposit fee 
+// but daily interest generation. Good for long-term Zeny sinking
+// and wealth generation.
+// ===============================================================
+
+prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
+    mes "[Investment Bank]";
+    mes "Welcome. We offer long-term wealth generation.";
+    mes "Deposit fee: ^FF00002%^000000";
+    mes "Interest rate: ^00FF001% per day^000000 (Max 10% accumulation)";
+    next;
+
+    // Check if player has an existing balance and calculate pending interest
+    .@days = 0;
+    .@interest = 0;
+    if (#INVEST_BALANCE > 0) {
+        .@days = (gettimetick(2) - #INVEST_TIME) / 86400; // 86400 seconds = 1 day
+        if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
+        .@interest = (#INVEST_BALANCE / 100) * .@days;
+    }
+
+    mes "[Investment Bank]";
+    mes "Your current principal: ^0000FF" + F_InsertComma(#INVEST_BALANCE) + " Zeny^000000";
+    mes "Accumulated interest: ^00FF00" + F_InsertComma(.@interest) + " Zeny^000000 (" + .@days + " days)";
+    mes "Total available: ^0000FF" + F_InsertComma(#INVEST_BALANCE + .@interest) + " Zeny^000000";
+    next;
+
+    switch(select("Deposit Zeny:Withdraw All:Cancel")) {
+        case 1:
+            mes "[Investment Bank]";
+            mes "How much would you like to deposit?";
+            mes "Remember, there is a 2% deposit fee.";
+            next;
+            input .@amount;
+            
+            if (.@amount < 100) {
+                mes "[Investment Bank]";
+                mes "The minimum deposit is 100 Zeny.";
+                close;
+            }
+
+            if (Zeny < .@amount) {
+                mes "[Investment Bank]";
+                mes "You don't have that much Zeny.";
+                close;
+            }
+
+            // If adding to an existing balance, we must credit the accumulated interest first
+            // to reset the timer, otherwise they lose their pending interest or exploit it.
+            if (#INVEST_BALANCE > 0) {
+                #INVEST_BALANCE += .@interest;
+            }
+
+            .@fee = (.@amount / 100) * 2;
+            .@net_deposit = .@amount - .@fee;
+
+            Zeny -= .@amount;
+            #INVEST_BALANCE += .@net_deposit;
+            #INVEST_TIME = gettimetick(2); // Reset timer to now
+
+            mes "[Investment Bank]";
+            mes "You deposited " + F_InsertComma(.@amount) + " Zeny.";
+            mes "Fee paid: " + F_InsertComma(.@fee) + " Zeny.";
+            mes "New Principal: ^0000FF" + F_InsertComma(#INVEST_BALANCE) + " Zeny^000000.";
+            mes "Your interest timer has been reset.";
+            close;
+
+        case 2:
+            if (#INVEST_BALANCE <= 0) {
+                mes "[Investment Bank]";
+                mes "You have no funds to withdraw.";
+                close;
+            }
+
+            .@total_payout = #INVEST_BALANCE + .@interest;
+
+            // Prevent Zeny overflow (Max Zeny is 2,100,000,000 in standard RO)
+            if (Zeny + .@total_payout > 2100000000) {
+                mes "[Investment Bank]";
+                mes "You cannot hold that much Zeny in your inventory.";
+                mes "Please make room before withdrawing.";
+                close;
+            }
+
+            Zeny += .@total_payout;
+            #INVEST_BALANCE = 0;
+            #INVEST_TIME = 0;
+
+            mes "[Investment Bank]";
+            mes "You have successfully withdrawn ^0000FF" + F_InsertComma(.@total_payout) + " Zeny^000000.";
+            mes "Thank you for doing business with us.";
+            close;
+
+        case 3:
+            close;
+    }
+}

@@ -18,11 +18,11 @@ OnUse:
 			mes "^0000FF4.^000000 Death penalty is reduced to 0.5%.";
 			mes " ";
 			mes "Progression Note: Experience rates are ^0000FFtiered^000000:";
-			mes "- Lv 1-30: 1x";
-			mes "- Lv 31-60: 2x";
-			mes "- Lv 61-99: 3x";
-			mes "- Lv 100-150: 4x";
-			mes "- Lv 151+: 5x";
+			mes "- Lv 1-30: 2x";
+			mes "- Lv 31-60: 3x";
+			mes "- Lv 61-99: 4x";
+			mes "- Lv 100-150: 5x";
+			mes "- Lv 151+: 6x";
 			close;
 		case 2:
 			mes "[Monster Intel App]";
@@ -139,11 +139,14 @@ OnUse:
 		case 3:
 			mes "[Market Pulse App]";
 			mes "Global Equity Index Trends:";
+			query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 			mes "Market Sentiment: ^0000FF" + callfunc("F_MoodNameStr") + "^000000";
 			mes "---------------------------";
 			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-				set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$); set .@diff, .@p - getd("$Price_"+.@cn$+"_Old");
+				set .@cn$, .@c$[.@i];
+				query_sql "SELECT price, price_old FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@po;
+				set .@diff, .@p - .@po;
 				if (.@diff > 0) { set .@clr$, "^00FF00"; set .@d$, "(+"+.@diff+"z)"; }
 				else if (.@diff < 0) { set .@clr$, "^FF0000"; set .@d$, "("+.@diff+"z)"; }
 				else { set .@clr$, "^000000"; set .@d$, "(0z)"; }

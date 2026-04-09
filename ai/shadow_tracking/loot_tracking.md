@@ -14,4 +14,7 @@ rAthena does not have a global script hook for item drops/pickups by default (un
 1. **Specific NPC Quests:** When a player turns in or receives a rare item via a quest script.
 2. **Collection Check NPCs:** When a player visits the "Collection Log" NPC, the NPC can scan their inventory/storage and insert records into `solo_persistence_log` for any rare items they possess that haven't been tracked yet.
 
+3. **Manual Tracking Helper:** The `F_TrackLoot(item_id)` function in `npc/custom/shadow_tracking.txt` allows any script to manually record an item acquisition to the SQL persistence layer.
+
 Because of this, Loot Tracking is a passive, pull-based model (verified when needed) rather than a push-based model (verified on every item drop).
+

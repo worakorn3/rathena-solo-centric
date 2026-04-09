@@ -11,16 +11,31 @@ alberta,110,65,4	script	Stock Broker#alb	4005,{ callfunc "F_StockExchangeMain"; 
 
 // --- Global Market Logic ---
 -	script	StockExchangeSetup	-1,{
-OnOnInit:
+OnInit:
 	setarray $StockCities$[0],"PRT","GEF","MOR","PAY","ALB";
+	
+	// Ensure Tables Exist
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_market` (`ticker` VARCHAR(10) PRIMARY KEY, `price` INT DEFAULT 1000, `price_old` INT DEFAULT 1000, `dividend` INT DEFAULT 3, `div_acc` INT DEFAULT 0, `split_count` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_player` (`account_id` INT(11) UNSIGNED NOT NULL, `ticker` VARCHAR(10) NOT NULL, `shares` INT DEFAULT 0, `total_cost` BIGINT DEFAULT 0, `last_claim_acc` INT DEFAULT 0, `split_processed` INT DEFAULT 0, PRIMARY KEY (`account_id`, `ticker`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_meta` (`mkey` VARCHAR(32) PRIMARY KEY, `mval` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+	// Initialize Market Data
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		query_sql "INSERT IGNORE INTO `solo_stock_market` (ticker) VALUES ('" + $StockCities$[.@i] + "')";
+	}
+	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0)";
 	end;
 
 OnClock0000:
 	setarray .@names$[0],"PRT","GEF","MOR","PAY","ALB";
-	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { setd "$Price_"+.@names$[.@i]+"_Old", getd("$Price_"+.@names$[.@i]); }
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
+		query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
+	}
 	set $MarketDrift, rand(-4, 6);
+	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
 	set $StockLastUpdate, gettime(4);
+	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 OnClock0300:
 OnClock0600:
 OnClock0900:
@@ -37,8 +52,11 @@ OnShiftManual:
 
 OnMidnightManual: 
 	setarray .@names$[0],"PRT","GEF","MOR","PAY","ALB";
-	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { setd "$Price_"+.@names$[.@i]+"_Old", getd("$Price_"+.@names$[.@i]); }
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
+		query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
+	}
 	set $MarketDrift, rand(-4, 6);
+	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
 	announce "MARKET NEWS: Admin has triggered a Midnight Cycle. Dividends updated.", bc_all;
 	end;
@@ -46,8 +64,14 @@ OnMidnightManual:
 L_ShiftProc:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	set .@u, 0;
+	// Sync Meta from SQL
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketDrift'", $MarketDrift;
+
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$);
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT price, dividend, split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@sc;
+		
 		set .@f, $MarketDrift + rand(-10, 10);
 		if ($MarketMood == 1) set .@f, .@f + 3;
 		else if ($MarketMood == 2) set .@f, .@f - 3;
@@ -57,31 +81,32 @@ L_ShiftProc:
 		if (.@new < 50) set .@new, 50; 
 		if (.@new >= 20000) {
 			set .@new, .@new / 10;
-			setd "$Price_"+.@cn$+"_Old", getd("$Price_"+.@cn$+"_Old")/10;
-			setd "$Div_"+.@cn$, getd("$Div_"+.@cn$)/10;
-			setd "$SplitCount_"+.@cn$, getd("$SplitCount_"+.@cn$)+1;
+			query_sql "UPDATE `solo_stock_market` SET price = " + .@new + ", price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = '" + .@cn$ + "'";
 			announce "MARKET NEWS: Successful 10:1 Stock Split for "+.@cn$+"!", bc_all;
+		} else {
+			query_sql "UPDATE `solo_stock_market` SET price = " + .@new + " WHERE ticker = '" + .@cn$ + "'";
 		}
-		setd "$Price_"+.@cn$, .@new;
 		if (.@new > .@p) set .@u, .@u + 1;
 	}
 	if (rand(1, 100) <= 8) set $MarketMood, 3; 
 	else if (.@u >= 2) set $MarketMood, 1; 
 	else set $MarketMood, 2;
+	
+	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketMood + " WHERE mkey = 'MarketMood'";
 	announce "MARKET NEWS: Stock shift complete. Trend: " + callfunc("F_MoodNameStr") + ".", bc_all;
 	return;
 
 L_MidnightProc:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$); set .@div, getd("$Div_"+.@cn$);
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT price, dividend, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@divacc;
 		
-		// --- Yield Targeting Logic (v23.9) ---
-		// Target: 2.5% of Price (Price * 25 / 1000)
 		set .@target, (.@p * 25) / 1000;
 		if (.@target < 1) set .@target, 1;
 		
-		if (rand(1, 100) <= 30) { // Higher activity (30%)
+		if (rand(1, 100) <= 30) {
 			if (.@div < .@target && $MarketMood != 2) { 
 				set .@div, .@div + 1; 
 				announce "CORPORATE NEWS: "+.@cn$+" dividend hike (+1z)!", bc_all; 
@@ -96,31 +121,26 @@ L_MidnightProc:
 		else if (.@div <= 0) { set .@div, 1; announce "CORPORATE NEWS: "+.@cn$+" has restored its dividend.", bc_all; }
 		
 		if (.@div > 500) set .@div, 500;
-		setd "$Div_"+.@cn$, .@div; setd "$DivAcc_"+.@cn$, getd("$DivAcc_"+.@cn$) + .@div;
+		query_sql "UPDATE `solo_stock_market` SET dividend = " + .@div + ", div_acc = div_acc + " + .@div + " WHERE ticker = '" + .@cn$ + "'";
 	}
 	return;
 }
 
 function	script	F_StockExchangeMain	{
-	if ($Price_PRT <= 0) {
-		set $Price_PRT, 1000; set $Price_GEF, 1000; set $Price_MOR, 1000; set $Price_PAY, 1000; set $Price_ALB, 1000;
-		set $Price_PRT_Old, 1000; set $Price_GEF_Old, 1000; set $Price_MOR_Old, 1000; set $Price_PAY_Old, 1000; set $Price_ALB_Old, 1000;
-		set $Div_PRT, 3; set $Div_GEF, 3; set $Div_MOR, 3; set $Div_PAY, 3; set $Div_ALB, 3;
-		set $MarketMood, 1; set $StockLastUpdate, gettime(4);
-	}
-
 L_MenuMain:
-	clear;
 	mes "[Midgard Stock Exchange]";
+	clear;
 	mes "Standard Index (Trends Today):";
 	mes "---------------------------";
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@p, getd("$Price_"+.@cn$); set .@diff, .@p - getd("$Price_"+.@cn$+"_Old");
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT price, price_old, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@po, .@div;
+		set .@diff, .@p - .@po;
 		if (.@diff > 0) { set .@clr$, "^00FF00"; set .@d$, "(+"+.@diff+"z)"; }
 		else if (.@diff < 0) { set .@clr$, "^FF0000"; set .@d$, "("+.@diff+"z)"; }
 		else { set .@clr$, "^000000"; set .@d$, "(0z)"; }
-		mes "- " + .@cn$ + ": " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Div: "+getd("$Div_"+.@cn$)+"z]";
+		mes "- " + .@cn$ + ": " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Div: "+.@div+"z]";
 	}
 	next;
 
@@ -136,11 +156,15 @@ L_MenuMain:
 
 L_ClaimDiv:
 	set .@total, 0; setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	.@account_id = getcharid(3);
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@s, getd("#Stock_"+.@cn$);
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@divacc;
+		query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
+		
 		if (.@s > 0) {
-			set .@total, .@total + (.@s * (getd("$DivAcc_"+.@cn$) - getd("#LastClaim_"+.@cn$)));
-			setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
+			set .@total, .@total + (.@s * (.@divacc - .@lastclaim));
+			query_sql "UPDATE `solo_stock_player` SET last_claim_acc = " + .@divacc + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 		}
 	}
 	if (.@total <= 0) { mes "No dividends to collect."; next; goto L_MenuMain; }
@@ -152,10 +176,12 @@ L_Admin:
 		case 1: doevent "StockExchangeSetup::OnShiftManual"; close;
 		case 2: doevent "StockExchangeSetup::OnMidnightManual"; close;
 		case 3:
-			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { setd "#Stock_"+.@c$[.@i], 0; setd "#Stock_"+.@c$[.@i]+"_Z", 0; }
+			.@account_id = getcharid(3);
+			query_sql "DELETE FROM `solo_stock_player` WHERE account_id = " + .@account_id;
 			mes "Portfolio wiped."; next; goto L_MenuMain;
-		case 4: set $Price_PRT, 0; return;
+		case 4: 
+			query_sql "UPDATE `solo_stock_market` SET price = 1000, price_old = 1000, dividend = 3, div_acc = 0, split_count = 0";
+			mes "Market Index reset."; next; goto L_MenuMain;
 		default: goto L_MenuMain;
 	}
 
@@ -163,8 +189,13 @@ L_MenuBuy:
 	mes "[Buy Stocks]";
 	set .@city, select("PRT:GEF:MOR:PAY:ALB");
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-	set .@cn$, .@c$[.@city - 1]; set .@p, getd("$Price_"+.@cn$);
-	set .@payout, (getd("#Stock_"+.@cn$) * (getd("$DivAcc_"+.@cn$) - getd("#LastClaim_"+.@cn$)));
+	set .@cn$, .@c$[.@city - 1];
+	.@account_id = getcharid(3);
+	
+	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
+	query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
+	
+	set .@payout, (.@s * (.@divacc - .@lastclaim));
 	
 	mes "Settle Payout: ^00FF00+" + .@payout + "z^000000";
 	mes "Price: " + .@p + "z";
@@ -176,18 +207,27 @@ L_MenuBuy:
 	if (select("Purchase:Cancel") == 2) goto L_MenuMain;
 	if (Zeny + .@payout < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
 	set Zeny, Zeny + .@payout - .@total; 
-	setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
-	setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) + .@qty; 
-	setd "#Stock_"+.@cn$+"_Z", getd("#Stock_"+.@cn$+"_Z") + (.@p * .@qty);
+	
+	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost, last_claim_acc) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + (.@p * .@qty) + ", " + .@divacc + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + (.@p * .@qty) + ", last_claim_acc = " + .@divacc;
 	goto L_MenuMain;
 
 L_MenuSell:
 	mes "[Sell Stocks]";
-	set .@city, select("PRT("+#Stock_PRT+"):GEF("+#Stock_GEF+"):MOR("+#Stock_MOR+"):PAY("+#Stock_PAY+"):ALB("+#Stock_ALB+")");
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-	set .@cn$, .@c$[.@city - 1]; set .@p, getd("$Price_"+.@cn$); set .@s, getd("#Stock_"+.@cn$);
+	.@account_id = getcharid(3);
+	
+	// Pre-fetch shares for menu display
+	for (.@i = 0; .@i < 5; .@i++) {
+		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@c$[.@i] + "'", .@sh[.@i];
+	}
+	
+	set .@city, select("PRT("+.@sh[0]+"):GEF("+.@sh[1]+"):MOR("+.@sh[2]+"):PAY("+.@sh[3]+"):ALB("+.@sh[4]+")");
+	set .@cn$, .@c$[.@city - 1];
+	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
+	query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
+	
 	if (.@s <= 0) { mes "No shares."; next; goto L_MenuMain; }
-	set .@payout, (.@s * (getd("$DivAcc_"+.@cn$) - getd("#LastClaim_"+.@cn$)));
+	set .@payout, (.@s * (.@divacc - .@lastclaim));
 	mes "Settle Payout: ^00FF00+" + .@payout + "z^000000";
 	next;
 	switch(select("Amount:Liquidate All:Back")) {
@@ -200,38 +240,47 @@ L_MenuSell:
 	mes "Net Received: " + .@net + "z";
 	next;
 	if (select("Confirm:Cancel") == 2) goto L_MenuMain;
-	setd "#LastClaim_"+.@cn$, getd("$DivAcc_"+.@cn$);
-	set .@redCost, (getd("#Stock_"+.@cn$+"_Z") * .@qty) / .@s;
-	setd "#Stock_"+.@cn$+"_Z", getd("#Stock_"+.@cn$+"_Z") - .@redCost;
-	setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) - .@qty;
+	
+	set .@redCost, (.@tc * .@qty) / .@s;
+	query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - " + .@redCost + ", last_claim_acc = " + .@divacc + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	set Zeny, Zeny + .@net + .@payout;
 	goto L_MenuMain;
 
 L_MenuPort:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+	.@account_id = getcharid(3);
+
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@gs, getd("$SplitCount_"+.@cn$); set .@ps, getd("#SplitCount_"+.@cn$);
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@gs;
+		query_sql "SELECT shares, split_processed FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@ps;
+		
 		if (.@gs > .@ps) {
-			if (getd("#Stock_"+.@cn$) > 0) {
+			if (.@s > 0) {
 				set .@diff, .@gs - .@ps;
-				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { setd "#Stock_"+.@cn$, getd("#Stock_"+.@cn$) * 10; }
+				set .@new_s, .@s;
+				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { set .@new_s, .@new_s * 10; }
+				query_sql "UPDATE `solo_stock_player` SET shares = " + .@new_s + ", split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 				dispbottom "Split applied to "+.@cn$+"!";
+			} else {
+				query_sql "UPDATE `solo_stock_player` SET split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 			}
-			setd "#SplitCount_"+.@cn$, .@gs;
 		}
 	}
 	mes "[My Portfolio]";
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i]; set .@s, getd("#Stock_"+.@cn$);
+		set .@cn$, .@c$[.@i];
+		query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
+		query_sql "SELECT price, dividend, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@divacc;
+
 		if (.@s > 0) {
-			set .@avg, getd("#Stock_"+.@cn$+"_Z") / .@s; set .@p, getd("$Price_"+.@cn$); set .@pl, .@p - .@avg;
+			set .@avg, .@tc / .@s; set .@pl, .@p - .@avg;
 			if (.@pl > 0) set .@pl$, "^00FF00+" + .@pl + "z^000000"; else if (.@pl < 0) set .@pl$, "^FF0000" + .@pl + "z^000000"; else set .@pl$, "0z";
 			
-			set .@div, getd("$Div_"+.@cn$);
 			if (.@avg > 0) { set .@yoc_p, (.@div * 1000) / .@avg; set .@yoc$, (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%"; } else set .@yoc$, "0.0%";
 			if (.@p > 0) { set .@cur_p, (.@div * 1000) / .@p; set .@cur$, (.@cur_p/10) + "." + (.@cur_p % 10) + "%"; } else set .@cur$, "0.0%";
 			
-			set .@pen, .@s * (getd("$DivAcc_" + .@cn$) - getd("#LastClaim_" + .@cn$));
+			set .@pen, .@s * (.@divacc - .@lastclaim);
 			mes "- " + .@cn$ + ": " + .@s + " shares";
 			mes "  Avg: " + .@avg + "z | Market: " + .@p + "z | P/L: " + .@pl$;
 			mes "  ^777777Yield: ^000000" + .@cur$ + " (Market) | ^0000FFYoC: " + .@yoc$ + " (Average)^000000";
@@ -245,3 +294,4 @@ L_MenuPort:
 function	script	F_MoodNameStr	{
 	if ($MarketMood == 1) return "Bullish"; if ($MarketMood == 2) return "Bearish"; if ($MarketMood == 3) return "Chaos"; return "Neutral";
 }
+
