@@ -1,0 +1,29 @@
+//============================================================
+//= Solo-Centric Custom Global Functions
+//= Central file for reusable functions (Economy, Loot tracking, etc.)
+//============================================================
+
+// F_TrackLoot(item_id)
+// Records the discovery/acquisition of an item.
+function	script	F_TrackLoot	{
+	set .@item_id, getarg(0);
+	set .@account_id, getcharid(3);
+	if (.@account_id == 0) return;
+
+	query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'LOOT', " + .@item_id + ", 1) ON DUPLICATE KEY UPDATE `value` = `value` + 1";
+	return;
+}
+
+// F_RecordEconomy(milestone_type, value)
+// Records a specific economy milestone (e.g., total zeny spent, total junk sold).
+// type 1: Total Junk Sold
+// type 2: Total Zeny Earned (from custom systems)
+function	script	F_RecordEconomy	{
+	set .@type, getarg(0);
+	set .@val, getarg(1);
+	set .@account_id, getcharid(3);
+	if (.@account_id == 0) return;
+
+	query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'ECONOMY', " + .@type + ", " + .@val + ") ON DUPLICATE KEY UPDATE `value` = `value` + " + .@val;
+	return;
+}

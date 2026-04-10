@@ -60,33 +60,6 @@ L_FlushKills:
 	#total_unflushed_kills = 0;
 	return;
 
-// --- Utility Functions ---
-
-// F_TrackLoot(item_id)
-// Records the discovery/acquisition of an item.
-function	F_TrackLoot	{
-	.@item_id = getarg(0);
-	.@account_id = getcharid(3);
-	if (.@account_id == 0) return;
-
-	query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'LOOT', " + .@item_id + ", 1) ON DUPLICATE KEY UPDATE `value` = `value` + 1";
-	return;
-}
-
-// F_RecordEconomy(milestone_type, value)
-// Records a specific economy milestone (e.g., total zeny spent, total junk sold).
-// type 1: Total Junk Sold
-// type 2: Total Zeny Earned (from custom systems)
-function	F_RecordEconomy	{
-	.@type = getarg(0);
-	.@val = getarg(1);
-	.@account_id = getcharid(3);
-	if (.@account_id == 0) return;
-
-	query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'ECONOMY', " + .@type + ", " + .@val + ") ON DUPLICATE KEY UPDATE `value` = `value` + " + .@val;
-	return;
-}
-
 OnInit:
 	// Create table if it doesn't exist (failsafe for setup)
 	query_sql "CREATE TABLE IF NOT EXISTS `solo_persistence_log` (`account_id` INT(11) UNSIGNED NOT NULL, `category` VARCHAR(32) NOT NULL, `target_id` INT(11) NOT NULL, `value` INT(11) DEFAULT '0', `tstamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (`account_id`, `category`, `target_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";

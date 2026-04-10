@@ -24,6 +24,37 @@ OnInit:
 		query_sql "INSERT IGNORE INTO `solo_stock_market` (ticker) VALUES ('" + $StockCities$[.@i] + "')";
 	}
 	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0)";
+
+	// Catch-up logic for missed midnights
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'LastUpdate'", $StockLastUpdate;
+	set .@now, gettimetick(2);
+
+	if ($StockLastUpdate <= 31) {
+		// Migration from old format (day of month) or fresh install
+		set $StockLastUpdate, .@now;
+		query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
+	} else {
+		// Calculate missed midnights using DATEDIFF
+		query_sql "SELECT DATEDIFF(CURDATE(), DATE(FROM_UNIXTIME(" + $StockLastUpdate + ")))", .@days_passed;
+		
+		if (.@days_passed > 0) {
+			if (.@days_passed > 30) set .@days_passed, 30; // Hard cap
+			
+			setarray .@names$[0],"PRT","GEF","MOR","PAY","ALB";
+			for (set .@d, 0; .@d < .@days_passed; set .@d, .@d + 1) {
+				for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
+					query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
+				}
+				set $MarketDrift, rand(-4, 6);
+				query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
+				callsub L_MidnightProc;
+			}
+			debugmes "Stock Market: Caught up on " + .@days_passed + " missed days.";
+			
+			set $StockLastUpdate, .@now;
+			query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
+		}
+	}
 	end;
 
 OnClock0000:
@@ -34,7 +65,7 @@ OnClock0000:
 	set $MarketDrift, rand(-4, 6);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
-	set $StockLastUpdate, gettime(4);
+	set $StockLastUpdate, gettimetick(2);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 OnClock0300:
 OnClock0600:
@@ -58,6 +89,8 @@ OnMidnightManual:
 	set $MarketDrift, rand(-4, 6);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
+	set $StockLastUpdate, gettimetick(2);
+	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 	announce "MARKET NEWS: Admin has triggered a Midnight Cycle. Dividends updated.", bc_all;
 	end;
 
