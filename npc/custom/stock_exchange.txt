@@ -15,15 +15,32 @@ OnInit:
 	setarray $StockCities$[0],"PRT","GEF","MOR","PAY","ALB";
 	
 	// Ensure Tables Exist
-	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_market` (`ticker` VARCHAR(10) PRIMARY KEY, `price` INT DEFAULT 1000, `price_old` INT DEFAULT 1000, `dividend` INT DEFAULT 3, `div_acc` INT DEFAULT 0, `split_count` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_player` (`account_id` INT(11) UNSIGNED NOT NULL, `ticker` VARCHAR(10) NOT NULL, `shares` INT DEFAULT 0, `total_cost` BIGINT DEFAULT 0, `last_claim_acc` INT DEFAULT 0, `split_processed` INT DEFAULT 0, PRIMARY KEY (`account_id`, `ticker`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_market` (`ticker` VARCHAR(10) PRIMARY KEY, `price` INT DEFAULT 100, `price_old` INT DEFAULT 100, `dividend` INT DEFAULT 3, `div_acc` INT DEFAULT 0, `split_count` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_player` (`account_id` INT(11) UNSIGNED NOT NULL, `ticker` VARCHAR(10) NOT NULL, `shares` INT DEFAULT 0, `total_cost` BIGINT DEFAULT 0, `pending_div` INT DEFAULT 0, `drip_enabled` TINYINT DEFAULT 0, `drip_carryover` INT DEFAULT 0, PRIMARY KEY (`account_id`, `ticker`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	
+	// Check and Add DRIP Columns
+	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_enabled'", .@col$;
+	if (.@col$ == "") {
+		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_enabled` TINYINT DEFAULT 0";
+	}
+	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_carryover'", .@col$;
+	if (.@col$ == "") {
+		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_carryover` INT DEFAULT 0";
+	}
+	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'pending_div'", .@col$;
+	if (.@col$ == "") {
+		query_sql "ALTER TABLE `solo_stock_player` ADD `pending_div` INT DEFAULT 0";
+		// Perform one-time migration for existing pending dividends
+		query_sql "UPDATE `solo_stock_player` p JOIN `solo_stock_market` m ON p.ticker = m.ticker SET p.pending_div = p.shares * (m.div_acc - p.last_claim_acc) WHERE p.shares > 0";
+	}
+
 	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_meta` (`mkey` VARCHAR(32) PRIMARY KEY, `mval` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
 	// Initialize Market Data
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		query_sql "INSERT IGNORE INTO `solo_stock_market` (ticker) VALUES ('" + $StockCities$[.@i] + "')";
 	}
-	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0)";
+	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0), ('DivTaxRate', 10)";
 
 	// Catch-up logic for missed midnights
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'LastUpdate'", $StockLastUpdate;
@@ -112,7 +129,7 @@ L_ShiftProc:
 		
 		set .@new, .@p + (.@p * .@f / 100);
 		if (.@new < 50) set .@new, 50; 
-		if (.@new >= 20000) {
+		if (.@new >= 1000) {
 			set .@new, .@new / 10;
 			query_sql "UPDATE `solo_stock_market` SET price = " + .@new + ", price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = '" + .@cn$ + "'";
 			announce "MARKET NEWS: Successful 10:1 Stock Split for "+.@cn$+"!", bc_all;
@@ -155,17 +172,63 @@ L_MidnightProc:
 		
 		if (.@div > 500) set .@div, 500;
 		query_sql "UPDATE `solo_stock_market` SET dividend = " + .@div + ", div_acc = div_acc + " + .@div + " WHERE ticker = '" + .@cn$ + "'";
+
+		// DRIP Reinvestment Processing
+		.@divacc_new = .@divacc + .@div;
+		deletearray .@u_accs; deletearray .@u_shares; deletearray .@u_costs; deletearray .@u_carrys; deletearray .@u_lastclaims;
+		query_sql "SELECT account_id, shares, total_cost, drip_carryover, last_claim_acc FROM `solo_stock_player` WHERE ticker = '" + .@cn$ + "' AND drip_enabled = 1 AND shares > 0", .@u_accs, .@u_shares, .@u_costs, .@u_carrys, .@u_lastclaims;
+		set .@num_users, getarraysize(.@u_accs);
+		for (set .@k, 0; .@k < .@num_users; set .@k, .@k + 1) {
+			set .@p_acc, .@u_accs[.@k];
+			set .@p_sh, .@u_shares[.@k];
+			set .@p_tc, .@u_costs[.@k];
+			set .@p_carry, .@u_carrys[.@k];
+			set .@p_last, .@u_lastclaims[.@k];
+			
+			set .@payout, (.@p_sh * (.@divacc_new - .@p_last)) + .@p_carry;
+			if (.@payout >= .@p) {
+				set .@new_shares, .@payout / .@p;
+				set .@cost, .@new_shares * .@p;
+				set .@new_carry, .@payout % .@p;
+				query_sql "UPDATE `solo_stock_player` SET shares = shares + " + .@new_shares + ", total_cost = total_cost + " + .@cost + ", last_claim_acc = " + .@divacc_new + ", drip_carryover = " + .@new_carry + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
+			} else {
+				query_sql "UPDATE `solo_stock_player` SET last_claim_acc = " + .@divacc_new + ", drip_carryover = " + .@payout + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
+			}
+		}
 	}
 	return;
 }
 
 function	script	F_StockExchangeMain	{
 L_MenuMain:
+	.@account_id = getcharid(3);
+	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
+
+	// Ensure account is synchronized with stock splits
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@c$[.@i];
+		set .@gs, 0;
+		set .@s, 0;
+		set .@ps, 0;
+		query_sql "SELECT split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@gs;
+		query_sql "SELECT shares, split_processed FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@ps;
+		if (.@gs > .@ps) {
+			if (.@s > 0) {
+				set .@diff, .@gs - .@ps;
+				set .@new_s, .@s;
+				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { set .@new_s, .@new_s * 10; }
+				query_sql "UPDATE `solo_stock_player` SET shares = " + .@new_s + ", split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+				dispbottom "Split applied to "+.@cn$+"!";
+			} else {
+				query_sql "UPDATE `solo_stock_player` SET split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+			}
+		}
+	}
+
 	mes "[Midgard Stock Exchange]";
 	clear;
 	mes "Standard Index (Trends Today):";
 	mes "---------------------------";
-	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
 		query_sql "SELECT price, price_old, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@po, .@div;
@@ -178,20 +241,25 @@ L_MenuMain:
 	next;
 
 	if (getgmlevel() >= 99) {
-		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:^FF0000[Admin Tools]^000000:Exit")) {
-			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_Admin; default: return;
+		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:DRIP Settings:^FF0000[Admin Tools]^000000:Exit")) {
+			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_MenuDrip; case 6: goto L_Admin; default: return;
 		}
 	} else {
-		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:Exit")) {
-			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; default: return;
+		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:DRIP Settings:Exit")) {
+			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_MenuDrip; default: return;
 		}
 	}
 
 L_ClaimDiv:
 	set .@total, 0; setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	.@account_id = getcharid(3);
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
+
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
+		set .@divacc, 0;
+		set .@s, 0;
+		set .@lastclaim, 0;
 		query_sql "SELECT div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@divacc;
 		query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
 		
@@ -201,19 +269,38 @@ L_ClaimDiv:
 		}
 	}
 	if (.@total <= 0) { mes "No dividends to collect."; next; goto L_MenuMain; }
-	set Zeny, Zeny + .@total; mes "Collected " + .@total + " Zeny."; next; goto L_MenuMain;
+	
+	set .@tax_amt, (.@total * .@tax_rate) / 100;
+	set .@net, .@total - .@tax_amt;
+	
+	mes "Gross Dividends: ^00FF00" + .@total + "z^000000";
+	mes "Tax (" + .@tax_rate + "%): ^FF0000-" + .@tax_amt + "z^000000";
+	mes "---------------------------";
+	mes "Net Collected: ^0000FF" + .@net + "z^000000";
+	
+	set Zeny, Zeny + .@net; 
+	next; goto L_MenuMain;
 
 L_Admin:
 	mes "[GM Admin Console]";
-	switch(select("Force 3-Hr Price Shift:Force Midnight Cycle:Reset My Portfolio:Reset Index:Back")) {
+	switch(select("Force 3-Hr Price Shift:Force Midnight Cycle:Set Dividend Tax:Reset My Portfolio:Reset Index:Back")) {
 		case 1: doevent "StockExchangeSetup::OnShiftManual"; close;
 		case 2: doevent "StockExchangeSetup::OnMidnightManual"; close;
 		case 3:
+			query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@current_tax;
+			mes "Current Dividend Tax: " + .@current_tax + "%";
+			mes "Input new tax rate (0-100):";
+			input .@new_tax;
+			if (.@new_tax < 0 || .@new_tax > 100) { mes "Invalid rate."; next; goto L_Admin; }
+			query_sql "UPDATE `solo_stock_meta` SET mval = " + .@new_tax + " WHERE mkey = 'DivTaxRate'";
+			mes "Dividend Tax updated to " + .@new_tax + "%.";
+			next; goto L_Admin;
+		case 4:
 			.@account_id = getcharid(3);
 			query_sql "DELETE FROM `solo_stock_player` WHERE account_id = " + .@account_id;
 			mes "Portfolio wiped."; next; goto L_MenuMain;
-		case 4: 
-			query_sql "UPDATE `solo_stock_market` SET price = 1000, price_old = 1000, dividend = 3, div_acc = 0, split_count = 0";
+		case 5: 
+			query_sql "UPDATE `solo_stock_market` SET price = 100, price_old = 100, dividend = 3, div_acc = 0, split_count = 0";
 			mes "Market Index reset."; next; goto L_MenuMain;
 		default: goto L_MenuMain;
 	}
@@ -224,13 +311,21 @@ L_MenuBuy:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	set .@cn$, .@c$[.@city - 1];
 	.@account_id = getcharid(3);
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
 	
+	set .@p, 0;
+	set .@divacc, 0;
+	set .@s, 0;
+	set .@lastclaim, 0;
 	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
 	query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
 	
-	set .@payout, (.@s * (.@divacc - .@lastclaim));
+	set .@payout_gross, (.@s * (.@divacc - .@lastclaim));
+	set .@payout_tax, (.@payout_gross * .@tax_rate) / 100;
+	set .@payout_net, .@payout_gross - .@payout_tax;
 	
-	mes "Settle Payout: ^00FF00+" + .@payout + "z^000000";
+	mes "Settle Payout (Net): ^00FF00+" + .@payout_net + "z^000000";
+	if (.@payout_gross > 0) mes "  ^777777(Gross: " + .@payout_gross + "z | Tax " + .@tax_rate + "%: -" + .@payout_tax + "z)^000000";
 	mes "Price: " + .@p + "z";
 	input .@qty;
 	if (.@qty <= 0) goto L_MenuMain;
@@ -238,8 +333,8 @@ L_MenuBuy:
 	mes "Total Cost: " + .@total + "z";
 	next;
 	if (select("Purchase:Cancel") == 2) goto L_MenuMain;
-	if (Zeny + .@payout < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
-	set Zeny, Zeny + .@payout - .@total; 
+	if (Zeny + .@payout_net < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
+	set Zeny, Zeny + .@payout_net - .@total; 
 	
 	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost, last_claim_acc) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + (.@p * .@qty) + ", " + .@divacc + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + (.@p * .@qty) + ", last_claim_acc = " + .@divacc;
 	goto L_MenuMain;
@@ -250,18 +345,31 @@ L_MenuSell:
 	.@account_id = getcharid(3);
 	
 	// Pre-fetch shares for menu display
-	for (.@i = 0; .@i < 5; .@i++) {
-		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@c$[.@i] + "'", .@sh[.@i];
+	deletearray .@sh;
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@q_shares, 0;
+		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@c$[.@i] + "'", .@q_shares;
+		set .@sh[.@i], .@q_shares;
 	}
 	
 	set .@city, select("PRT("+.@sh[0]+"):GEF("+.@sh[1]+"):MOR("+.@sh[2]+"):PAY("+.@sh[3]+"):ALB("+.@sh[4]+")");
 	set .@cn$, .@c$[.@city - 1];
+	set .@p, 0;
+	set .@divacc, 0;
+	set .@s, 0;
+	set .@tc, 0;
+	set .@lastclaim, 0;
 	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
 	query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
 	
 	if (.@s <= 0) { mes "No shares."; next; goto L_MenuMain; }
-	set .@payout, (.@s * (.@divacc - .@lastclaim));
-	mes "Settle Payout: ^00FF00+" + .@payout + "z^000000";
+	set .@payout_gross, (.@s * (.@divacc - .@lastclaim));
+	set .@payout_tax, (.@payout_gross * .@tax_rate) / 100;
+	set .@payout_net, .@payout_gross - .@payout_tax;
+	
+	mes "Settle Payout (Net): ^00FF00+" + .@payout_net + "z^000000";
+	if (.@payout_gross > 0) mes "  ^777777(Gross: " + .@payout_gross + "z | Tax " + .@tax_rate + "%: -" + .@payout_tax + "z)^000000";
 	next;
 	switch(select("Amount:Liquidate All:Back")) {
 		case 1: mes "Amount?"; input .@qty; break;
@@ -276,33 +384,19 @@ L_MenuSell:
 	
 	set .@redCost, (.@tc * .@qty) / .@s;
 	query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - " + .@redCost + ", last_claim_acc = " + .@divacc + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-	set Zeny, Zeny + .@net + .@payout;
+	set Zeny, Zeny + .@net + .@payout_net;
 	goto L_MenuMain;
 
 L_MenuPort:
-	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-	.@account_id = getcharid(3);
-
-	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i];
-		query_sql "SELECT split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@gs;
-		query_sql "SELECT shares, split_processed FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@ps;
-		
-		if (.@gs > .@ps) {
-			if (.@s > 0) {
-				set .@diff, .@gs - .@ps;
-				set .@new_s, .@s;
-				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { set .@new_s, .@new_s * 10; }
-				query_sql "UPDATE `solo_stock_player` SET shares = " + .@new_s + ", split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-				dispbottom "Split applied to "+.@cn$+"!";
-			} else {
-				query_sql "UPDATE `solo_stock_player` SET split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-			}
-		}
-	}
 	mes "[My Portfolio]";
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
+		set .@s, 0;
+		set .@tc, 0;
+		set .@lastclaim, 0;
+		set .@p, 0;
+		set .@div, 0;
+		set .@divacc, 0;
 		query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
 		query_sql "SELECT price, dividend, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@divacc;
 
@@ -322,6 +416,55 @@ L_MenuPort:
 	}
 	next;
 	goto L_MenuMain;
+
+L_MenuDrip:
+	mes "[DRIP Settings]";
+	mes "Dividend Reinvestment Plan (DRIP) allows you to automatically reinvest your dividends to buy more shares, tax-free!";
+	mes "----------------------------------";
+	
+	// Query each ticker individually to avoid getarraysize() truncation on trailing zero values
+	setarray .@all_tickers$[0],"PRT","GEF","MOR","PAY","ALB";
+	set .@num_holdings, 0;
+	deletearray .@held_tickers$; deletearray .@held_shares; deletearray .@held_drip; deletearray .@held_carry;
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@all_tickers$[.@i];
+		query_sql "SELECT shares, drip_enabled, drip_carryover FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@q_shares, .@q_drip, .@q_carry;
+		if (.@q_shares > 0) {
+			set .@held_tickers$[.@num_holdings], .@cn$;
+			set .@held_shares[.@num_holdings], .@q_shares;
+			set .@held_drip[.@num_holdings], .@q_drip;
+			set .@held_carry[.@num_holdings], .@q_carry;
+			set .@num_holdings, .@num_holdings + 1;
+		}
+	}
+	
+	if (.@num_holdings <= 0) {
+		mes "You do not currently hold any stocks.";
+		next; goto L_MenuMain;
+	}
+	
+	for (set .@i, 0; .@i < .@num_holdings; set .@i, .@i + 1) {
+		mes "- " + .@held_tickers$[.@i] + ": " + (.@held_drip[.@i] ? "^00FF00ON^000000" : "^FF0000OFF^000000") + " | Carryover: " + .@held_carry[.@i] + "z (Holdings: " + .@held_shares[.@i] + " shares)";
+	}
+	next;
+	
+	mes "Select a ticker to toggle DRIP:";
+	set .@menu_str$, "";
+	for (set .@i, 0; .@i < .@num_holdings; set .@i, .@i + 1) {
+		set .@menu_str$, .@menu_str$ + .@held_tickers$[.@i] + " (" + (.@held_drip[.@i] ? "^00FF00DRIP ON^000000" : "^FF0000DRIP OFF^000000") + "):";
+	}
+	set .@menu_str$, .@menu_str$ + "Back";
+	
+	set .@choice, select(.@menu_str$);
+	if (.@choice > .@num_holdings || .@choice <= 0) goto L_MenuMain;
+	
+	set .@cn$, .@held_tickers$[.@choice - 1];
+	set .@de, .@held_drip[.@choice - 1];
+	set .@new_de, .@de ? 0 : 1;
+	
+	query_sql "UPDATE `solo_stock_player` SET drip_enabled = " + .@new_de + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+	mes "DRIP for " + .@cn$ + " is now " + (.@new_de ? "^00FF00ON^000000" : "^FF0000OFF^000000") + ".";
+	next; goto L_MenuDrip;
 }
 
 function	script	F_MoodNameStr	{
