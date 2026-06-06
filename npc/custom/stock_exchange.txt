@@ -179,7 +179,11 @@ L_MidnightProc:
 		query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * " + .@div + ") WHERE ticker = '" + .@cn$ + "' AND shares > 0";
 
 		// DRIP Reinvestment Processing
-		deletearray .@u_accs; deletearray .@u_shares; deletearray .@u_costs; deletearray .@u_carrys; deletearray .@u_pendings;
+		deletearray .@u_accs[0], getarraysize(.@u_accs);
+		deletearray .@u_shares[0], getarraysize(.@u_shares);
+		deletearray .@u_costs[0], getarraysize(.@u_costs);
+		deletearray .@u_carrys[0], getarraysize(.@u_carrys);
+		deletearray .@u_pendings[0], getarraysize(.@u_pendings);
 		query_sql "SELECT account_id, shares, total_cost, drip_carryover, pending_div FROM `solo_stock_player` WHERE ticker = '" + .@cn$ + "' AND drip_enabled = 1 AND shares > 0", .@u_accs, .@u_shares, .@u_costs, .@u_carrys, .@u_pendings;
 		set .@num_users, getarraysize(.@u_accs);
 		for (set .@k, 0; .@k < .@num_users; set .@k, .@k + 1) {
@@ -318,7 +322,7 @@ L_MenuSell:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	.@account_id = getcharid(3);
 	
-	deletearray .@sh;
+	deletearray .@sh[0], getarraysize(.@sh);
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@q_shares, 0;
 		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@c$[.@i] + "'", .@q_shares;
@@ -403,7 +407,10 @@ L_MenuDrip:
 	// Query each ticker individually to avoid getarraysize() truncation on trailing zero values
 	setarray .@all_tickers$[0],"PRT","GEF","MOR","PAY","ALB";
 	set .@num_holdings, 0;
-	deletearray .@held_tickers$; deletearray .@held_shares; deletearray .@held_drip; deletearray .@held_carry;
+	deletearray .@held_tickers$[0], getarraysize(.@held_tickers$);
+	deletearray .@held_shares[0], getarraysize(.@held_shares);
+	deletearray .@held_drip[0], getarraysize(.@held_drip);
+	deletearray .@held_carry[0], getarraysize(.@held_carry);
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@all_tickers$[.@i];
 		set .@q_shares, 0;
