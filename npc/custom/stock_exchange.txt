@@ -173,27 +173,27 @@ L_MidnightProc:
 		
 		if (.@div > 500) set .@div, 500;
 		query_sql "UPDATE `solo_stock_market` SET dividend = " + .@div + ", div_acc = div_acc + " + .@div + " WHERE ticker = '" + .@cn$ + "'";
+		query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * " + .@div + ") WHERE ticker = '" + .@cn$ + "' AND shares > 0";
 
 		// DRIP Reinvestment Processing
-		.@divacc_new = .@divacc + .@div;
-		deletearray .@u_accs; deletearray .@u_shares; deletearray .@u_costs; deletearray .@u_carrys; deletearray .@u_lastclaims;
-		query_sql "SELECT account_id, shares, total_cost, drip_carryover, last_claim_acc FROM `solo_stock_player` WHERE ticker = '" + .@cn$ + "' AND drip_enabled = 1 AND shares > 0", .@u_accs, .@u_shares, .@u_costs, .@u_carrys, .@u_lastclaims;
+		deletearray .@u_accs; deletearray .@u_shares; deletearray .@u_costs; deletearray .@u_carrys; deletearray .@u_pendings;
+		query_sql "SELECT account_id, shares, total_cost, drip_carryover, pending_div FROM `solo_stock_player` WHERE ticker = '" + .@cn$ + "' AND drip_enabled = 1 AND shares > 0", .@u_accs, .@u_shares, .@u_costs, .@u_carrys, .@u_pendings;
 		set .@num_users, getarraysize(.@u_accs);
 		for (set .@k, 0; .@k < .@num_users; set .@k, .@k + 1) {
 			set .@p_acc, .@u_accs[.@k];
 			set .@p_sh, .@u_shares[.@k];
 			set .@p_tc, .@u_costs[.@k];
 			set .@p_carry, .@u_carrys[.@k];
-			set .@p_last, .@u_lastclaims[.@k];
+			set .@p_pending, .@u_pendings[.@k];
 			
-			set .@payout, (.@p_sh * (.@divacc_new - .@p_last)) + .@p_carry;
+			set .@payout, .@p_pending + .@p_carry;
 			if (.@payout >= .@p) {
 				set .@new_shares, .@payout / .@p;
 				set .@cost, .@new_shares * .@p;
 				set .@new_carry, .@payout % .@p;
-				query_sql "UPDATE `solo_stock_player` SET shares = shares + " + .@new_shares + ", total_cost = total_cost + " + .@cost + ", last_claim_acc = " + .@divacc_new + ", drip_carryover = " + .@new_carry + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
+				query_sql "UPDATE `solo_stock_player` SET shares = shares + " + .@new_shares + ", total_cost = total_cost + " + .@cost + ", pending_div = 0, drip_carryover = " + .@new_carry + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
 			} else {
-				query_sql "UPDATE `solo_stock_player` SET last_claim_acc = " + .@divacc_new + ", drip_carryover = " + .@payout + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
+				query_sql "UPDATE `solo_stock_player` SET pending_div = 0, drip_carryover = " + .@payout + " WHERE account_id = " + .@p_acc + " AND ticker = '" + .@cn$ + "'";
 			}
 		}
 	}
