@@ -237,15 +237,11 @@ L_ClaimDiv:
 
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
-		set .@divacc, 0;
-		set .@s, 0;
-		set .@lastclaim, 0;
-		query_sql "SELECT div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@divacc;
-		query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
-		
-		if (.@s > 0) {
-			set .@total, .@total + (.@s * (.@divacc - .@lastclaim));
-			query_sql "UPDATE `solo_stock_player` SET last_claim_acc = " + .@divacc + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+		set .@pending, 0;
+		query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@pending;
+		if (.@pending > 0) {
+			set .@total, .@total + .@pending;
+			query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 		}
 	}
 	if (.@total <= 0) { mes "No dividends to collect."; next; goto L_MenuMain; }
@@ -258,7 +254,8 @@ L_ClaimDiv:
 	mes "---------------------------";
 	mes "Net Collected: ^0000FF" + .@net + "z^000000";
 	
-	set Zeny, Zeny + .@net; 
+	set Zeny, Zeny + .@net;
+	callfunc "F_RecordEconomy", 2, .@net; // 2: Total Zeny Earned
 	next; goto L_MenuMain;
 
 L_Admin:
@@ -291,32 +288,26 @@ L_MenuBuy:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	set .@cn$, .@c$[.@city - 1];
 	.@account_id = getcharid(3);
-	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
 	
 	set .@p, 0;
-	set .@divacc, 0;
-	set .@s, 0;
-	set .@lastclaim, 0;
-	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
-	query_sql "SELECT shares, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@lastclaim;
+	query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p;
 	
-	set .@payout_gross, (.@s * (.@divacc - .@lastclaim));
-	set .@payout_tax, (.@payout_gross * .@tax_rate) / 100;
-	set .@payout_net, .@payout_gross - .@payout_tax;
-	
-	mes "Settle Payout (Net): ^00FF00+" + .@payout_net + "z^000000";
-	if (.@payout_gross > 0) mes "  ^777777(Gross: " + .@payout_gross + "z | Tax " + .@tax_rate + "%: -" + .@payout_tax + "z)^000000";
 	mes "Price: " + .@p + "z";
+	mes "A 1.0% brokerage transaction fee will be added to the purchase.";
 	input .@qty;
 	if (.@qty <= 0) goto L_MenuMain;
-	set .@total, (.@p * .@qty) + ((.@p * .@qty)/100);
+	set .@subtotal, .@p * .@qty;
+	set .@fee, .@subtotal / 100;
+	set .@total, .@subtotal + .@fee;
+	mes "Subtotal: " + .@subtotal + "z";
+	mes "Broker Fee (1%): " + .@fee + "z";
 	mes "Total Cost: " + .@total + "z";
 	next;
 	if (select("Purchase:Cancel") == 2) goto L_MenuMain;
-	if (Zeny + .@payout_net < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
-	set Zeny, Zeny + .@payout_net - .@total; 
+	if (Zeny < .@total) { mes "No Zeny."; next; goto L_MenuMain; }
+	set Zeny, Zeny - .@total; 
 	
-	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost, last_claim_acc) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + (.@p * .@qty) + ", " + .@divacc + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + (.@p * .@qty) + ", last_claim_acc = " + .@divacc;
+	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + .@subtotal + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + .@subtotal;
 	goto L_MenuMain;
 
 L_MenuSell:
@@ -324,7 +315,6 @@ L_MenuSell:
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	.@account_id = getcharid(3);
 	
-	// Pre-fetch shares for menu display
 	deletearray .@sh;
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@q_shares, 0;
@@ -335,20 +325,20 @@ L_MenuSell:
 	set .@city, select("PRT("+.@sh[0]+"):GEF("+.@sh[1]+"):MOR("+.@sh[2]+"):PAY("+.@sh[3]+"):ALB("+.@sh[4]+")");
 	set .@cn$, .@c$[.@city - 1];
 	set .@p, 0;
-	set .@divacc, 0;
 	set .@s, 0;
 	set .@tc, 0;
-	set .@lastclaim, 0;
-	query_sql "SELECT price, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@divacc;
-	query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
+	set .@pending, 0;
+	query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p;
+	query_sql "SELECT shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@pending;
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
 	
 	if (.@s <= 0) { mes "No shares."; next; goto L_MenuMain; }
-	set .@payout_gross, (.@s * (.@divacc - .@lastclaim));
+	
+	set .@payout_gross, .@pending;
 	set .@payout_tax, (.@payout_gross * .@tax_rate) / 100;
 	set .@payout_net, .@payout_gross - .@payout_tax;
 	
-	mes "Settle Payout (Net): ^00FF00+" + .@payout_net + "z^000000";
+	mes "Accrued Dividends (Net): ^00FF00+" + .@payout_net + "z^000000";
 	if (.@payout_gross > 0) mes "  ^777777(Gross: " + .@payout_gross + "z | Tax " + .@tax_rate + "%: -" + .@payout_tax + "z)^000000";
 	next;
 	switch(select("Amount:Liquidate All:Back")) {
@@ -357,14 +347,21 @@ L_MenuSell:
 		default: goto L_MenuMain;
 	}
 	if (.@qty <= 0 || .@qty > .@s) goto L_MenuMain;
-	set .@net, (.@p * .@qty) - ((.@p * .@qty)/100);
+	
+	set .@subtotal, .@p * .@qty;
+	set .@fee, .@subtotal / 100;
+	set .@net, .@subtotal - .@fee;
+	
+	mes "Subtotal: " + .@subtotal + "z";
+	mes "Broker Fee (1%): " + .@fee + "z";
 	mes "Net Received: " + .@net + "z";
 	next;
 	if (select("Confirm:Cancel") == 2) goto L_MenuMain;
 	
 	set .@redCost, (.@tc * .@qty) / .@s;
-	query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - " + .@redCost + ", last_claim_acc = " + .@divacc + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+	query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - " + .@redCost + ", pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	set Zeny, Zeny + .@net + .@payout_net;
+	callfunc "F_RecordEconomy", 2, .@net + .@payout_net; // 2: Total Zeny Earned
 	goto L_MenuMain;
 
 L_MenuPort:
@@ -373,12 +370,11 @@ L_MenuPort:
 		set .@cn$, .@c$[.@i];
 		set .@s, 0;
 		set .@tc, 0;
-		set .@lastclaim, 0;
+		set .@pending, 0;
 		set .@p, 0;
 		set .@div, 0;
-		set .@divacc, 0;
-		query_sql "SELECT shares, total_cost, last_claim_acc FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@lastclaim;
-		query_sql "SELECT price, dividend, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@divacc;
+		query_sql "SELECT shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@tc, .@pending;
+		query_sql "SELECT price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div;
 
 		if (.@s > 0) {
 			set .@avg, .@tc / .@s; set .@pl, .@p - .@avg;
@@ -387,11 +383,10 @@ L_MenuPort:
 			if (.@avg > 0) { set .@yoc_p, (.@div * 1000) / .@avg; set .@yoc$, (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%"; } else set .@yoc$, "0.0%";
 			if (.@p > 0) { set .@cur_p, (.@div * 1000) / .@p; set .@cur$, (.@cur_p/10) + "." + (.@cur_p % 10) + "%"; } else set .@cur$, "0.0%";
 			
-			set .@pen, .@s * (.@divacc - .@lastclaim);
 			mes "- " + .@cn$ + ": " + .@s + " shares";
 			mes "  Avg: " + .@avg + "z | Market: " + .@p + "z | P/L: " + .@pl$;
 			mes "  ^777777Yield: ^000000" + .@cur$ + " (Market) | ^0000FFYoC: " + .@yoc$ + " (Average)^000000";
-			mes "  ^0000FFPending Div: " + .@pen + "z^000000";
+			mes "  ^0000FFPending Div: " + .@pending + "z^000000";
 		}
 	}
 	next;
