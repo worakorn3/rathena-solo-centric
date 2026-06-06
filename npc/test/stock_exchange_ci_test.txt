@@ -60,10 +60,34 @@ OnInit:
 	AssertEquals(50, .@shares3, "TST3 split multiplied shares by 10");
 	AssertEquals(150, .@pending3_post, "TST3 split left cash pending_div unaffected");
 	
+	// 6. T5: Verify All 5 Real Tickers (PRT, GEF, MOR, PAY, ALB)
+	// Insert holdings for all 5 tickers for account 999998
+	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999998, 'PRT', 10, 1000, 0, 0, 0), (999998, 'GEF', 10, 1000, 0, 0, 0), (999998, 'MOR', 10, 1000, 0, 0, 0), (999998, 'PAY', 10, 1000, 0, 0, 0), (999998, 'ALB', 10, 1000, 0, 0, 0)";
+	
+	deletearray .@real_held$[0], getarraysize(.@real_held$);
+	setarray .@real_tickers$[0], "PRT", "GEF", "MOR", "PAY", "ALB";
+	set .@real_count, 0;
+	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+		set .@cn$, .@real_tickers$[.@i];
+		set .@q_shares, 0;
+		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = 999998 AND ticker = '" + .@cn$ + "'", .@q_shares;
+		if (.@q_shares > 0) {
+			set .@real_held$[.@real_count], .@cn$;
+			set .@real_count, .@real_count + 1;
+		}
+	}
+	AssertEquals(5, .@real_count, "All 5 real tickers should be held");
+	AssertEquals("PRT", .@real_held$[0], "1st real ticker is PRT");
+	AssertEquals("GEF", .@real_held$[1], "2nd real ticker is GEF");
+	AssertEquals("MOR", .@real_held$[2], "3rd real ticker is MOR");
+	AssertEquals("PAY", .@real_held$[3], "4th real ticker is PAY");
+	AssertEquals("ALB", .@real_held$[4], "5th real ticker is ALB");
+	
 	// Cleanup
 	query_sql "DELETE FROM `solo_stock_market` WHERE ticker IN ('TST1', 'TST2', 'TST3', 'TST4')";
-	query_sql "DELETE FROM `solo_stock_player` WHERE account_id = 999999";
+	query_sql "DELETE FROM `solo_stock_player` WHERE account_id IN (999999, 999998)";
 	
 	debugmes "Stock Exchange CI Test: Completed successfully.";
 	end;
 }
+
