@@ -20,17 +20,17 @@ OnInit:
 	
 	// Check and Add DRIP Columns
 	set .@col$, "";
-	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_enabled'", .@col$;
+	query_sql "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'solo_stock_player' AND COLUMN_NAME = 'drip_enabled' AND TABLE_SCHEMA = DATABASE()", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_enabled` TINYINT DEFAULT 0";
 	}
 	set .@col$, "";
-	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_carryover'", .@col$;
+	query_sql "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'solo_stock_player' AND COLUMN_NAME = 'drip_carryover' AND TABLE_SCHEMA = DATABASE()", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_carryover` INT DEFAULT 0";
 	}
 	set .@col$, "";
-	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'pending_div'", .@col$;
+	query_sql "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'solo_stock_player' AND COLUMN_NAME = 'pending_div' AND TABLE_SCHEMA = DATABASE()", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `pending_div` INT DEFAULT 0";
 		// Perform one-time migration for existing pending dividends
