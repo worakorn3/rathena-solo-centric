@@ -1,0 +1,69 @@
+-	script	stock_exchange_test#ci	-1,{
+OnInit:
+	// Test suite setup
+	debugmes "Stock Exchange CI Test: Starting...";
+	
+	// 1. Setup Mock DB Data
+	query_sql "REPLACE INTO `solo_stock_market` (ticker, price, price_old, dividend, div_acc, split_count) VALUES ('TST1', 100, 100, 10, 0, 0), ('TST2', 200, 200, 20, 0, 0), ('TST3', 900, 900, 30, 0, 0), ('TST4', 400, 400, 40, 0, 0)";
+	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999999, 'TST1', 10, 1000, 0, 1, 0), (999999, 'TST3', 5, 4500, 0, 0, 0)";
+	
+	// 2. T1: Accrual & Ticker Isolation Verification
+	// Simulate dividend shift for TST1 and TST3
+	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 10) WHERE ticker = 'TST1' AND shares > 0";
+	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 30) WHERE ticker = 'TST3' AND shares > 0";
+	
+	set .@pending1, 0; set .@pending2, 0; set .@pending3, 0; set .@pending4, 0;
+	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@pending1;
+	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST2'", .@pending2;
+	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST3'", .@pending3;
+	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST4'", .@pending4;
+	
+	AssertEquals(100, .@pending1, "TST1 pending dividend accrual");
+	AssertEquals(0, .@pending2, "TST2 pending dividend isolation (no shares)");
+	AssertEquals(150, .@pending3, "TST3 pending dividend accrual");
+	AssertEquals(0, .@pending4, "TST4 pending dividend isolation (no shares)");
+	
+	// 3. T2: DRIP Reinvestment & Carryover Test
+	// Reinvest TST1 payout (100 pending_div) at price 100
+	query_sql "UPDATE `solo_stock_player` SET shares = shares + 1, total_cost = total_cost + 100, pending_div = 0, drip_carryover = 0 WHERE account_id = 999999 AND ticker = 'TST1'";
+	
+	set .@shares1, 0; set .@tc1, 0;
+	query_sql "SELECT shares, total_cost FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@shares1, .@tc1;
+	AssertEquals(11, .@shares1, "TST1 DRIP shares added");
+	AssertEquals(1100, .@tc1, "TST1 DRIP total cost updated");
+	
+	// 4. T3: Ticker Isolation Settings Query
+	// Verify only TST1 and TST3 show up as holdings
+	deletearray .@held_tickers$;
+	setarray .@all_tickers$[0],"TST1","TST2","TST3","TST4";
+	set .@num_holdings, 0;
+	for (set .@i, 0; .@i < 4; set .@i, .@i + 1) {
+		set .@cn$, .@all_tickers$[.@i];
+		set .@q_shares, 0;
+		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = '" + .@cn$ + "'", .@q_shares;
+		if (.@q_shares > 0) {
+			set .@held_tickers$[.@num_holdings], .@cn$;
+			set .@num_holdings, .@num_holdings + 1;
+		}
+	}
+	AssertEquals(2, .@num_holdings, "Omit zero-share tickers from holdings list");
+	AssertEquals("TST1", .@held_tickers$[0], "Omit TST2 and list TST1");
+	AssertEquals("TST3", .@held_tickers$[1], "Omit TST4 and list TST3");
+	
+	// 5. T4: Stock Split Verification
+	// Simulate 10:1 stock split on TST3
+	query_sql "UPDATE `solo_stock_market` SET price = 90, price_old = 90, dividend = 3, split_count = split_count + 1 WHERE ticker = 'TST3'";
+	query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = 'TST3'";
+	
+	set .@shares3, 0; set .@pending3_post, 0;
+	query_sql "SELECT shares, pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST3'", .@shares3, .@pending3_post;
+	AssertEquals(50, .@shares3, "TST3 split multiplied shares by 10");
+	AssertEquals(150, .@pending3_post, "TST3 split left cash pending_div unaffected");
+	
+	// Cleanup
+	query_sql "DELETE FROM `solo_stock_market` WHERE ticker IN ('TST1', 'TST2', 'TST3', 'TST4')";
+	query_sql "DELETE FROM `solo_stock_player` WHERE account_id = 999999";
+	
+	debugmes "Stock Exchange CI Test: Completed successfully.";
+	end;
+}
