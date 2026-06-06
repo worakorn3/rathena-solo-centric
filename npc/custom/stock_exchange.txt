@@ -408,6 +408,9 @@ L_MenuDrip:
 	deletearray .@held_tickers$; deletearray .@held_shares; deletearray .@held_drip; deletearray .@held_carry;
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@all_tickers$[.@i];
+		set .@q_shares, 0;
+		set .@q_drip, 0;
+		set .@q_carry, 0;
 		query_sql "SELECT shares, drip_enabled, drip_carryover FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@q_shares, .@q_drip, .@q_carry;
 		if (.@q_shares > 0) {
 			set .@held_tickers$[.@num_holdings], .@cn$;
