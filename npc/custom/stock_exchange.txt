@@ -19,14 +19,17 @@ OnInit:
 	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_player` (`account_id` INT(11) UNSIGNED NOT NULL, `ticker` VARCHAR(10) NOT NULL, `shares` INT DEFAULT 0, `total_cost` BIGINT DEFAULT 0, `pending_div` INT DEFAULT 0, `drip_enabled` TINYINT DEFAULT 0, `drip_carryover` INT DEFAULT 0, PRIMARY KEY (`account_id`, `ticker`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 	
 	// Check and Add DRIP Columns
+	set .@col$, "";
 	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_enabled'", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_enabled` TINYINT DEFAULT 0";
 	}
+	set .@col$, "";
 	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'drip_carryover'", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `drip_carryover` INT DEFAULT 0";
 	}
+	set .@col$, "";
 	query_sql "SHOW COLUMNS FROM `solo_stock_player` LIKE 'pending_div'", .@col$;
 	if (.@col$ == "") {
 		query_sql "ALTER TABLE `solo_stock_player` ADD `pending_div` INT DEFAULT 0";
