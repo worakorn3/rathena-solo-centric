@@ -132,6 +132,7 @@ L_ShiftProc:
 		if (.@new >= 1000) {
 			set .@new, .@new / 10;
 			query_sql "UPDATE `solo_stock_market` SET price = " + .@new + ", price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = '" + .@cn$ + "'";
+			query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = '" + .@cn$ + "'";
 			announce "MARKET NEWS: Successful 10:1 Stock Split for "+.@cn$+"!", bc_all;
 		} else {
 			query_sql "UPDATE `solo_stock_market` SET price = " + .@new + " WHERE ticker = '" + .@cn$ + "'";
@@ -203,27 +204,6 @@ function	script	F_StockExchangeMain	{
 L_MenuMain:
 	.@account_id = getcharid(3);
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-
-	// Ensure account is synchronized with stock splits
-	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@c$[.@i];
-		set .@gs, 0;
-		set .@s, 0;
-		set .@ps, 0;
-		query_sql "SELECT split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@gs;
-		query_sql "SELECT shares, split_processed FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'", .@s, .@ps;
-		if (.@gs > .@ps) {
-			if (.@s > 0) {
-				set .@diff, .@gs - .@ps;
-				set .@new_s, .@s;
-				for (set .@j, 0; .@j < .@diff; set .@j, .@j + 1) { set .@new_s, .@new_s * 10; }
-				query_sql "UPDATE `solo_stock_player` SET shares = " + .@new_s + ", split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-				dispbottom "Split applied to "+.@cn$+"!";
-			} else {
-				query_sql "UPDATE `solo_stock_player` SET split_processed = " + .@gs + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-			}
-		}
-	}
 
 	mes "[Midgard Stock Exchange]";
 	clear;
