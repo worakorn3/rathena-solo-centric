@@ -21,5 +21,11 @@ OnPCLoginEvent:
 			dispbottom "Support Soul: You've received 3 Mercenary Scrolls.";
 		}
 	}
+	
+	if (Char_StarterKit == 1) {
+		Char_StarterKit = 2;
+		getitem 12921, 1;   // Boarding Halter
+		dispbottom "Starter Kit Upgrade: Received a Boarding Halter for faster travel!";
+	}
 	end;
 }
