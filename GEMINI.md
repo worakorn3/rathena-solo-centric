@@ -68,11 +68,43 @@ Use the provided management script:
 - **Schema:** SQL files are located in `sql-files/`.
 - **Data Tables:** `.yml` and `.txt` files in the `db/` directory.
 
-### Scripting
-- **NPCs:** Standard rAthena scripts are in `npc/`.
-- **Custom Mechanics:** Solo-specific scripts are located in `npc/custom/`.
+### Scripting & Custom Mechanics
+- **NPC Location:** Standard rAthena scripts are in `npc/`. Solo-specific scripts are in `npc/custom/`.
+- **NPC Scripting Rules:** **ALL** NPC scripting modifications must strictly adhere to the [RATHENA_NPC_RULES.md](file:///E:/Games/Ragnarok/rathena-solo-centric/RATHENA_NPC_RULES.md) file.
+- **Top 3 Absolute Mandates:**
+  1. **Tab Separation:** Always use a single literal Tab character (`\t`) to separate fields in script headers (NPC, Shop, Warp, Boss, Monster). Spaces are NOT allowed and will crash parsing.
+  2. **Scoping:** Always use local variables (`.@local_var`, `.@local_var$`) for any temporary calculations, loops, or intermediate variables to prevent DB bloating and memory leaks.
+  3. **Inventory Checks:** Every `getitem` call must be protected by a preceding `checkweight` inventory check to prevent lost items.
+- **Automated Script Testing:** The repository supports automated syntax validation and self-testing logic via the map-server `--run-once` flag and the `errormes` command. 
+  **CRITICAL AI AGENT RULE:** When testing scripts or running the map-server (e.g., with the `--run-once` flag), you MUST run it inside a Docker container instead of directly on the host OS. Do NOT run `./map-server --run-once` directly on Windows/PowerShell.
+  Instead, run via Docker, for example:
+  ```bash
+  docker compose run --rm map-server ./map-server --run-once
+  # Or with standard docker:
+  # docker run --rm -v ${PWD}:/usr/src/app -w /usr/src/app <your_rathena_image> ./map-server --run-once
+  ```
+  This validates all scripts. In buildbot mode (compiled with `--enable-buildbot=yes`), any syntax error or logic assertion failure using `errormes` will force the server to exit with a non-zero status (`EXIT_FAILURE`), failing the test run.
 
 ### Coding Style
 - Follow existing rAthena C++ conventions (tab indentation, `PascalCase` for functions, `snake_case` for variables in some modules).
 - Use `ShowError`, `ShowWarning`, `ShowInfo`, and `ShowStatus` for logging within the C++ source.
 - Prefer `.yml` for new database entries where supported.
+
+## Mistake Analysis & Prevention Protocol (Targeted Retrieval)
+
+### 1. Knowledge Hierarchy & When to Read
+- **Tier 1 (Universal Invariants):** Follow the Top 3 Mandates above directly in every session.
+- **Tier 2 (Domain Skills & Rules):** When modifying NPC scripts, reference [RATHENA_NPC_RULES.md](file:///E:/Games/Ragnarok/rathena-solo-centric/RATHENA_NPC_RULES.md).
+- **Tier 3 (Cold Archive - `MISTAKES_AND_LEARNINGS.md`):**
+  - **When Debugging / Diagnosing Errors:** Search (`grep_search`) for matching error strings or symptoms in `MISTAKES_AND_LEARNINGS.md` to check if a known root cause exists.
+  - **Do NOT** read the entire archive file blindly on unrelated tasks to prevent context dilution.
+
+### 2. When to WRITE to `MISTAKES_AND_LEARNINGS.md` (Post-Mortem Log)
+Whenever an error, bug, failure, regression, missed requirement, or wrong implementation occurs and is resolved:
+1. Append to `MISTAKES_AND_LEARNINGS.md` using the **Caveman Approach** (ultra-terse, high-density, zero fluff):
+   `- [YYYY-MM-DD] TOPIC_ID | BAD: <symptom/error> | WHY: <root cause> | FIX: <fix applied> | RULE: <prevention safeguard>`
+2. If the rule is a recurring critical pattern, promote the `RULE` to [RATHENA_NPC_RULES.md](file:///E:/Games/Ragnarok/rathena-solo-centric/RATHENA_NPC_RULES.md) or add an automated check in `./map-server --run-once`.
+
+
+
+
