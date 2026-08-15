@@ -8,11 +8,13 @@ OnPCLoginEvent:
 OnPCLoadMapEvent:
 OnPCBaseLvUpEvent:
 	// Scaling Solo-Centric EXP Rates
-	.@boost = 100; // Baseline 2x EXP from Level 1
-	if (BaseLevel > 150) .@boost = 500;
-	else if (BaseLevel > 99) .@boost = 400;
-	else if (BaseLevel > 60) .@boost = 300;
-	else if (BaseLevel > 30) .@boost = 200;
+	.@boost = 300; // Baseline 4x EXP from Level 1
+	if (BaseLevel > 199) .@boost = 1100;      // 12x
+	else if (BaseLevel > 149) .@boost = 900; // 10x
+	else if (BaseLevel > 99) .@boost = 700;  // 8x
+	else if (BaseLevel > 85) .@boost = 600;  // 7x
+	else if (BaseLevel > 70) .@boost = 500;  // 6x
+	else if (BaseLevel > 40) .@boost = 400;  // 5x
 
 	// Check if boost has changed to avoid spamming messages
 	if (CurrentExpBoost != .@boost) {
