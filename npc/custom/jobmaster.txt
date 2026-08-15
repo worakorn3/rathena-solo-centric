@@ -377,13 +377,45 @@ function	Confirm_Change	{
 		mes "Unknown Class Error.";
 		close;
 	}
+	
+	// Solo-Centric Bribes
+	.@cost_z = 0;
+	.@cost_id = 0;
+	.@cost_amt = 0;
+	.@eac = eaclass(.@class);
+	
+	if (.@class == Job_Novice_High) {
+		.@cost_z = 1285000;
+	} else if (.@eac & EAJL_FOURTH) {
+		.@cost_z = 10000000;
+	} else if (.@eac & EAJL_THIRD) {
+		.@cost_z = 3000000;
+	} else if ((.@eac & EAJL_2_1) || (.@eac & EAJL_2_2) || .@class == Job_Super_Novice) {
+		.@cost_z = 250000;
+	} else if (.@class != Job_Baby) {
+		.@cost_z = 25000;
+		.@cost_id = 909; // Jellopy
+		.@cost_amt = 50;
+	}
+
 	mes "Do you want to change into ^0055FF"+jobname(.@class)+"^000000 class?";
+	if (.@cost_z > 0 || .@cost_amt > 0) {
+		mes "^FF0000[Bribe Required]^000000";
+		if (.@cost_z > 0) mes " - " + .@cost_z + " Zeny";
+		if (.@cost_amt > 0) mes " - " + .@cost_amt + "x " + getitemname(.@cost_id);
+	}
+	
 	.@job_option$ = " ~ Change into ^0055FF"+jobname(.@class)+"^000000 class";
 	if( .@class == Job_Novice_High)
 		.@job_option$ = " ~ ^0055FFRebirth^000000";
 	
-	if (select(.@job_option$+": ~ ^777777" + 
-			((.@back) ?"Go back" : "Cancel") + "^000000") == 1) {
+	if (select(.@job_option$+": ~ ^777777" + ((.@back) ?"Go back" : "Cancel") + "^000000") == 1) {
+		if (Zeny < .@cost_z || (.@cost_amt > 0 && countitem(.@cost_id) < .@cost_amt)) {
+			mes "You don't have enough to bypass the quest. Come back when you do.";
+			close;
+		}
+		if (.@cost_z > 0) Zeny -= .@cost_z;
+		if (.@cost_amt > 0) delitem .@cost_id, .@cost_amt;
 		Job_Change(.@class);
 	}
 	if (!.@back)
