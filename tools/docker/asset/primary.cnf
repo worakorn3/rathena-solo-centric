@@ -1,0 +1,11 @@
+[mariadb]
+server-id = 1
+log-bin = mysql-bin
+binlog-format = ROW
+gtid_domain_id = 0
+binlog_do_db = ragnarok
+expire_logs_days = 7
+max_binlog_size = 100M
+
+[client-server]
+socket = /run/mysqld/mysqld.sock
