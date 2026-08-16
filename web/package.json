@@ -1,0 +1,21 @@
+{
+  "name": "rathena-player-portal-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:server": "bun --filter server dev",
+    "dev:client": "bun --filter client dev",
+    "dev": "bun --filter server dev & bun --filter client dev",
+    "build:shared": "bun --filter @rathena/shared build",
+    "build:client": "bun --filter @rathena/client build",
+    "build": "bun run build:shared && bun run build:client",
+    "test": "bun test --filter server"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
