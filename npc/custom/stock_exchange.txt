@@ -12,6 +12,7 @@ alberta,110,65,4	script	Stock Broker#alb	4005,{ callfunc "F_StockExchangeMain"; 
 // --- Global Market Logic ---
 -	script	StockExchangeSetup	-1,{
 OnInit:
+	freeloop(1);
 	setarray $StockCities$[0],"PRT","GEF","MOR","PAY","ALB";
 	
 	// Ensure Tables Exist
@@ -75,6 +76,7 @@ OnInit:
 			query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 		}
 	}
+	freeloop(0);
 	end;
 
 OnClock0000:
@@ -87,6 +89,8 @@ OnClock0000:
 	callsub L_MidnightProc;
 	set $StockLastUpdate, gettimetick(2);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
+	end;
+
 OnClock0300:
 OnClock0600:
 OnClock0900:
@@ -115,6 +119,7 @@ OnMidnightManual:
 	end;
 
 L_ShiftProc:
+	freeloop(1);
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	set .@u, 0;
 	// Sync Meta from SQL
@@ -148,9 +153,11 @@ L_ShiftProc:
 	
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketMood + " WHERE mkey = 'MarketMood'";
 	announce "MARKET NEWS: Stock shift complete. Trend: " + callfunc("F_MoodNameStr") + ".", bc_all;
+	freeloop(0);
 	return;
 
 L_MidnightProc:
+	freeloop(1);
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
@@ -204,6 +211,7 @@ L_MidnightProc:
 			}
 		}
 	}
+	freeloop(0);
 	return;
 }
 
@@ -268,8 +276,8 @@ L_ClaimDiv:
 L_Admin:
 	mes "[GM Admin Console]";
 	switch(select("Force 3-Hr Price Shift:Force Midnight Cycle:Set Dividend Tax:Reset My Portfolio:Reset Index:Back")) {
-		case 1: doevent "StockExchangeSetup::OnShiftManual"; close;
-		case 2: doevent "StockExchangeSetup::OnMidnightManual"; close;
+		case 1: donpcevent "StockExchangeSetup::OnShiftManual"; close;
+		case 2: donpcevent "StockExchangeSetup::OnMidnightManual"; close;
 		case 3:
 			query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@current_tax;
 			mes "Current Dividend Tax: " + .@current_tax + "%";

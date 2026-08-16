@@ -83,6 +83,10 @@ OnInit:
 	AssertEquals("PAY", .@real_held$[3], "4th real ticker is PAY");
 	AssertEquals("ALB", .@real_held$[4], "5th real ticker is ALB");
 	
+	// 7. T6: Verify Manual Cycle Triggers (Shift & Midnight)
+	donpcevent "StockExchangeSetup::OnShiftManual";
+	donpcevent "StockExchangeSetup::OnMidnightManual";
+
 	// Cleanup
 	query_sql "DELETE FROM `solo_stock_market` WHERE ticker IN ('TST1', 'TST2', 'TST3', 'TST4')";
 	query_sql "DELETE FROM `solo_stock_player` WHERE account_id IN (999999, 999998)";

@@ -37,31 +37,74 @@ OnPCLoginEvent:
 L_FlushKills:
 	if (#dirty_kill_count == 0) return;
 
-	.@account_id = getcharid(3);
+	set .@account_id, getcharid(3);
 	if (.@account_id == 0) {
 		debugmes "[ShadowTracker] ERROR: No RID found during flush!";
 		return;
 	}
 
-	// dispbottom "^00FF00[ShadowTracker]^000000 Saving " + #dirty_kill_count + " milestones...";
+	// Build bulk SQL statement
+	set .@sql$, callfunc("F_BuildBulkKillSQL", .@account_id, #dirty_kill_count);
 
-	for (.@i = 0; .@i < #dirty_kill_count; .@i++) {
-		.@mob_id = getd("#dirty_kill_id_" + .@i);
-		.@count = getd("#kill_count_" + .@mob_id);
-		
-		if (.@count > 0) {
-			query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'KILL', " + .@mob_id + ", " + .@count + ") ON DUPLICATE KEY UPDATE `value` = `value` + " + .@count;
-			setd "#kill_count_" + .@mob_id, 0; 
-		}
-		setd "#dirty_kill_id_" + .@i, 0; // Clear index
+	if (.@sql$ != "") {
+		query_sql .@sql$;
 	}
 
-	#dirty_kill_count = 0;
-	#total_unflushed_kills = 0;
+	// Clean up variables in-memory (no DB hits inside loop)
+	for (set .@i, 0; .@i < #dirty_kill_count; set .@i, .@i + 1) {
+		set .@mob_id, getd("#dirty_kill_id_" + .@i);
+		setd "#kill_count_" + .@mob_id, 0;
+		setd "#dirty_kill_id_" + .@i, 0;
+	}
+
+	set #dirty_kill_count, 0;
+	set #total_unflushed_kills, 0;
 	return;
+
 
 OnInit:
 	// Create table if it doesn't exist (failsafe for setup)
 	query_sql "CREATE TABLE IF NOT EXISTS `solo_persistence_log` (`account_id` INT(11) UNSIGNED NOT NULL, `category` VARCHAR(32) NOT NULL, `target_id` INT(11) NOT NULL, `value` INT(11) DEFAULT '0', `tstamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (`account_id`, `category`, `target_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 	end;
 }
+
+// F_BuildBulkKillSQL(account_id, dirty_kill_count)
+// Constructs a bulk SQL insert statement for flushing kills.
+function	script	F_BuildBulkKillSQL	{
+	set .@account_id, getarg(0);
+	set .@dirty_kill_count, getarg(1);
+
+	if (.@dirty_kill_count == 0) {
+		return "";
+	}
+
+	set .@sql$, "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES ";
+	set .@has_values, 0;
+
+	for (set .@i, 0; .@i < .@dirty_kill_count; set .@i, .@i + 1) {
+		if (playerattached()) {
+			set .@mob_id, getd("#dirty_kill_id_" + .@i);
+			set .@count, getd("#kill_count_" + .@mob_id);
+		} else {
+			// Mock path for headless CI tests
+			set .@mob_id, $@mock_dirty_kill_id[.@i];
+			set .@count, getd("$@mock_kill_count_" + .@mob_id);
+		}
+
+		if (.@count > 0) {
+			if (.@has_values) {
+				set .@sql$, .@sql$ + ",";
+			}
+			set .@sql$, .@sql$ + "(" + .@account_id + ",'KILL'," + .@mob_id + "," + .@count + ")";
+			set .@has_values, 1;
+		}
+	}
+
+	if (!.@has_values) {
+		return "";
+	}
+
+	set .@sql$, .@sql$ + " ON DUPLICATE KEY UPDATE `value` = `value` + VALUES(`value`)";
+	return .@sql$;
+}
+

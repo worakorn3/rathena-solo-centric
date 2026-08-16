@@ -1,0 +1,26 @@
+-	script	shadow_tracking_test#ci	-1,{
+OnInit:
+	debugmes "Shadow Tracking CI Test: Starting...";
+
+	.@account_id = 999999;
+
+	// Test 1: Empty dirty kill count should return empty string
+	.@sql1$ = callfunc("F_BuildBulkKillSQL", .@account_id, 0);
+	AssertEquals("", .@sql1$, "T1: Empty query for 0 dirty kills");
+
+	// Test 2: Build bulk SQL with active counts, ignoring zero counts
+	$@mock_dirty_kill_id[0] = 1001;
+	$@mock_dirty_kill_id[1] = 1002;
+	$@mock_dirty_kill_id[2] = 1003;
+	$@mock_kill_count_1001 = 5;
+	$@mock_kill_count_1002 = 0; // Should be ignored
+	$@mock_kill_count_1003 = 12;
+
+	.@sql2$ = callfunc("F_BuildBulkKillSQL", .@account_id, 3);
+	.@expected$ = "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (999999,'KILL',1001,5),(999999,'KILL',1003,12) ON DUPLICATE KEY UPDATE `value` = `value` + VALUES(`value`)";
+
+	AssertEquals(.@expected$, .@sql2$, "T2: Correctly built query with active counts");
+
+	debugmes "Shadow Tracking CI Test: Completed successfully.";
+	end;
+}
