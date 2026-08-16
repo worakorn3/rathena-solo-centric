@@ -48,11 +48,12 @@ make install
 Open `rAthena.sln` in Visual Studio 2017 or newer and build the solution in **Release** or **RelWithDebInfo** configuration.
 
 ### Running the Server
-Use the provided management script:
-- `start`: `./athena-start start`
-- `stop`: `./athena-start stop`
-- `status`: `./athena-start status`
-- `watch`: `./athena-start watch` (Auto-restart on crash)
+- **Host (Windows):** Run Windows binaries directly or manage containerized instances via Docker. Do NOT run `./athena-start` directly in PowerShell (it is a Linux bash script).
+- **Linux/Docker Container:**
+  - `start`: `./athena-start start`
+  - `stop`: `./athena-start stop`
+  - `status`: `./athena-start status`
+  - `watch`: `./athena-start watch` (Auto-restart on crash)
 
 ---
 

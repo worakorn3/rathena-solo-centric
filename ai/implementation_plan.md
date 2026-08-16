@@ -66,9 +66,10 @@
 | **Reputation Factions** | ⏳ [PENDING] | Daily quests and rep-locked rewards |
 | **Challenge Modes** | ⏳ [PENDING] | Roguelike dungeon runs with modifiers |
 
-### Phase 5: Infrastructure (Admin)
+### Phase 5: Infrastructure (Admin & Player Portal)
 | Feature | Status | Details |
 |---------|--------|---------|
+| **Player Web Portal (MVP 1)** | ✅ [DONE] | [Web Portal Architecture & Plan](plans/web_portal_plan.md) (Bun/Elysia/Vite/Replica DB 3307) |
 | **Web Admin Panel** | ⏳ [PENDING] | Economic & Player data dashboard (React/Node) |
 | **Encyclopedia NPC** | ⏳ [PENDING] | Central info guide for all custom systems |
 

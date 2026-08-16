@@ -152,3 +152,10 @@ Thumbs.db
 
 # generated files
 generated
+
+# Development & Scratch
+node_modules/
+scratch/
+*.tsbuildinfo
+.turbo/
+dist/
