@@ -1,0 +1,4016 @@
+# ==========================================================
+# rAthena Solo-Centric: Daily Junk Buyer Master Pool
+# Purely Script-Driven (Harvested from mob_db.yml & item_db_etc.yml)
+# ==========================================================
+
+tier_1:
+  name: "Novice & 1st Class (Lv 1 - 50)"
+  min_level: 1
+  max_level: 50
+  items:
+    - id: 904
+      name: "Scorpion Tail"
+      min_price: 620
+      max_price: 1116
+      mobs: "Elusive Scorpion (Lv 16)"
+    - id: 939
+      name: "Bee Sting"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Hornet (Lv 11)"
+    - id: 909
+      name: "Jellopy"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Hornet (Lv 11)"
+    - id: 913
+      name: "Tooth of Bat"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Familiar (Lv 24)"
+    - id: 914
+      name: "Fluff"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Fabre (Lv 6)"
+    - id: 949
+      name: "Feather"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Lunatic (Lv 3)"
+    - id: 935
+      name: "Shell"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Steel Chonchon (Lv 48)"
+    - id: 916
+      name: "Feather of Birds"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Raggler (Lv 48)"
+    - id: 902
+      name: "Tree Root"
+      min_price: 500
+      max_price: 750
+      mobs: "Willow Ringleader (Lv 8)"
+    - id: 907
+      name: "Resin"
+      min_price: 600
+      max_price: 1080
+      mobs: "Willow Ringleader (Lv 8)"
+    - id: 1068
+      name: "Barren Trunk"
+      min_price: 500
+      max_price: 750
+      mobs: "Willow Ringleader (Lv 8)"
+    - id: 1067
+      name: "Solid Trunk"
+      min_price: 500
+      max_price: 750
+      mobs: "Willow Ringleader (Lv 8)"
+    - id: 918
+      name: "Sticky Webfoot"
+      min_price: 500
+      max_price: 750
+      mobs: "Roda Frog Ringleader (Lv 13)"
+    - id: 920
+      name: "Wolf Claw"
+      min_price: 500
+      max_price: 750
+      mobs: "Swift Wolf (Lv 45)"
+    - id: 919
+      name: "Animal Skin"
+      min_price: 500
+      max_price: 750
+      mobs: "Swift Wolf (Lv 45)"
+    - id: 921
+      name: "Mushroom Spore"
+      min_price: 500
+      max_price: 750
+      mobs: "Swift Spore (Lv 18)"
+    - id: 957
+      name: "Decayed Nail"
+      min_price: 500
+      max_price: 750
+      mobs: "Furious Zombie (Lv 17)"
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 500
+      max_price: 750
+      mobs: "Poporing Ringleader (Lv 30)"
+    - id: 932
+      name: "Skel-Bone"
+      min_price: 1160
+      max_price: 2088
+      mobs: "Soldier Skeleton Ringlea (Lv 34)"
+    - id: 924
+      name: "Powder of Butterfly"
+      min_price: 500
+      max_price: 810
+      mobs: "Swift Creamy (Lv 23)"
+    - id: 925
+      name: "Bill of Birds"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Peco Peco (Lv 25)"
+    - id: 905
+      name: "Stem"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Mandragora (Lv 13)"
+    - id: 931
+      name: "Orcish Voucher"
+      min_price: 710
+      max_price: 1278
+      mobs: "Furious Orc Warrior (Lv 44)"
+    - id: 906
+      name: "Pointed Scale"
+      min_price: 500
+      max_price: 750
+      mobs: "Wormtail Ringleader (Lv 17)"
+    - id: 926
+      name: "Snake Scale"
+      min_price: 500
+      max_price: 750
+      mobs: "Boa Ringleader (Lv 18)"
+    - id: 910
+      name: "Garlet"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Ambernite (Lv 19)"
+    - id: 908
+      name: "Spawn"
+      min_price: 700
+      max_price: 1260
+      mobs: "Elusive Thara Frog (Lv 40)"
+    - id: 955
+      name: "Worm Peeling"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Thief Bug (Lv 21)"
+    - id: 940
+      name: "Grasshopper's Leg"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Rocker (Lv 15)"
+    - id: 952
+      name: "Cactus Needle"
+      min_price: 500
+      max_price: 750
+      mobs: "Muka Ringleader (Lv 23)"
+    - id: 945
+      name: "Raccoon Leaf"
+      min_price: 530
+      max_price: 954
+      mobs: "Furious Smokie (Lv 29)"
+    - id: 942
+      name: "Yoyo Tail"
+      min_price: 570
+      max_price: 1026
+      mobs: "Swift Yoyo (Lv 38)"
+    - id: 948
+      name: "Bear's Footskin"
+      min_price: 870
+      max_price: 1566
+      mobs: "Bigfoot Ringleader (Lv 29)"
+    - id: 705
+      name: "Clover"
+      min_price: 500
+      max_price: 750
+      mobs: "Solid Lunatic (Lv 3)"
+    - id: 960
+      name: "Nipper"
+      min_price: 570
+      max_price: 1026
+      mobs: "Solid Vadon (Lv 45)"
+    - id: 961
+      name: "Conch"
+      min_price: 790
+      max_price: 1422
+      mobs: "Solid Cornutus (Lv 48)"
+    - id: 965
+      name: "Clam Shell"
+      min_price: 500
+      max_price: 750
+      mobs: "Swift Shellfish (Lv 50)"
+    - id: 7033
+      name: "Poison Spore"
+      min_price: 570
+      max_price: 1026
+      mobs: "Solid Poison Spore (Lv 26)"
+    - id: 946
+      name: "Snail's Shell"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Ambernite (Lv 19)"
+    - id: 1025
+      name: "Cobweb"
+      min_price: 920
+      max_price: 1656
+      mobs: "Furious Argos (Lv 47)"
+    - id: 1027
+      name: "Porcupine Quill"
+      min_price: 790
+      max_price: 1422
+      mobs: "Swift Caramel (Lv 25)"
+    - id: 1026
+      name: "Acorn"
+      min_price: 500
+      max_price: 882
+      mobs: "Swift Coco (Lv 38)"
+    - id: 7006
+      name: "Wing of Red Bat"
+      min_price: 840
+      max_price: 1512
+      mobs: "Elusive Drainliar (Lv 47)"
+    - id: 911
+      name: "Scell"
+      min_price: 600
+      max_price: 1080
+      mobs: "Elusive Goblin (Lv 48)"
+    - id: 947
+      name: "Horn"
+      min_price: 580
+      max_price: 1044
+      mobs: "Solid Horn (Lv 32)"
+    - id: 1052
+      name: "Single Cell"
+      min_price: 500
+      max_price: 750
+      mobs: "Furious Plankton (Lv 40)"
+    - id: 1017
+      name: "Mole Whiskers"
+      min_price: 530
+      max_price: 954
+      mobs: "Solid Martin (Lv 39)"
+    - id: 1018
+      name: "Mole Claw"
+      min_price: 1050
+      max_price: 1890
+      mobs: "Solid Martin (Lv 39)"
+    - id: 1041
+      name: "Lantern"
+      min_price: 1250
+      max_price: 2250
+      mobs: "Elusive Skeleton Worker (Lv 44)"
+    - id: 1013
+      name: "Rainbow Shell"
+      min_price: 500
+      max_price: 810
+      mobs: "Elusive Stainer (Lv 21)"
+    - id: 1016
+      name: "Rat Tail"
+      min_price: 500
+      max_price: 750
+      mobs: "Tarou Ringleader (Lv 22)"
+    - id: 1059
+      name: "Fabric"
+      min_price: 1530
+      max_price: 2754
+      mobs: "Solid Whisper (Lv 46)"
+    - id: 7053
+      name: "Cyfar"
+      min_price: 3860
+      max_price: 6948
+      mobs: "Solid Orc Lady (Lv 45)"
+    - id: 912
+      name: "Zargon"
+      min_price: 1800
+      max_price: 3240
+      mobs: "Swift Seal (Lv 47)"
+    - id: 7065
+      name: "Sea-Otter Fur"
+      min_price: 4100
+      max_price: 7380
+      mobs: "Sea Otter Ringleader (Lv 48)"
+    - id: 7049
+      name: "Stone"
+      min_price: 500
+      max_price: 750
+      mobs: "Poring (Lv 1)"
+    - id: 6564
+      name: "Captive Hatchling"
+      min_price: 500
+      max_price: 750
+      mobs: "Novus (Lv 1)"
+    - id: 917
+      name: "Talon"
+      min_price: 500
+      max_price: 750
+      mobs: "Condor (Lv 12)"
+    - id: 915
+      name: "Chrysalis"
+      min_price: 500
+      max_price: 750
+      mobs: "Pupa (Lv 4)"
+    - id: 1066
+      name: "Fine-grained Trunk"
+      min_price: 500
+      max_price: 750
+      mobs: "Willow Ringleader (Lv 8)"
+    - id: 6453
+      name: "Undelivered Gift"
+      min_price: 500
+      max_price: 750
+      mobs: "Cruiser (Lv 41)"
+    - id: 1024
+      name: "Squid Ink"
+      min_price: 1320
+      max_price: 2376
+      mobs: "Marse (Lv 47)"
+    - id: 7031
+      name: "Old Frying Pan"
+      min_price: 980
+      max_price: 1764
+      mobs: "Magnolia (Lv 26)"
+    - id: 956
+      name: "Gill"
+      min_price: 1710
+      max_price: 3078
+      mobs: "Marc (Lv 36)"
+    - id: 950
+      name: "Heart of Mermaid"
+      min_price: 1320
+      max_price: 2376
+      mobs: "Obeune (Lv 31)"
+    - id: 1070
+      name: "Orange Gooey Mushroom"
+      min_price: 500
+      max_price: 750
+      mobs: "Thief Mushroom (Lv 1)"
+    - id: 1028
+      name: "Mane"
+      min_price: 980
+      max_price: 1764
+      mobs: "Savage (Lv 26)"
+    - id: 958
+      name: "Horrendous Mouth"
+      min_price: 1950
+      max_price: 3510
+      mobs: "Tenacious Ghoul (Lv 40)"
+    - id: 928
+      name: "Insect Feeler"
+      min_price: 570
+      max_price: 1026
+      mobs: "Thief Bug Male (Lv 30)"
+    - id: 959
+      name: "Stinky Scale"
+      min_price: 840
+      max_price: 1512
+      mobs: "Megalodon (Lv 46)"
+    - id: 962
+      name: "Tentacle"
+      min_price: 500
+      max_price: 750
+      mobs: "Hydra (Lv 34)"
+    - id: 964
+      name: "Crab Shell"
+      min_price: 500
+      max_price: 810
+      mobs: "Crab (Lv 43)"
+    - id: 1040
+      name: "Elder Pixie's Moustache"
+      min_price: 1160
+      max_price: 2088
+      mobs: "Giearth (Lv 42)"
+    - id: 7011
+      name: "Claw of Monkey"
+      min_price: 2330
+      max_price: 4194
+      mobs: "Choco (Lv 43)"
+    - id: 951
+      name: "Fin"
+      min_price: 2060
+      max_price: 3708
+      mobs: "Strouf (Lv 48)"
+    - id: 7850
+      name: "Wooden Block"
+      min_price: 500
+      max_price: 750
+      mobs: "Christmas Goblin (Lv 25)"
+    - id: 7860
+      name: "Peeps"
+      min_price: 500
+      max_price: 750
+      mobs: "Spring Rabbit (Lv 25)"
+    - id: 7861
+      name: "Jelly Bean"
+      min_price: 500
+      max_price: 750
+      mobs: "Spring Rabbit (Lv 25)"
+    - id: 7862
+      name: "Marshmallow"
+      min_price: 500
+      max_price: 750
+      mobs: "Spring Rabbit (Lv 25)"
+    - id: 966
+      name: "Clam Flesh"
+      min_price: 790
+      max_price: 1422
+      mobs: "Swift Shellfish (Lv 50)"
+    - id: 1056
+      name: "Grit"
+      min_price: 1530
+      max_price: 2754
+      mobs: "Swift Shellfish (Lv 50)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 2240
+      max_price: 4032
+      mobs: "Solid Cornutus (Lv 48)"
+    - id: 7182
+      name: "Cacao"
+      min_price: 1000
+      max_price: 1800
+      mobs: "Solid Yoyo (Lv 38)"
+    - id: 1036
+      name: "Dragon Scale"
+      min_price: 2500
+      max_price: 4500
+      mobs: "Novus (Lv 1)"
+    - id: 746
+      name: "Glass Bead"
+      min_price: 5250
+      max_price: 9450
+      mobs: "Sea Otter Ringleader (Lv 48)"
+    - id: 1069
+      name: "Orange Net Mushroom"
+      min_price: 500
+      max_price: 750
+      mobs: "Thief Mushroom (Lv 1)"
+    - id: 7272
+      name: "Rice Ball Doll"
+      min_price: 2500
+      max_price: 4500
+      mobs: "Boiled Rice (Lv 15)"
+    - id: 7864
+      name: "Love Flower"
+      min_price: 500
+      max_price: 750
+      mobs: "Mystic Plant (Lv 1)"
+    - id: 1038
+      name: "Little Evil Horn"
+      min_price: 2640
+      max_price: 4752
+      mobs: "Deviruchi (Lv 46)"
+    - id: 1039
+      name: "Little Evil Wing"
+      min_price: 10000
+      max_price: 18000
+      mobs: "Deviruchi (Lv 46)"
+    - id: 7035
+      name: "Matchstick"
+      min_price: 500
+      max_price: 900
+      mobs: "Chepet (Lv 42)"
+    - id: 1042
+      name: "Bug Leg"
+      min_price: 2150
+      max_price: 3870
+      mobs: "Furious Argos (Lv 47)"
+    - id: 1002
+      name: "Iron Ore"
+      min_price: 500
+      max_price: 750
+      mobs: "Elusive Deniro (Lv 31)"
+    - id: 7770
+      name: "Sweet Rice"
+      min_price: 500
+      max_price: 750
+      mobs: "Boiled Rice (Lv 15)"
+    - id: 728
+      name: "Topaz"
+      min_price: 22500
+      max_price: 40500
+      mobs: "Novus (Lv 1)"
+    - id: 998
+      name: "Iron"
+      min_price: 500
+      max_price: 900
+      mobs: "Elusive Skeleton Worker (Lv 44)"
+
+tier_2:
+  name: "2nd Class & Trans (Lv 51 - 99)"
+  min_level: 51
+  max_level: 99
+  items:
+    - id: 936
+      name: "Scale Shell"
+      min_price: 2796
+      max_price: 4660
+      mobs: "Solid Isis (Lv 59)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 2688
+      max_price: 4480
+      mobs: "Furious Hunter Fly (Lv 63)"
+    - id: 958
+      name: "Horrendous Mouth"
+      min_price: 2340
+      max_price: 3900
+      mobs: "Furious Ghoul (Lv 61)"
+    - id: 954
+      name: "Shining Scale"
+      min_price: 2796
+      max_price: 4660
+      mobs: "Solid Side Winder (Lv 70)"
+    - id: 926
+      name: "Snake Scale"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Side Winder (Lv 70)"
+    - id: 953
+      name: "Stone Heart"
+      min_price: 1104
+      max_price: 1840
+      mobs: "Furious Golem (Lv 61)"
+    - id: 930
+      name: "Rotten Bandage"
+      min_price: 2100
+      max_price: 3500
+      mobs: "Swift Mummy (Lv 55)"
+    - id: 950
+      name: "Heart of Mermaid"
+      min_price: 1584
+      max_price: 2640
+      mobs: "Solid Iara (Lv 79)"
+    - id: 940
+      name: "Grasshopper's Leg"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Metaller (Lv 55)"
+    - id: 963
+      name: "Sharp Scale"
+      min_price: 1500
+      max_price: 2500
+      mobs: "Swift Piranha (Lv 75)"
+    - id: 1042
+      name: "Bug Leg"
+      min_price: 2580
+      max_price: 4300
+      mobs: "Elusive Argiope (Lv 75)"
+    - id: 1061
+      name: "Witched Starsand"
+      min_price: 2904
+      max_price: 4840
+      mobs: "Furious Bathory (Lv 86)"
+    - id: 1038
+      name: "Little Evil Horn"
+      min_price: 3168
+      max_price: 5280
+      mobs: "Solid Deviruchi (Lv 93)"
+    - id: 1021
+      name: "Dokebi Horn"
+      min_price: 1752
+      max_price: 2920
+      mobs: "Furious Dokebi (Lv 68)"
+    - id: 1057
+      name: "Moth Dust"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Dustiness (Lv 62)"
+    - id: 1032
+      name: "Maneater Blossom"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Swift Geographer (Lv 73)"
+    - id: 905
+      name: "Stem"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Rafflesia Arnoldi (Lv 80)"
+    - id: 1012
+      name: "Frill"
+      min_price: 1500
+      max_price: 2500
+      mobs: "Furious Driller (Lv 65)"
+    - id: 911
+      name: "Scell"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Comodo (Lv 81)"
+    - id: 1055
+      name: "Earthworm Peeling"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Furious Hode (Lv 63)"
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Penomena Ringleader (Lv 85)"
+    - id: 912
+      name: "Zargon"
+      min_price: 2160
+      max_price: 3600
+      mobs: "Solid Wind Ghost (Lv 80)"
+    - id: 7031
+      name: "Old Frying Pan"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Elusive Magnolia (Lv 53)"
+    - id: 1031
+      name: "Mantis Scythe"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Swift Mantis (Lv 65)"
+    - id: 1045
+      name: "Cultish Masque"
+      min_price: 2472
+      max_price: 4120
+      mobs: "Elusive Marduk (Lv 73)"
+    - id: 1060
+      name: "Golden Hair"
+      min_price: 2580
+      max_price: 4300
+      mobs: "Marionette Ringleader (Lv 90)"
+    - id: 941
+      name: "Nose Ring"
+      min_price: 3408
+      max_price: 5680
+      mobs: "Furious Minorous (Lv 58)"
+    - id: 922
+      name: "Orc's Fang"
+      min_price: 1320
+      max_price: 2200
+      mobs: "Swift Orc Skeleton (Lv 53)"
+    - id: 932
+      name: "Skel-Bone"
+      min_price: 1392
+      max_price: 2320
+      mobs: "Solid Wind Ghost (Lv 80)"
+    - id: 1043
+      name: "Orc Claw"
+      min_price: 1008
+      max_price: 1680
+      mobs: "Elusive Orc Zombie (Lv 51)"
+    - id: 7110
+      name: "Broken Sword"
+      min_price: 3528
+      max_price: 5880
+      mobs: "Swift Pasana (Lv 79)"
+    - id: 1035
+      name: "Dragon Canine"
+      min_price: 2904
+      max_price: 4840
+      mobs: "Swift Petite (Lv 86)"
+    - id: 1023
+      name: "Fish Tail"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Elusive Phen (Lv 52)"
+    - id: 1033
+      name: "Maneater Root"
+      min_price: 1248
+      max_price: 2080
+      mobs: "Swift Rafflesia (Lv 86)"
+    - id: 1056
+      name: "Grit"
+      min_price: 1836
+      max_price: 3060
+      mobs: "Elusive Sleeper (Lv 81)"
+    - id: 1028
+      name: "Mane"
+      min_price: 1176
+      max_price: 1960
+      mobs: "Solid Savage (Lv 59)"
+    - id: 1020
+      name: "Black Hair"
+      min_price: 1752
+      max_price: 2920
+      mobs: "Swift Sohee (Lv 64)"
+    - id: 1095
+      name: "Needle of Alarm"
+      min_price: 3276
+      max_price: 5460
+      mobs: "Clock Ringleader (Lv 81)"
+    - id: 1097
+      name: "Worn Out Page"
+      min_price: 5688
+      max_price: 9480
+      mobs: "Swift Rideword (Lv 74)"
+    - id: 931
+      name: "Orcish Voucher"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid High Orc (Lv 81)"
+    - id: 7012
+      name: "Tough Scalelike Stem"
+      min_price: 2472
+      max_price: 4120
+      mobs: "Swift Stem Worm (Lv 84)"
+    - id: 7013
+      name: "Coral Reef"
+      min_price: 4632
+      max_price: 7720
+      mobs: "Penomena Ringleader (Lv 85)"
+    - id: 962
+      name: "Tentacle"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Penomena Ringleader (Lv 85)"
+    - id: 7054
+      name: "Brigan"
+      min_price: 4476
+      max_price: 7460
+      mobs: "Furious Stalactic Golem (Lv 68)"
+    - id: 7053
+      name: "Cyfar"
+      min_price: 4632
+      max_price: 7720
+      mobs: "Furious Wild Rose (Lv 70)"
+    - id: 967
+      name: "Turtle Shell"
+      min_price: 4080
+      max_price: 6800
+      mobs: "Solid Solider (Lv 92)"
+    - id: 7064
+      name: "Wing of Dragonfly"
+      min_price: 3120
+      max_price: 5200
+      mobs: "Swift Dragon Tail (Lv 86)"
+    - id: 7101
+      name: "Peco Peco Feather"
+      min_price: 2724
+      max_price: 4540
+      mobs: "Solid Grand Peco (Lv 75)"
+    - id: 7106
+      name: "Antelope Horn"
+      min_price: 4032
+      max_price: 6720
+      mobs: "Solid Goat (Lv 80)"
+    - id: 7124
+      name: "Sand Clump"
+      min_price: 4236
+      max_price: 7060
+      mobs: "Elusive Sleeper (Lv 81)"
+    - id: 7151
+      name: "Oil Paper"
+      min_price: 1260
+      max_price: 2100
+      mobs: "Swift Karakasa (Lv 72)"
+    - id: 7150
+      name: "Piece of Bamboo"
+      min_price: 1860
+      max_price: 3100
+      mobs: "Swift Karakasa (Lv 72)"
+    - id: 7156
+      name: "Broken Shuriken"
+      min_price: 2820
+      max_price: 4700
+      mobs: "Furious Shinobi (Lv 95)"
+    - id: 7155
+      name: "Poisonous Toad Skin"
+      min_price: 1680
+      max_price: 2800
+      mobs: "Swift Poison Toad (Lv 87)"
+    - id: 7152
+      name: "Glossy Hair"
+      min_price: 2040
+      max_price: 3400
+      mobs: "Miyabi Doll Ringleader (Lv 85)"
+    - id: 7163
+      name: "Hard Feeler"
+      min_price: 3420
+      max_price: 5700
+      mobs: "Swift Bloody Butterfly (Lv 94)"
+    - id: 924
+      name: "Powder of Butterfly"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Bloody Butterfly (Lv 94)"
+    - id: 7192
+      name: "Vane"
+      min_price: 1000
+      max_price: 1600
+      mobs: "Dumpling Child Ringleade (Lv 60)"
+    - id: 7164
+      name: "Solid Peach"
+      min_price: 2400
+      max_price: 4000
+      mobs: "Solid Enchanted Peach Tr (Lv 92)"
+    - id: 7197
+      name: "Tough Vines"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Swift Dryad (Lv 68)"
+    - id: 7190
+      name: "Solid Husk"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Beetle King (Lv 55)"
+    - id: 7202
+      name: "Pincher of Beetle"
+      min_price: 1740
+      max_price: 2900
+      mobs: "Furious Beetle King (Lv 55)"
+    - id: 7203
+      name: "Strong Branch"
+      min_price: 1140
+      max_price: 1900
+      mobs: "Elusive Wood Goblin (Lv 81)"
+    - id: 7196
+      name: "Shoulder Protector"
+      min_price: 1380
+      max_price: 2300
+      mobs: "Wootan Fighter (Lv 95)"
+    - id: 7193
+      name: "Sprout"
+      min_price: 1380
+      max_price: 2300
+      mobs: "Solid Parasite (Lv 76)"
+    - id: 7266
+      name: "Denture from Dragon Mask"
+      min_price: 2616
+      max_price: 4360
+      mobs: "Elusive Zhu Po Long (Lv 82)"
+    - id: 7264
+      name: "Dry Sand"
+      min_price: 1932
+      max_price: 3220
+      mobs: "Mi Gao (Lv 95)"
+    - id: 7267
+      name: "Tiger Panty"
+      min_price: 1788
+      max_price: 2980
+      mobs: "Elusive Jing Guai (Lv 80)"
+    - id: 7301
+      name: "Tassel"
+      min_price: 4788
+      max_price: 7980
+      mobs: "Furious Tamruan (Lv 73)"
+    - id: 7198
+      name: "Huge Leaf"
+      min_price: 3660
+      max_price: 6100
+      mobs: "Leaf Cat Ringleader (Lv 64)"
+    - id: 7298
+      name: "Fig Leaf"
+      min_price: 3228
+      max_price: 5380
+      mobs: "Leaf Cat Ringleader (Lv 64)"
+    - id: 7325
+      name: "Flexible Tube"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Metaling (Lv 81)"
+    - id: 7312
+      name: "Jubilee"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Porcellio (Lv 85)"
+    - id: 7316
+      name: "Insect Leg"
+      min_price: 3948
+      max_price: 6580
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 7320
+      name: "Dust Pollutant"
+      min_price: 1536
+      max_price: 2560
+      mobs: "Venomous Ringleader (Lv 87)"
+    - id: 1017
+      name: "Mole Whiskers"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Holden (Lv 85)"
+    - id: 1018
+      name: "Mole Claw"
+      min_price: 1260
+      max_price: 2100
+      mobs: "Solid Holden (Lv 85)"
+    - id: 7762
+      name: "Yaga's Pestle"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Vavayaga (Lv 87)"
+    - id: 6403
+      name: "Comodo Leather"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Comodo (Lv 81)"
+    - id: 908
+      name: "Spawn"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Comodo (Lv 81)"
+    - id: 965
+      name: "Clam Shell"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Red Eruma (Lv 91)"
+    - id: 7345
+      name: "Handcuffs"
+      min_price: 4344
+      max_price: 7240
+      mobs: "Furious Wickebine Tres (Lv 98)"
+    - id: 7347
+      name: "Research Chart"
+      min_price: 5040
+      max_price: 8400
+      mobs: "Furious Wickebine Tres (Lv 98)"
+    - id: 7071
+      name: "Tattered Clothes"
+      min_price: 7680
+      max_price: 12800
+      mobs: "Owl Duke Ringleader (Lv 92)"
+    - id: 7165
+      name: "Transparent Celestial Robe"
+      min_price: 3900
+      max_price: 6500
+      mobs: "Elusive Evil Nymph (Lv 97)"
+    - id: 715
+      name: "Yellow Gemstone"
+      min_price: 2700
+      max_price: 4500
+      mobs: "Furious Driller (Lv 65)"
+    - id: 7186
+      name: "Thin Trunk"
+      min_price: 2280
+      max_price: 3800
+      mobs: "Solid Parasite (Lv 76)"
+    - id: 7317
+      name: "Rusty Screw"
+      min_price: 3204
+      max_price: 5340
+      mobs: "Swift Teddy Bear (Lv 91)"
+    - id: 957
+      name: "Decayed Nail"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Zombie (Lv 60)"
+    - id: 1099
+      name: "Worn-out Prison Uniform"
+      min_price: 4080
+      max_price: 6800
+      mobs: "Solid Zombie Prisoner (Lv 89)"
+    - id: 716
+      name: "Red Gemstone"
+      min_price: 2700
+      max_price: 4500
+      mobs: "Furious Driller (Lv 65)"
+    - id: 1014
+      name: "Ant Jaw"
+      min_price: 1392
+      max_price: 2320
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 1019
+      name: "Trunk"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Karakasa (Lv 72)"
+    - id: 935
+      name: "Shell"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Metaller (Lv 55)"
+    - id: 919
+      name: "Animal Skin"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Roween (Lv 95)"
+    - id: 7005
+      name: "Skull"
+      min_price: 6264
+      max_price: 10440
+      mobs: "Furious Dark Priest (Lv 98)"
+    - id: 7001
+      name: "Mould Powder"
+      min_price: 2796
+      max_price: 4660
+      mobs: "Furious Noxious (Lv 87)"
+    - id: 7119
+      name: "Bacillus"
+      min_price: 6144
+      max_price: 10240
+      mobs: "Venomous Ringleader (Lv 87)"
+    - id: 7187
+      name: "Festival Mask"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Dumpling Child Ringleade (Lv 60)"
+    - id: 7188
+      name: "Brown Root"
+      min_price: 3360
+      max_price: 5600
+      mobs: "Swift Dryad (Lv 68)"
+    - id: 7100
+      name: "Sharp Leaf"
+      min_price: 4836
+      max_price: 8060
+      mobs: "Swift Dryad (Lv 68)"
+    - id: 7265
+      name: "Dragon Horn"
+      min_price: 3264
+      max_price: 5440
+      mobs: "Elusive Zhu Po Long (Lv 82)"
+    - id: 7038
+      name: "Yarn"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Zhu Po Long (Lv 82)"
+    - id: 7069
+      name: "Destroyed Armor"
+      min_price: 6252
+      max_price: 10420
+      mobs: "Furious Tamruan (Lv 73)"
+    - id: 7321
+      name: "Crystal Fragment"
+      min_price: 3312
+      max_price: 5520
+      mobs: "Solid Mineral (Lv 96)"
+    - id: 7318
+      name: "Old Pick"
+      min_price: 3072
+      max_price: 5120
+      mobs: "Elusive Pitman (Lv 90)"
+    - id: 7564
+      name: "Rotten Meat"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Roween (Lv 95)"
+    - id: 917
+      name: "Talon"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Toucan (Lv 70)"
+    - id: 7004
+      name: "Mud Lump"
+      min_price: 5256
+      max_price: 8760
+      mobs: "Mi Gao (Lv 95)"
+    - id: 937
+      name: "Venom Canine"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Side Winder Ringleader (Lv 70)"
+    - id: 7121
+      name: "Honey Pot"
+      min_price: 3732
+      max_price: 6220
+      mobs: "Swift Pasana (Lv 79)"
+    - id: 7002
+      name: "Ogre Tooth"
+      min_price: 3948
+      max_price: 6580
+      mobs: "Solid High Orc (Lv 81)"
+    - id: 7107
+      name: "Antelope Skin"
+      min_price: 4536
+      max_price: 7560
+      mobs: "Goat Ringleader (Lv 80)"
+    - id: 997
+      name: "Great Nature"
+      min_price: 18000
+      max_price: 30000
+      mobs: "Swift Sleeper (Lv 81)"
+    - id: 7153
+      name: "Worn-out Kimono"
+      min_price: 3540
+      max_price: 5900
+      mobs: "Miyabi Doll Ringleader (Lv 85)"
+    - id: 7168
+      name: "Giant Butterfly Wing"
+      min_price: 3684
+      max_price: 6140
+      mobs: "Swift Bloody Butterfly (Lv 94)"
+    - id: 7326
+      name: "Fluorescent Liquid"
+      min_price: 4272
+      max_price: 7120
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 7154
+      name: "Poisonous Powder"
+      min_price: 1000
+      max_price: 1600
+      mobs: "Swift Poison Toad (Lv 87)"
+    - id: 7111
+      name: "Slick Paper"
+      min_price: 4236
+      max_price: 7060
+      mobs: "Swift Karakasa (Lv 72)"
+    - id: 928
+      name: "Insect Feeler"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Dustiness (Lv 62)"
+    - id: 7003
+      name: "Anolian Skin"
+      min_price: 5808
+      max_price: 9680
+      mobs: "Solid Alligator (Lv 57)"
+    - id: 7157
+      name: "Dark Mask"
+      min_price: 1884
+      max_price: 3140
+      mobs: "Furious Shinobi (Lv 95)"
+    - id: 7201
+      name: "Log"
+      min_price: 1500
+      max_price: 2500
+      mobs: "Elusive Wood Goblin (Lv 81)"
+    - id: 7194
+      name: "Soft Blade of Grass"
+      min_price: 2400
+      max_price: 4000
+      mobs: "Solid Parasite (Lv 76)"
+    - id: 7322
+      name: "Toxic Gas"
+      min_price: 3996
+      max_price: 6660
+      mobs: "Venomous Ringleader (Lv 87)"
+    - id: 7582
+      name: "Jewel of Destruction"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Treasure Chest (Lv 99)"
+    - id: 907
+      name: "Resin"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Wood Goblin (Lv 81)"
+    - id: 966
+      name: "Clam Flesh"
+      min_price: 1000
+      max_price: 1580
+      mobs: "Elusive Red Eruma (Lv 91)"
+    - id: 6942
+      name: "Will Master"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Renovated Amdarais (Lv 99)"
+    - id: 901
+      name: "Daenggie"
+      min_price: 1560
+      max_price: 2600
+      mobs: "Munak (Lv 58)"
+    - id: 929
+      name: "Immortal Heart"
+      min_price: 2244
+      max_price: 3740
+      mobs: "Verit (Lv 52)"
+    - id: 956
+      name: "Gill"
+      min_price: 2052
+      max_price: 3420
+      mobs: "Marc (Lv 56)"
+    - id: 1053
+      name: "Ancient Tooth"
+      min_price: 3288
+      max_price: 5480
+      mobs: "Deviace (Lv 60)"
+    - id: 1062
+      name: "Jack o' Pumpkin"
+      min_price: 2244
+      max_price: 3740
+      mobs: "Jakk (Lv 63)"
+    - id: 7754
+      name: "Broken Crown"
+      min_price: 18000
+      max_price: 30000
+      mobs: "Tristan III (Lv 80)"
+    - id: 6405
+      name: "Cendrawasih Feather"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Cendrawasih (Lv 84)"
+    - id: 916
+      name: "Feather of Birds"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Cendrawasih (Lv 84)"
+    - id: 7063
+      name: "Soft Feather"
+      min_price: 1680
+      max_price: 2800
+      mobs: "Cendrawasih (Lv 84)"
+    - id: 732
+      name: "3carat Diamond"
+      min_price: 330000
+      max_price: 550000
+      mobs: "Treasure Chest (Lv 99)"
+    - id: 7066
+      name: "Ice Cubic"
+      min_price: 3960
+      max_price: 6600
+      mobs: "Swift Siroma (Lv 98)"
+    - id: 985
+      name: "Elunium"
+      min_price: 6600
+      max_price: 11000
+      mobs: "Solid Banaspaty (Lv 85)"
+    - id: 7289
+      name: "Peridot"
+      min_price: 18000
+      max_price: 30000
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 718
+      name: "Garnet"
+      min_price: 36000
+      max_price: 60000
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 934
+      name: "Memento"
+      min_price: 3600
+      max_price: 6000
+      mobs: "Solid Requiem (Lv 71)"
+    - id: 756
+      name: "Rough Oridecon"
+      min_price: 3300
+      max_price: 5500
+      mobs: "Solid Banaspaty (Lv 85)"
+    - id: 7703
+      name: "Piece of Cogwheel"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Alarm (Lv 58)"
+    - id: 7166
+      name: "Soft Silk"
+      min_price: 7200
+      max_price: 12000
+      mobs: "Elusive Evil Nymph (Lv 97)"
+    - id: 7149
+      name: "Yellow Plate"
+      min_price: 1320
+      max_price: 2200
+      mobs: "Kapha (Lv 83)"
+    - id: 1054
+      name: "Ancient Lips"
+      min_price: 6000
+      max_price: 10000
+      mobs: "Furious Merman (Lv 60)"
+    - id: 1000
+      name: "Star Crumb"
+      min_price: 27000
+      max_price: 45000
+      mobs: "Miyabi Doll Ringleader (Lv 85)"
+    - id: 944
+      name: "Horseshoe"
+      min_price: 3528
+      max_price: 5880
+      mobs: "Nightmare (Lv 69)"
+    - id: 1065
+      name: "Trap"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Mimic (Lv 56)"
+    - id: 6508
+      name: "Silver Bracelet"
+      min_price: 1800
+      max_price: 3000
+      mobs: "Temple Guard (Lv 84)"
+    - id: 7568
+      name: "White Mask"
+      min_price: 6360
+      max_price: 10600
+      mobs: "Enraged Devotee (Lv 82)"
+    - id: 1059
+      name: "Fabric"
+      min_price: 1836
+      max_price: 3060
+      mobs: "Wraith (Lv 77)"
+    - id: 1044
+      name: "Zenorc's Fang"
+      min_price: 1584
+      max_price: 2640
+      mobs: "Zenorc (Lv 54)"
+    - id: 998
+      name: "Iron"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Firelock Soldier (Lv 88)"
+    - id: 7158
+      name: "Broken Liquor Jar"
+      min_price: 1000
+      max_price: 1600
+      mobs: "Tengu (Lv 98)"
+    - id: 913
+      name: "Tooth of Bat"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Familiar (Lv 80)"
+    - id: 951
+      name: "Fin"
+      min_price: 2472
+      max_price: 4120
+      mobs: "Strouf (Lv 61)"
+    - id: 1036
+      name: "Dragon Scale"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Petite (Lv 79)"
+    - id: 7009
+      name: "Glitter Shell"
+      min_price: 3168
+      max_price: 5280
+      mobs: "Brilight (Lv 71)"
+    - id: 7171
+      name: "Leopard Skin"
+      min_price: 1692
+      max_price: 2820
+      mobs: "Baby Leopard (Lv 68)"
+    - id: 1050
+      name: "Tendon"
+      min_price: 1320
+      max_price: 2200
+      mobs: "Marine Sphere (Lv 51)"
+    - id: 948
+      name: "Bear's Footskin"
+      min_price: 1044
+      max_price: 1740
+      mobs: "Sasquatch (Lv 72)"
+    - id: 7099
+      name: "Worn-out Magic Scroll"
+      min_price: 4632
+      max_price: 7720
+      mobs: "Elusive Vavayaga (Lv 87)"
+    - id: 7126
+      name: "Large Jellopy"
+      min_price: 5040
+      max_price: 8400
+      mobs: "Photon Cannon (Lv 66)"
+    - id: 7850
+      name: "Wooden Block"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Baby Hatii (Lv 94)"
+    - id: 909
+      name: "Jellopy"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Poring (Lv 99)"
+    - id: 1013
+      name: "Rainbow Shell"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Ungoliant Ringleader (Lv 94)"
+    - id: 711
+      name: "Shoot"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Swift Les (Lv 82)"
+    - id: 1041
+      name: "Lantern"
+      min_price: 1500
+      max_price: 2500
+      mobs: "Elusive Pitman (Lv 90)"
+    - id: 7938
+      name: "Light Granule"
+      min_price: 9000
+      max_price: 15000
+      mobs: "Furious Mimic (Lv 56)"
+    - id: 1002
+      name: "Iron Ore"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Metaling (Lv 81)"
+    - id: 903
+      name: "Reptile Tongue"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Grove (Lv 55)"
+    - id: 992
+      name: "Wind of Verdure"
+      min_price: 6000
+      max_price: 10000
+      mobs: "Solid Grand Peco (Lv 75)"
+    - id: 1003
+      name: "Coal"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Solid Banaspaty (Lv 85)"
+    - id: 7299
+      name: "Straw Basket"
+      min_price: 3792
+      max_price: 6320
+      mobs: "Kraben (Lv 70)"
+    - id: 984
+      name: "Oridecon"
+      min_price: 6600
+      max_price: 11000
+      mobs: "Treasure Chest (Lv 99)"
+    - id: 1022
+      name: "Nine Tails"
+      min_price: 3900
+      max_price: 6500
+      mobs: "Nine Tail (Lv 72)"
+    - id: 1063
+      name: "Fang"
+      min_price: 4080
+      max_price: 6800
+      mobs: "Orc Archer (Lv 78)"
+    - id: 7007
+      name: "Claw of Rat"
+      min_price: 4488
+      max_price: 7480
+      mobs: "Cramp (Lv 82)"
+    - id: 7162
+      name: "Cloud Crumb"
+      min_price: 2340
+      max_price: 3900
+      mobs: "Taoist Hermit (Lv 96)"
+    - id: 726
+      name: "Sapphire"
+      min_price: 27000
+      max_price: 45000
+      mobs: "Mobster (Lv 58)"
+    - id: 7161
+      name: "Black Bear Skin"
+      min_price: 2304
+      max_price: 3840
+      mobs: "Zipper Bear (Lv 90)"
+    - id: 7195
+      name: "Slingshot"
+      min_price: 1260
+      max_price: 2100
+      mobs: "Wootan Shooter (Lv 67)"
+    - id: 6244
+      name: "Gun Powder"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Pitman (Lv 90)"
+    - id: 7067
+      name: "Stone Fragment"
+      min_price: 3840
+      max_price: 6400
+      mobs: "Solid Solider (Lv 92)"
+    - id: 7070
+      name: "Broken Shell"
+      min_price: 5400
+      max_price: 9000
+      mobs: "Freezer Ringleader (Lv 94)"
+    - id: 7189
+      name: "Wooden Heart"
+      min_price: 4080
+      max_price: 6800
+      mobs: "Wooden Golem (Lv 72)"
+    - id: 7262
+      name: "Folding Fan of Cat Ghost"
+      min_price: 2796
+      max_price: 4660
+      mobs: "Mao Guai (Lv 89)"
+    - id: 7561
+      name: "Glacial Heart"
+      min_price: 3636
+      max_price: 6060
+      mobs: "Enraged Devotee (Lv 82)"
+    - id: 6265
+      name: "Pineapple"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Solid Parasite (Lv 76)"
+    - id: 1011
+      name: "Emveretarcon"
+      min_price: 6000
+      max_price: 10000
+      mobs: "Solid Mineral (Lv 96)"
+    - id: 910
+      name: "Garlet"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Magnolia (Lv 53)"
+    - id: 7268
+      name: "Little Ghost Doll"
+      min_price: 7260
+      max_price: 12100
+      mobs: "Elusive Zhu Po Long (Lv 82)"
+    - id: 7752
+      name: "Clattering Skull"
+      min_price: 5040
+      max_price: 8400
+      mobs: "Enraged Devotee (Lv 85)"
+    - id: 1015
+      name: "Tongue"
+      min_price: 3168
+      max_price: 5280
+      mobs: "Rybio (Lv 98)"
+    - id: 7319
+      name: "Used Iron Plate"
+      min_price: 6144
+      max_price: 10240
+      mobs: "Old Stove (Lv 92)"
+    - id: 1098
+      name: "Manacles"
+      min_price: 3948
+      max_price: 6580
+      mobs: "Skeleton Prisoner (Lv 91)"
+    - id: 7159
+      name: "Tengu Nose"
+      min_price: 2400
+      max_price: 4000
+      mobs: "Tengu (Lv 98)"
+    - id: 7167
+      name: "Strange Steel Piece"
+      min_price: 2580
+      max_price: 4300
+      mobs: "Zipper Bear (Lv 90)"
+    - id: 7200
+      name: "Elastic Band"
+      min_price: 2280
+      max_price: 3800
+      mobs: "Wootan Shooter (Lv 67)"
+    - id: 918
+      name: "Sticky Webfoot"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Kikimora (Lv 85)"
+    - id: 6214
+      name: "Smoke Powder"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Furious Shinobi (Lv 95)"
+    - id: 7112
+      name: "Sharp Paper"
+      min_price: 5436
+      max_price: 9060
+      mobs: "The Paper (Lv 97)"
+    - id: 7172
+      name: "Leopard Claw"
+      min_price: 1740
+      max_price: 2900
+      mobs: "Baby Leopard (Lv 68)"
+    - id: 949
+      name: "Feather"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Strouf (Lv 61)"
+    - id: 7097
+      name: "Burning Heart"
+      min_price: 5544
+      max_price: 9240
+      mobs: "Kaho (Lv 98)"
+    - id: 7027
+      name: "Key of Underground"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elder (Lv 92)"
+    - id: 7315
+      name: "Dark Crystal Fragment"
+      min_price: 2532
+      max_price: 4220
+      mobs: "Obsidian (Lv 97)"
+    - id: 7032
+      name: "Piece of Egg Shell"
+      min_price: 1008
+      max_price: 1680
+      mobs: "Runaway Dandelion Member (Lv 90)"
+    - id: 6215
+      name: "Tear Gas"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Venomous Ringleader (Lv 87)"
+    - id: 6213
+      name: "Explosive Powder"
+      min_price: 3000
+      max_price: 5000
+      mobs: "Furious Noxious (Lv 87)"
+    - id: 1051
+      name: "Detonator"
+      min_price: 2700
+      max_price: 4500
+      mobs: "Marine Sphere (Lv 51)"
+    - id: 7444
+      name: "Treasure Box"
+      min_price: 1800000
+      max_price: 3000000
+      mobs: "Treasure Chest (Lv 99)"
+    - id: 7269
+      name: "Pinafore"
+      min_price: 5760
+      max_price: 9600
+      mobs: "Baby Hatii (Lv 94)"
+    - id: 999
+      name: "Steel"
+      min_price: 6000
+      max_price: 10000
+      mobs: "Elusive Pitman (Lv 90)"
+    - id: 728
+      name: "Topaz"
+      min_price: 27000
+      max_price: 45000
+      mobs: "Solid Mineral (Lv 96)"
+    - id: 955
+      name: "Worm Peeling"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Furious Beetle King (Lv 55)"
+    - id: 6264
+      name: "Melon"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Elusive Grove (Lv 55)"
+    - id: 1058
+      name: "Moth Wings"
+      min_price: 1200
+      max_price: 2000
+      mobs: "Furious Dustiness (Lv 62)"
+    - id: 7026
+      name: "Key of Clock Tower"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Clock Tower Manager (Lv 90)"
+    - id: 1764
+      name: "Sharp Arrow"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Raydric Archer (Lv 82)"
+    - id: 7263
+      name: "Cat's Eye"
+      min_price: 5724
+      max_price: 9540
+      mobs: "Mao Guai (Lv 89)"
+    - id: 7016
+      name: "Spoon Stub"
+      min_price: 15000
+      max_price: 25000
+      mobs: "Runaway Dandelion Member (Lv 90)"
+    - id: 902
+      name: "Tree Root"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Runaway Dandelion Member (Lv 90)"
+    - id: 1096
+      name: "Round Shell"
+      min_price: 4680
+      max_price: 7800
+      mobs: "Swift Dragon Tail (Lv 86)"
+    - id: 1039
+      name: "Little Evil Wing"
+      min_price: 12000
+      max_price: 20000
+      mobs: "Solid Deviruchi (Lv 93)"
+    - id: 983
+      name: "Black Dyestuffs"
+      min_price: 48000
+      max_price: 80000
+      mobs: "Renovated Amdarais (Lv 99)"
+    - id: 6245
+      name: "Black Powder"
+      min_price: 1000
+      max_price: 1500
+      mobs: "Renovated Amdarais (Lv 99)"
+    - id: 7449
+      name: "Bloody Page"
+      min_price: 4080
+      max_price: 6800
+      mobs: "Enraged Devotee (Lv 82)"
+    - id: 7122
+      name: "Burning Hair"
+      min_price: 5844
+      max_price: 9740
+      mobs: "Enraged Dog (Lv 85)"
+
+tier_3:
+  name: "3rd Class Early (Lv 100 - 140)"
+  min_level: 100
+  max_level: 140
+  items:
+    - id: 937
+      name: "Venom Canine"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Anacondaq (Lv 100)"
+    - id: 932
+      name: "Skel-Bone"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Necromancer Ringleader (Lv 133)"
+    - id: 1034
+      name: "Blue Hair"
+      min_price: 2394
+      max_price: 3762
+      mobs: "Swift Kobold Archer (Lv 108)"
+    - id: 1048
+      name: "Horrendous Hair"
+      min_price: 5600
+      max_price: 8800
+      mobs: "Swift Medusa (Lv 102)"
+    - id: 7054
+      name: "Brigan"
+      min_price: 5222
+      max_price: 8206
+      mobs: "Swift Raydric (Lv 115)"
+    - id: 7003
+      name: "Anolian Skin"
+      min_price: 6776
+      max_price: 10648
+      mobs: "Furious Anolian (Lv 109)"
+    - id: 7004
+      name: "Mud Lump"
+      min_price: 6132
+      max_price: 9636
+      mobs: "Elusive Sting (Lv 104)"
+    - id: 7005
+      name: "Skull"
+      min_price: 7308
+      max_price: 11484
+      mobs: "Furious Wanderer (Lv 120)"
+    - id: 912
+      name: "Zargon"
+      min_price: 2520
+      max_price: 3960
+      mobs: "Swift Centipede (Lv 125)"
+    - id: 1059
+      name: "Fabric"
+      min_price: 2142
+      max_price: 3366
+      mobs: "Elusive Wraith Dead (Nig (Lv 110)"
+    - id: 1042
+      name: "Bug Leg"
+      min_price: 3010
+      max_price: 4730
+      mobs: "Swift Centipede (Lv 125)"
+    - id: 948
+      name: "Bear's Footskin"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Solid Leib Olmai (Lv 118)"
+    - id: 953
+      name: "Stone Heart"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Elusive Bradium Golem (Lv 133)"
+    - id: 941
+      name: "Nose Ring"
+      min_price: 3976
+      max_price: 6248
+      mobs: "Furious Majoruros (Lv 107)"
+    - id: 967
+      name: "Turtle Shell"
+      min_price: 4760
+      max_price: 7480
+      mobs: "Assaulter Ringleader (Lv 100)"
+    - id: 7095
+      name: "Metal Fragment"
+      min_price: 7518
+      max_price: 11814
+      mobs: "Furious Apocalypse (Lv 121)"
+    - id: 7006
+      name: "Wing of Red Bat"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Explosion (Lv 100)"
+    - id: 1060
+      name: "Golden Hair"
+      min_price: 3010
+      max_price: 4730
+      mobs: "Elusive Violy (Lv 118)"
+    - id: 7214
+      name: "Bat Cage"
+      min_price: 6160
+      max_price: 9680
+      mobs: "Swift Loli Ruri (Lv 109)"
+    - id: 7216
+      name: "Red Muffler"
+      min_price: 4620
+      max_price: 7260
+      mobs: "Elusive Disguise (Lv 103)"
+    - id: 7220
+      name: "Ectoplasm"
+      min_price: 2254
+      max_price: 3542
+      mobs: "Furious Lude (Lv 101)"
+    - id: 7317
+      name: "Rusty Screw"
+      min_price: 3738
+      max_price: 5874
+      mobs: "Elusive Zakudam (Lv 115)"
+    - id: 7319
+      name: "Used Iron Plate"
+      min_price: 7168
+      max_price: 11264
+      mobs: "Remover Ringleader (Lv 121)"
+    - id: 7115
+      name: "Harpy Feather"
+      min_price: 7994
+      max_price: 12562
+      mobs: "Elusive Hill Wind (Lv 101)"
+    - id: 1097
+      name: "Worn Out Page"
+      min_price: 6636
+      max_price: 10428
+      mobs: "Swift Death Word (Lv 114)"
+    - id: 7561
+      name: "Glacial Heart"
+      min_price: 4242
+      max_price: 6666
+      mobs: "Swift Ice Titan (Lv 110)"
+    - id: 1040
+      name: "Elder Pixie's Moustache"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Knocker Ringleader (Lv 126)"
+    - id: 6020
+      name: "Fur"
+      min_price: 4928
+      max_price: 7744
+      mobs: "Solid Tatacho (Lv 128)"
+    - id: 905
+      name: "Stem"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Solid Nephentes (Lv 114)"
+    - id: 7100
+      name: "Sharp Leaf"
+      min_price: 5642
+      max_price: 8866
+      mobs: "Solid Dark Pinguicula (Lv 113)"
+    - id: 6324
+      name: "Single Horned Helmet"
+      min_price: 4914
+      max_price: 7722
+      mobs: "Swift Uni-horn Scaraba (Lv 130)"
+    - id: 6322
+      name: "Antler Helmet"
+      min_price: 5600
+      max_price: 8800
+      mobs: "Elusive Antler Scaraba (Lv 136)"
+    - id: 6321
+      name: "Rakehorn Helm"
+      min_price: 5754
+      max_price: 9042
+      mobs: "Furious Rake Scaraba (Lv 139)"
+    - id: 6325
+      name: "White Spider Limb"
+      min_price: 7028
+      max_price: 11044
+      mobs: "Dolomedes Ringleader (Lv 132)"
+    - id: 962
+      name: "Tentacle"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Lamp Rey (Lv 110)"
+    - id: 6508
+      name: "Silver Bracelet"
+      min_price: 2100
+      max_price: 3300
+      mobs: "Manananggal Ringleader (Lv 107)"
+    - id: 6905
+      name: "Broken Magic Stone"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Infinite Vocal (Lv 105)"
+    - id: 7221
+      name: "Tangled Chains"
+      min_price: 5180
+      max_price: 8140
+      mobs: "Elusive Disguise (Lv 103)"
+    - id: 930
+      name: "Rotten Bandage"
+      min_price: 2450
+      max_price: 3850
+      mobs: "Mummy (Nightmare) (Lv 117)"
+    - id: 929
+      name: "Immortal Heart"
+      min_price: 2618
+      max_price: 4114
+      mobs: "Verit (Nightmare) (Lv 115)"
+    - id: 957
+      name: "Decayed Nail"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Zombie (Lv 100)"
+    - id: 902
+      name: "Tree Root"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Willow (Lv 101)"
+    - id: 7511
+      name: "Rune of Darkness"
+      min_price: 17682
+      max_price: 27786
+      mobs: "Solid Skogul (Lv 126)"
+    - id: 7122
+      name: "Burning Hair"
+      min_price: 6818
+      max_price: 10714
+      mobs: "Furious Explosion (Lv 100)"
+    - id: 7225
+      name: "Pumpkin Lantern"
+      min_price: 3402
+      max_price: 5346
+      mobs: "Furious Lude (Lv 101)"
+    - id: 917
+      name: "Talon"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Condor (Lv 101)"
+    - id: 921
+      name: "Mushroom Spore"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Spore (Lv 101)"
+    - id: 926
+      name: "Snake Scale"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Boa (Lv 103)"
+    - id: 949
+      name: "Feather"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Caterpillar (Lv 121)"
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Swift Zombie Slaughter (Lv 124)"
+    - id: 7097
+      name: "Burning Heart"
+      min_price: 6468
+      max_price: 10164
+      mobs: "Elusive Salamander (Lv 138)"
+    - id: 7219
+      name: "Striped Sock"
+      min_price: 6440
+      max_price: 10120
+      mobs: "Swift Loli Ruri (Lv 109)"
+    - id: 7116
+      name: "Harpy Talon"
+      min_price: 8470
+      max_price: 13310
+      mobs: "Elusive Hill Wind (Lv 101)"
+    - id: 7507
+      name: "Solid Iron Piece"
+      min_price: 5894
+      max_price: 9262
+      mobs: "Furious Alicel (Lv 115)"
+    - id: 7066
+      name: "Ice Cubic"
+      min_price: 4620
+      max_price: 7260
+      mobs: "Swift Ice Titan (Lv 110)"
+    - id: 7565
+      name: "Sticky Poison"
+      min_price: 2450
+      max_price: 3850
+      mobs: "Elusive Muscipular (Lv 105)"
+    - id: 1032
+      name: "Maneater Blossom"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Elusive Muscipular (Lv 105)"
+    - id: 7752
+      name: "Clattering Skull"
+      min_price: 5880
+      max_price: 9240
+      mobs: "Swift Zombie Slaughter (Lv 124)"
+    - id: 7753
+      name: "Broken Farming Utensil"
+      min_price: 2310
+      max_price: 3630
+      mobs: "Swift Zombie Slaughter (Lv 124)"
+    - id: 919
+      name: "Animal Skin"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Elusive Galion (Lv 100)"
+    - id: 7751
+      name: "Old White Cloth"
+      min_price: 3850
+      max_price: 6050
+      mobs: "Elusive Banshee Master (Lv 118)"
+    - id: 6021
+      name: "Peaked Hat"
+      min_price: 3024
+      max_price: 4752
+      mobs: "Solid Tatacho (Lv 128)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 3136
+      max_price: 4928
+      mobs: "Elusive Luciola Vespa (Lv 109)"
+    - id: 6041
+      name: "Strong Vine"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Solid Nephentes (Lv 114)"
+    - id: 7188
+      name: "Brown Root"
+      min_price: 3920
+      max_price: 6160
+      mobs: "Solid Dark Pinguicula (Lv 113)"
+    - id: 6073
+      name: "Dragon's Mane"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Solid Draco (Lv 114)"
+    - id: 7067
+      name: "Stone Fragment"
+      min_price: 4480
+      max_price: 7040
+      mobs: "Elusive Bradium Golem (Lv 133)"
+    - id: 6319
+      name: "Small Bradium"
+      min_price: 2268
+      max_price: 3564
+      mobs: "Dolomedes Ringleader (Lv 132)"
+    - id: 6394
+      name: "Golden Feather"
+      min_price: 3402
+      max_price: 5346
+      mobs: "Miming Ringleader (Lv 140)"
+    - id: 1024
+      name: "Squid Ink"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Lamp Rey (Lv 110)"
+    - id: 7798
+      name: "Fragment of Darkness"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Furious Incarnation of M (Lv 132)"
+    - id: 7564
+      name: "Rotten Meat"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Elusive Galion (Lv 100)"
+    - id: 705
+      name: "Clover"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Lunatic (Lv 100)"
+    - id: 914
+      name: "Fluff"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Fabre (Lv 100)"
+    - id: 916
+      name: "Feather of Birds"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Picky (Lv 100)"
+    - id: 935
+      name: "Shell"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Chonchon (Lv 105)"
+    - id: 7068
+      name: "Burnt Tree"
+      min_price: 5054
+      max_price: 7942
+      mobs: "Furious Skeleton General (Lv 139)"
+    - id: 1061
+      name: "Witched Starsand"
+      min_price: 3388
+      max_price: 5324
+      mobs: "Solid Tatacho (Lv 128)"
+    - id: 7094
+      name: "Fragment"
+      min_price: 9408
+      max_price: 14784
+      mobs: "Furious Apocalypse (Lv 121)"
+    - id: 7093
+      name: "Cogwheel"
+      min_price: 10584
+      max_price: 16632
+      mobs: "Furious Apocalypse (Lv 121)"
+    - id: 1769
+      name: "Mute Arrow"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Gargoyle Ringleader (Lv 100)"
+    - id: 7512
+      name: "Burnt Part"
+      min_price: 11200
+      max_price: 17600
+      mobs: "Furious Alicel (Lv 115)"
+    - id: 1033
+      name: "Maneater Root"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Elusive Muscipular (Lv 105)"
+    - id: 7198
+      name: "Huge Leaf"
+      min_price: 4270
+      max_price: 6710
+      mobs: "Solid Dark Pinguicula (Lv 113)"
+    - id: 7032
+      name: "Piece of Egg Shell"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Faceworm Egg (Lv 140)"
+    - id: 6511
+      name: "Beautiful Flower"
+      min_price: 2100
+      max_price: 3300
+      mobs: "Manananggal Ringleader (Lv 107)"
+    - id: 6510
+      name: "Elegant Flower"
+      min_price: 2100
+      max_price: 3300
+      mobs: "Manananggal Ringleader (Lv 107)"
+    - id: 913
+      name: "Tooth of Bat"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Manananggal Ringleader (Lv 107)"
+    - id: 6509
+      name: "Mysterious Flower"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Elusive Tiyanak (Lv 105)"
+    - id: 6223
+      name: "Carnium"
+      min_price: 14000
+      max_price: 22000
+      mobs: "Matt Drainliar (Lv 137)"
+    - id: 920
+      name: "Wolf Claw"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Wolf (Lv 103)"
+    - id: 955
+      name: "Worm Peeling"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Centipede Larva (Lv 118)"
+    - id: 1021
+      name: "Dokebi Horn"
+      min_price: 2044
+      max_price: 3212
+      mobs: "Dokebi (Lv 102)"
+    - id: 952
+      name: "Cactus Needle"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Muka (Lv 104)"
+    - id: 925
+      name: "Bill of Birds"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Peco Peco (Lv 104)"
+    - id: 1062
+      name: "Jack o' Pumpkin"
+      min_price: 2618
+      max_price: 4114
+      mobs: "Jakk (Lv 100)"
+    - id: 958
+      name: "Horrendous Mouth"
+      min_price: 2730
+      max_price: 4290
+      mobs: "Zombie (Lv 140)"
+    - id: 6023
+      name: "Mystic Horn"
+      min_price: 7000
+      max_price: 11000
+      mobs: "Cornus (Lv 120)"
+    - id: 940
+      name: "Grasshopper's Leg"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Infinite Vocal (Lv 105)"
+    - id: 6940
+      name: "Moving Black Material"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Butcher Soldier (Lv 115)"
+    - id: 934
+      name: "Memento"
+      min_price: 4200
+      max_price: 6600
+      mobs: "Swift Banshee (Lv 130)"
+    - id: 716
+      name: "Red Gemstone"
+      min_price: 3150
+      max_price: 4950
+      mobs: "Elusive Wraith Dead (Nig (Lv 110)"
+    - id: 7939
+      name: "Elder Branch"
+      min_price: 10500
+      max_price: 16500
+      mobs: "Solid Dark Pinguicula (Lv 113)"
+    - id: 7117
+      name: "Torn Magic Book"
+      min_price: 7994
+      max_price: 12562
+      mobs: "Necromancer Ringleader (Lv 133)"
+    - id: 7449
+      name: "Bloody Page"
+      min_price: 4760
+      max_price: 7480
+      mobs: "Death Word Ringleader (Lv 114)"
+    - id: 6323
+      name: "Two-Horned Helmet"
+      min_price: 5096
+      max_price: 8008
+      mobs: "Two-Horned Scaraba (Lv 134)"
+    - id: 7568
+      name: "White Mask"
+      min_price: 7420
+      max_price: 11660
+      mobs: "Enraged Devotee (Lv 133)"
+    - id: 1096
+      name: "Round Shell"
+      min_price: 5460
+      max_price: 8580
+      mobs: "Maggot (Lv 133)"
+    - id: 740
+      name: "Puppet"
+      min_price: 7000
+      max_price: 11000
+      mobs: "Elusive Violy (Lv 118)"
+    - id: 715
+      name: "Yellow Gemstone"
+      min_price: 3150
+      max_price: 4950
+      mobs: "Wizard of the Truth (Lv 118)"
+    - id: 7069
+      name: "Destroyed Armor"
+      min_price: 7294
+      max_price: 11462
+      mobs: "Assaulter Ringleader (Lv 100)"
+    - id: 1068
+      name: "Barren Trunk"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Willow (Lv 101)"
+    - id: 7157
+      name: "Dark Mask"
+      min_price: 2198
+      max_price: 3454
+      mobs: "Temple Guard (Lv 130)"
+    - id: 944
+      name: "Horseshoe"
+      min_price: 4116
+      max_price: 6468
+      mobs: "Nightmare (Lv 100)"
+    - id: 1022
+      name: "Nine Tails"
+      min_price: 4550
+      max_price: 7150
+      mobs: "Angry Nine Tail (Lv 116)"
+    - id: 712
+      name: "Flower"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Papila (Lv 138)"
+    - id: 7030
+      name: "Claw of Desert Wolf"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Desert Wolf (Lv 103)"
+    - id: 904
+      name: "Scorpion Tail"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Scorpion (Lv 105)"
+    - id: 945
+      name: "Raccoon Leaf"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Smokie (Lv 102)"
+    - id: 906
+      name: "Pointed Scale"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Wormtail (Lv 102)"
+    - id: 965
+      name: "Clam Shell"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Sea Otter (Lv 107)"
+    - id: 959
+      name: "Stinky Scale"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Megalodon (Lv 108)"
+    - id: 1064
+      name: "Reins"
+      min_price: 5614
+      max_price: 8822
+      mobs: "Abysmal Knight (Lv 122)"
+    - id: 7218
+      name: "Decomposed Rope"
+      min_price: 2730
+      max_price: 4290
+      mobs: "Gibbet (Lv 105)"
+    - id: 7217
+      name: "Spool"
+      min_price: 2968
+      max_price: 4664
+      mobs: "Heirozoist (Lv 102)"
+    - id: 7053
+      name: "Cyfar"
+      min_price: 5404
+      max_price: 8492
+      mobs: "Galapago (Lv 107)"
+    - id: 1056
+      name: "Grit"
+      min_price: 2142
+      max_price: 3366
+      mobs: "Sandman (Lv 106)"
+    - id: 7197
+      name: "Tough Vines"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Dryad (Lv 109)"
+    - id: 1038
+      name: "Little Evil Horn"
+      min_price: 3696
+      max_price: 5808
+      mobs: "Fatal Days (Lv 120)"
+    - id: 1037
+      name: "Dragon Tail"
+      min_price: 8400
+      max_price: 13200
+      mobs: "Solid Draco (Lv 114)"
+    - id: 1036
+      name: "Dragon Scale"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Solid Draco (Lv 114)"
+    - id: 7340
+      name: "Will of the Darkness"
+      min_price: 5138
+      max_price: 8074
+      mobs: "Hodremlin Ringleader (Lv 122)"
+    - id: 7563
+      name: "Bloody Rune"
+      min_price: 14112
+      max_price: 22176
+      mobs: "Hodremlin Ringleader (Lv 122)"
+    - id: 7312
+      name: "Jubilee"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Heavy Metaling (Lv 107)"
+    - id: 7326
+      name: "Fluorescent Liquid"
+      min_price: 4984
+      max_price: 7832
+      mobs: "Aqua Elemental (Lv 121)"
+    - id: 1026
+      name: "Acorn"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Rata (Lv 131)"
+    - id: 951
+      name: "Fin"
+      min_price: 2884
+      max_price: 4532
+      mobs: "Sropho (Lv 113)"
+    - id: 718
+      name: "Garnet"
+      min_price: 42000
+      max_price: 66000
+      mobs: "Elusive Lady Solace (Lv 123)"
+    - id: 723
+      name: "Ruby"
+      min_price: 31500
+      max_price: 49500
+      mobs: "Furious Baroness of Retr (Lv 121)"
+    - id: 6086
+      name: "Withered Flower"
+      min_price: 6230
+      max_price: 9790
+      mobs: "Solid Dark Pinguicula (Lv 113)"
+    - id: 728
+      name: "Topaz"
+      min_price: 31500
+      max_price: 49500
+      mobs: "Dame of Sentinel Ringlea (Lv 127)"
+    - id: 7799
+      name: "Crystal of Darkness"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Furious Incarnation of M (Lv 132)"
+    - id: 947
+      name: "Horn"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Floating Word (Lv 110)"
+    - id: 1098
+      name: "Manacles"
+      min_price: 4606
+      max_price: 7238
+      mobs: "Old Friendship (Lv 110)"
+    - id: 1050
+      name: "Tendon"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Fatal Days (Lv 120)"
+    - id: 25279
+      name: "Crude Ammo"
+      min_price: 2100
+      max_price: 3300
+      mobs: "Buffalo Bandit Sharpsho (Lv 103)"
+    - id: 25278
+      name: "Bandit's Scarf"
+      min_price: 2310
+      max_price: 3630
+      mobs: "Buffalo Bandit Duelist (Lv 101)"
+    - id: 25283
+      name: "Brown Muffler"
+      min_price: 2940
+      max_price: 4620
+      mobs: "Bowie Buffalo Bandit (Lv 107)"
+    - id: 25276
+      name: "Clean Bone"
+      min_price: 2436
+      max_price: 3828
+      mobs: "Coyote (Lv 110)"
+    - id: 25284
+      name: "Swamp Bug Shell"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Swamp Arclouze (Lv 106)"
+    - id: 25285
+      name: "Brown Rat Tail"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Brown Rat (Lv 101)"
+    - id: 25159
+      name: "Heart Hunter's Seal"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Heart Hunter Skirmisher (Lv 130)"
+    - id: 1023
+      name: "Fish Tail"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Boiled Water Phen (Lv 139)"
+    - id: 956
+      name: "Gill"
+      min_price: 2394
+      max_price: 3762
+      mobs: "Boiled Water Marc (Lv 137)"
+    - id: 7168
+      name: "Giant Butterfly Wing"
+      min_price: 4298
+      max_price: 6754
+      mobs: "Aries (Lv 140)"
+    - id: 7210
+      name: "Armor Piece of Dullahan"
+      min_price: 5530
+      max_price: 8690
+      mobs: "Dullahan (Lv 108)"
+    - id: 7007
+      name: "Claw of Rat"
+      min_price: 5236
+      max_price: 8228
+      mobs: "Sewage Cramp (Lv 140)"
+    - id: 924
+      name: "Powder of Butterfly"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Creamy Fear (Lv 117)"
+    - id: 1025
+      name: "Cobweb"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Giant Spider (Lv 117)"
+    - id: 7096
+      name: "Lava"
+      min_price: 7756
+      max_price: 12188
+      mobs: "Lava Golem (Lv 103)"
+    - id: 7064
+      name: "Wing of Dragonfly"
+      min_price: 3640
+      max_price: 5720
+      mobs: "Dragon Tail (Lv 106)"
+    - id: 1045
+      name: "Cultish Masque"
+      min_price: 2884
+      max_price: 4532
+      mobs: "Anubis (Lv 105)"
+    - id: 7215
+      name: "Broken Needle"
+      min_price: 4830
+      max_price: 7590
+      mobs: "Heirozoist (Lv 102)"
+    - id: 7072
+      name: "Old Shuriken"
+      min_price: 12460
+      max_price: 19580
+      mobs: "Assaulter Ringleader (Lv 100)"
+    - id: 7065
+      name: "Sea-Otter Fur"
+      min_price: 5740
+      max_price: 9020
+      mobs: "Sea Otter (Lv 107)"
+    - id: 7120
+      name: "Burning Horseshoe"
+      min_price: 5754
+      max_price: 9042
+      mobs: "Furious Nightmare Terror (Lv 107)"
+    - id: 1035
+      name: "Dragon Canine"
+      min_price: 3388
+      max_price: 5324
+      mobs: "Acidus (Lv 130)"
+    - id: 7222
+      name: "Wooden Gnarl"
+      min_price: 3276
+      max_price: 5148
+      mobs: "Gibbet (Lv 105)"
+    - id: 7207
+      name: "Old Manteau"
+      min_price: 7350
+      max_price: 11550
+      mobs: "Bloody Murderer (Lv 110)"
+    - id: 7325
+      name: "Flexible Tube"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Heavy Metaling (Lv 107)"
+    - id: 6498
+      name: "Jejellopy"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Jejeling (Lv 100)"
+    - id: 909
+      name: "Jellopy"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Chonchon (Lv 105)"
+    - id: 6213
+      name: "Explosive Powder"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Elusive Sting (Lv 104)"
+    - id: 7206
+      name: "Black Cat Doll"
+      min_price: 10080
+      max_price: 15840
+      mobs: "Swift Loli Ruri (Lv 109)"
+    - id: 756
+      name: "Rough Oridecon"
+      min_price: 3850
+      max_price: 6050
+      mobs: "Furious Explosion (Lv 100)"
+    - id: 1063
+      name: "Fang"
+      min_price: 4760
+      max_price: 7480
+      mobs: "Colorless Vow (Lv 110)"
+    - id: 907
+      name: "Resin"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Willow (Lv 101)"
+    - id: 1067
+      name: "Solid Trunk"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Willow (Lv 101)"
+    - id: 6921
+      name: "Dehumidifiers"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Frozen Wolf (Lv 140)"
+    - id: 6942
+      name: "Will Master"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Enchanted Archer Skelet (Lv 114)"
+    - id: 25266
+      name: "Dried Yggdrasil Leaf"
+      min_price: 3150
+      max_price: 4950
+      mobs: "Living Dead (Lv 139)"
+    - id: 25267
+      name: "Suspicious Pentacle"
+      min_price: 6790
+      max_price: 10670
+      mobs: "Living Dead (Lv 139)"
+    - id: 25257
+      name: "Bloody Love Letter"
+      min_price: 6832
+      max_price: 10736
+      mobs: "Resentful Sohee (Lv 114)"
+    - id: 25259
+      name: "Recruitment Leaflet"
+      min_price: 5446
+      max_price: 8558
+      mobs: "Deranged Adventurer (Lv 117)"
+    - id: 998
+      name: "Iron"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Assistant Bot (Lv 137)"
+    - id: 1015
+      name: "Tongue"
+      min_price: 3696
+      max_price: 5808
+      mobs: "Phendark (Lv 102)"
+    - id: 1028
+      name: "Mane"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Gullinbursti (Lv 120)"
+    - id: 936
+      name: "Scale Shell"
+      min_price: 3262
+      max_price: 5126
+      mobs: "Naga (Lv 117)"
+    - id: 7209
+      name: "Helm of Dullahan"
+      min_price: 9450
+      max_price: 14850
+      mobs: "Dullahan (Lv 108)"
+    - id: 7205
+      name: "Piece of Black Cloth"
+      min_price: 3682
+      max_price: 5786
+      mobs: "Quve (Lv 100)"
+    - id: 910
+      name: "Garlet"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Marin (Lv 103)"
+    - id: 7321
+      name: "Crystal Fragment"
+      min_price: 3864
+      max_price: 6072
+      mobs: "Cobalt Mineral (Lv 113)"
+    - id: 6032
+      name: "Horn of Hillslion"
+      min_price: 3500
+      max_price: 5500
+      mobs: "Hillthrion (Lv 123)"
+    - id: 7063
+      name: "Soft Feather"
+      min_price: 2000
+      max_price: 3080
+      mobs: "Cornus (Lv 120)"
+    - id: 6672
+      name: "Gray Shard"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Forgotten Name (Lv 120)"
+    - id: 25263
+      name: "Short Bat Hair"
+      min_price: 5530
+      max_price: 8690
+      mobs: "Matt Drainliar (Lv 137)"
+    - id: 963
+      name: "Sharp Scale"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Boiled Water Phen (Lv 139)"
+    - id: 7047
+      name: "Alice's Apron"
+      min_price: 16968
+      max_price: 26664
+      mobs: "Alice (Lv 100)"
+    - id: 1039
+      name: "Little Evil Wing"
+      min_price: 14000
+      max_price: 22000
+      mobs: "Furious Gargoyle (Lv 100)"
+    - id: 7213
+      name: "Needle Packet"
+      min_price: 5824
+      max_price: 9152
+      mobs: "E-EA1L (Lv 116)"
+    - id: 7098
+      name: "Live Coal"
+      min_price: 4466
+      max_price: 7018
+      mobs: "Imp (Lv 129)"
+    - id: 999
+      name: "Steel"
+      min_price: 7000
+      max_price: 11000
+      mobs: "Elusive Zakudam (Lv 115)"
+    - id: 1065
+      name: "Trap"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Mimic (Nightmare) (Lv 137)"
+    - id: 739
+      name: "Rouge"
+      min_price: 70000
+      max_price: 110000
+      mobs: "Solid Skogul (Lv 126)"
+    - id: 757
+      name: "Rough Elunium"
+      min_price: 4550
+      max_price: 7150
+      mobs: "Solid Skogul (Lv 126)"
+    - id: 7441
+      name: "Blue Feather"
+      min_price: 9856
+      max_price: 15488
+      mobs: "Dame of Sentinel Ringlea (Lv 127)"
+    - id: 6253
+      name: "Cold Ice"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Swift Ice Titan (Lv 110)"
+    - id: 6090
+      name: "Refined Bradium"
+      min_price: 7700
+      max_price: 12100
+      mobs: "Elusive Bradium Golem (Lv 133)"
+    - id: 6224
+      name: "Bradium"
+      min_price: 14000
+      max_price: 22000
+      mobs: "Elusive Bradium Golem (Lv 133)"
+    - id: 7012
+      name: "Tough Scalelike Stem"
+      min_price: 2884
+      max_price: 4532
+      mobs: "Dolor (Lv 122)"
+    - id: 903
+      name: "Reptile Tongue"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Green Pitaya (Lv 136)"
+    - id: 7123
+      name: "Dragon Skin"
+      min_price: 7168
+      max_price: 11264
+      mobs: "Deleter (Lv 105)"
+    - id: 7125
+      name: "Scorpion Claw"
+      min_price: 4942
+      max_price: 7766
+      mobs: "Gig (Lv 100)"
+    - id: 7208
+      name: "Rusty Kitchen Knife"
+      min_price: 12460
+      max_price: 19580
+      mobs: "Bloody Murderer (Lv 110)"
+    - id: 7347
+      name: "Research Chart"
+      min_price: 5880
+      max_price: 9240
+      mobs: "Eremes Guile (Lv 140)"
+    - id: 25129
+      name: "Unstable Energy Particle"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Eremes Guile (Lv 140)"
+    - id: 25127
+      name: "Silent Energy Particle"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Egnigem Cenia (Lv 136)"
+    - id: 7345
+      name: "Handcuffs"
+      min_price: 5068
+      max_price: 7964
+      mobs: "Wickebine Tres (Lv 132)"
+    - id: 7850
+      name: "Wooden Block"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Desert Wolf (Lv 103)"
+    - id: 7071
+      name: "Tattered Clothes"
+      min_price: 8960
+      max_price: 14080
+      mobs: "Mangkukulam (Lv 110)"
+    - id: 7938
+      name: "Light Granule"
+      min_price: 10500
+      max_price: 16500
+      mobs: "Mimic (Nightmare) (Lv 137)"
+    - id: 7440
+      name: "Red Feather"
+      min_price: 9338
+      max_price: 14674
+      mobs: "Furious Baroness of Retr (Lv 121)"
+    - id: 6217
+      name: "Mandragora Flowerpot"
+      min_price: 14000
+      max_price: 22000
+      mobs: "Elusive Muscipular (Lv 105)"
+    - id: 6751
+      name: "Crushed Can Iron Plate"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Step (Lv 130)"
+    - id: 1066
+      name: "Fine-grained Trunk"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Willow (Lv 101)"
+    - id: 25157
+      name: "Fallen Leaves Branch"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Human Kimera (Lv 100)"
+    - id: 25158
+      name: "Core Jelly"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Material Kimera (Lv 100)"
+    - id: 25265
+      name: "Shining Spore"
+      min_price: 2394
+      max_price: 3762
+      mobs: "Black Mushroom (Lv 130)"
+    - id: 25297
+      name: "Frozen Stone Fragment"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Angry Gazeti (Lv 126)"
+    - id: 25299
+      name: "Snowball"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Angry Snowier (Lv 129)"
+    - id: 25298
+      name: "Spirit Jewel"
+      min_price: 2000
+      max_price: 3000
+      mobs: "Angry Ice Titan (Lv 133)"
+    - id: 6089
+      name: "Dark Piece"
+      min_price: 7000
+      max_price: 11000
+      mobs: "A013 - Caput (Lv 110)"
+    - id: 1019
+      name: "Trunk"
+      min_price: 2000
+      max_price: 3000
+      mobs: "A013 - Dolor (Lv 111)"
+    - id: 7194
+      name: "Soft Blade of Grass"
+      min_price: 2800
+      max_price: 4400
+      mobs: "Verporta (Lv 136)"
+
+tier_4:
+  name: "3rd Class Mid/High (Lv 141 - 175)"
+  min_level: 141
+  max_level: 175
+  items:
+    - id: 7345
+      name: "Handcuffs"
+      min_price: 5792
+      max_price: 8688
+      mobs: "Celia Ringleader (Lv 141)"
+    - id: 7205
+      name: "Piece of Black Cloth"
+      min_price: 4208
+      max_price: 6312
+      mobs: "Swift Dark Shadow (Lv 147)"
+    - id: 7005
+      name: "Skull"
+      min_price: 8352
+      max_price: 12528
+      mobs: "Furious Wanderer (Nightm (Lv 151)"
+    - id: 1034
+      name: "Blue Hair"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Furious Dark Hammer Kobo (Lv 142)"
+    - id: 6557
+      name: "Fancy Fairy Wing"
+      min_price: 18800
+      max_price: 28200
+      mobs: "Elusive Menblatt (Lv 143)"
+    - id: 7163
+      name: "Hard Feeler"
+      min_price: 4560
+      max_price: 6840
+      mobs: "Elusive Menblatt (Lv 143)"
+    - id: 957
+      name: "Decayed Nail"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Zombie (Lv 160)"
+    - id: 905
+      name: "Stem"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Jungle Madragora (Lv 144)"
+    - id: 6086
+      name: "Withered Flower"
+      min_price: 7120
+      max_price: 10680
+      mobs: "Elusive Angra Mantis (Lv 144)"
+    - id: 6395
+      name: "Angel Magic Powder"
+      min_price: 4912
+      max_price: 7368
+      mobs: "Furious Little Fatum (Lv 142)"
+    - id: 7001
+      name: "Mould Powder"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Solid Cenere (Lv 146)"
+    - id: 6561
+      name: "Dustball"
+      min_price: 16000
+      max_price: 24000
+      mobs: "Solid Cenere (Lv 146)"
+    - id: 6560
+      name: "Leaf Bookmark"
+      min_price: 24000
+      max_price: 36000
+      mobs: "Solid Antique Book (Lv 148)"
+    - id: 913
+      name: "Tooth of Bat"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Gutsy Familiar (Lv 166)"
+    - id: 7168
+      name: "Giant Butterfly Wing"
+      min_price: 4912
+      max_price: 7368
+      mobs: "Elusive Menblatt (Lv 143)"
+    - id: 7320
+      name: "Dust Pollutant"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Solid Cenere (Lv 146)"
+    - id: 1097
+      name: "Worn Out Page"
+      min_price: 7584
+      max_price: 11376
+      mobs: "Swift Antique Book (Lv 148)"
+    - id: 998
+      name: "Iron"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Exploration Rover (Lv 168)"
+    - id: 1027
+      name: "Porcupine Quill"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Taffy (Lv 145)"
+    - id: 958
+      name: "Horrendous Mouth"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Zombie (Lv 160)"
+    - id: 944
+      name: "Horseshoe"
+      min_price: 4704
+      max_price: 7056
+      mobs: "Sweet Nightmare (Lv 141)"
+    - id: 930
+      name: "Rotten Bandage"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Mummy (Nightmare (Lv 141)"
+    - id: 1062
+      name: "Jack o' Pumpkin"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Jakk (Lv 160)"
+    - id: 955
+      name: "Worm Peeling"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Diligent Andre (Lv 167)"
+    - id: 7317
+      name: "Rusty Screw"
+      min_price: 4272
+      max_price: 6408
+      mobs: "Shining Teddy Bear (Lv 160)"
+    - id: 6940
+      name: "Moving Black Material"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Immotal Corps (Lv 158)"
+    - id: 1040
+      name: "Elder Pixie's Moustache"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Gutsy Giearth (Lv 168)"
+    - id: 7054
+      name: "Brigan"
+      min_price: 5968
+      max_price: 8952
+      mobs: "Skeleton (Lv 160)"
+    - id: 6558
+      name: "Pile Of Acorn"
+      min_price: 12000
+      max_price: 18000
+      mobs: "Petal (Lv 141)"
+    - id: 1095
+      name: "Needle of Alarm"
+      min_price: 4368
+      max_price: 6552
+      mobs: "Big Bell (Lv 163)"
+    - id: 7099
+      name: "Worn-out Magic Scroll"
+      min_price: 6176
+      max_price: 9264
+      mobs: "Arc Elder (Lv 168)"
+    - id: 919
+      name: "Animal Skin"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Taffy (Lv 145)"
+    - id: 7564
+      name: "Rotten Meat"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ominous Permeter (Lv 157)"
+    - id: 7006
+      name: "Wing of Red Bat"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Drainliar (Lv 160)"
+    - id: 7218
+      name: "Decomposed Rope"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Decorated Evil Tree (Lv 148)"
+    - id: 7201
+      name: "Log"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Tree (Lv 144)"
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Sewage Venenum (Lv 142)"
+    - id: 6089
+      name: "Dark Piece"
+      min_price: 8000
+      max_price: 12000
+      mobs: "Swift Dark Shadow (Lv 147)"
+    - id: 7322
+      name: "Toxic Gas"
+      min_price: 5328
+      max_price: 7992
+      mobs: "Solid Cenere (Lv 146)"
+    - id: 7015
+      name: "Bookclip in Memory"
+      min_price: 24000
+      max_price: 36000
+      mobs: "Swift Antique Book (Lv 148)"
+    - id: 7194
+      name: "Soft Blade of Grass"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Elusive Angra Mantis (Lv 144)"
+    - id: 25277
+      name: "Deadly Poison Powder"
+      min_price: 5152
+      max_price: 7728
+      mobs: "Gaster (Lv 141)"
+    - id: 25280
+      name: "Broken Shotgun"
+      min_price: 7280
+      max_price: 10920
+      mobs: "Elite Buffalo Bandit (Lv 148)"
+    - id: 25282
+      name: "Worn Revolver"
+      min_price: 6560
+      max_price: 9840
+      mobs: "Elite Buffalo Bandit (Lv 151)"
+    - id: 25281
+      name: "Crude Scimitar"
+      min_price: 7760
+      max_price: 11640
+      mobs: "Elite Buffalo Bandit (Lv 152)"
+    - id: 1041
+      name: "Lantern"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Hardworking Pitman (Lv 154)"
+    - id: 7321
+      name: "Crystal Fragment"
+      min_price: 4416
+      max_price: 6624
+      mobs: "Soul Fragment (Lv 153)"
+    - id: 7203
+      name: "Strong Branch"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Stone Shooter (Lv 166)"
+    - id: 25159
+      name: "Heart Hunter's Seal"
+      min_price: 4000
+      max_price: 6000
+      mobs: "High Hunter Bellare (Lv 165)"
+    - id: 7012
+      name: "Tough Scalelike Stem"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Dolor (Lv 173)"
+    - id: 7511
+      name: "Rune of Darkness"
+      min_price: 20208
+      max_price: 30312
+      mobs: "Mutant Twin Caput (Lv 175)"
+    - id: 951
+      name: "Fin"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Deep Sea Sropho (Lv 147)"
+    - id: 950
+      name: "Heart of Mermaid"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Deep Sea Obeaune (Lv 149)"
+    - id: 1053
+      name: "Ancient Tooth"
+      min_price: 4384
+      max_price: 6576
+      mobs: "Deep Sea Deviace (Lv 150)"
+    - id: 1024
+      name: "Squid Ink"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Deep Sea Marse (Lv 149)"
+    - id: 909
+      name: "Jellopy"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mushy Ant Egg (Lv 164)"
+    - id: 7004
+      name: "Mud Lump"
+      min_price: 7008
+      max_price: 10512
+      mobs: "Sewage Waterfall (Lv 141)"
+    - id: 1031
+      name: "Mantis Scythe"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Killer Mantis (Lv 141)"
+    - id: 1021
+      name: "Dokebi Horn"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Am Mut (Lv 141)"
+    - id: 7195
+      name: "Slingshot"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Wootan Shooter (Lv 164)"
+    - id: 7316
+      name: "Insect Leg"
+      min_price: 5264
+      max_price: 7896
+      mobs: "Bookworm (Lv 141)"
+    - id: 7106
+      name: "Antelope Horn"
+      min_price: 5376
+      max_price: 8064
+      mobs: "Ashen Goat (Lv 168)"
+    - id: 7347
+      name: "Research Chart"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Chen (Lv 141)"
+    - id: 7222
+      name: "Wooden Gnarl"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Decorated Evil Tree (Lv 148)"
+    - id: 6691
+      name: "Burning Feather"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Fire Condor (Lv 141)"
+    - id: 6693
+      name: "Stone Of Blessing"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Fire Golem (Lv 148)"
+    - id: 7319
+      name: "Used Iron Plate"
+      min_price: 8192
+      max_price: 12288
+      mobs: "Excavator Robot (Lv 163)"
+    - id: 6922
+      name: "Sandpaper"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Taffy (Lv 145)"
+    - id: 6924
+      name: "Red Eye"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Watcher (Lv 145)"
+    - id: 25266
+      name: "Dried Yggdrasil Leaf"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Living Dead (Lv 142)"
+    - id: 1002
+      name: "Iron Ore"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Red Teddy Bear (Lv 155)"
+    - id: 985
+      name: "Elunium"
+      min_price: 8800
+      max_price: 13200
+      mobs: "Shining Teddy Bear (Lv 160)"
+    - id: 984
+      name: "Oridecon"
+      min_price: 8800
+      max_price: 13200
+      mobs: "Shining Teddy Bear (Lv 160)"
+    - id: 1019
+      name: "Trunk"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Dolor (Lv 173)"
+    - id: 7196
+      name: "Shoulder Protector"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Wootan Fighter (Lv 167)"
+    - id: 7565
+      name: "Sticky Poison"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Dolor (Lv 173)"
+    - id: 1050
+      name: "Tendon"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Twin Caput (Lv 175)"
+    - id: 1000505
+      name: "Opaque Liquid"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Diligent Andre (Lv 167)"
+    - id: 1000506
+      name: "Shell of Awareness"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Diligent Andre (Lv 167)"
+    - id: 935
+      name: "Shell"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mushy Ant Egg (Lv 164)"
+    - id: 1000504
+      name: "Dry Sand"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Gutsy Giearth (Lv 168)"
+    - id: 912
+      name: "Zargon"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Gargoyle (Lv 150)"
+    - id: 934
+      name: "Memento"
+      min_price: 4800
+      max_price: 7200
+      mobs: "Ancient Mummy (Nightmare (Lv 141)"
+    - id: 1096
+      name: "Round Shell"
+      min_price: 6240
+      max_price: 9360
+      mobs: "Faceworm Larva (Lv 145)"
+    - id: 7200
+      name: "Elastic Band"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Wootan Shooter (Lv 164)"
+    - id: 932
+      name: "Skel-Bone"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Skeleton (Lv 160)"
+    - id: 7563
+      name: "Bloody Rune"
+      min_price: 16128
+      max_price: 24192
+      mobs: "Mutant Dolor (Lv 173)"
+    - id: 1044
+      name: "Zenorc's Fang"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Twin Caput (Lv 175)"
+    - id: 1057
+      name: "Moth Dust"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Neo Punk (Lv 155)"
+    - id: 6694
+      name: "Monster Blood"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Fire Sandman (Lv 143)"
+    - id: 6696
+      name: "Frilldora's Fiery Nape"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Fire Frilldora (Lv 147)"
+    - id: 6695
+      name: "Golem's Fiery Stone Tooth"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Fire Golem (Lv 148)"
+    - id: 7507
+      name: "Solid Iron Piece"
+      min_price: 6736
+      max_price: 10104
+      mobs: "Can Robot (Lv 155)"
+    - id: 1059
+      name: "Fabric"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Immotal Corps (Lv 158)"
+    - id: 25264
+      name: "Cluster of Nightmares"
+      min_price: 6576
+      max_price: 9864
+      mobs: "Sweet Nightmare (Lv 141)"
+    - id: 25615
+      name: "Nasarin's Soul Stone"
+      min_price: 4000
+      max_price: 6000
+      mobs: "White Teddy Bear (Lv 155)"
+    - id: 25619
+      name: "Clay Doll"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Shining Teddy Bear (Lv 160)"
+    - id: 7318
+      name: "Old Pick"
+      min_price: 4096
+      max_price: 6144
+      mobs: "Hardworking Pitman (Lv 154)"
+    - id: 7315
+      name: "Dark Crystal Fragment"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Sinister Obsidian (Lv 156)"
+    - id: 7053
+      name: "Cyfar"
+      min_price: 6176
+      max_price: 9264
+      mobs: "Ancient Tri Joint (Lv 164)"
+    - id: 7097
+      name: "Burning Heart"
+      min_price: 7392
+      max_price: 11088
+      mobs: "Rigid Kaho (Lv 173)"
+    - id: 7188
+      name: "Brown Root"
+      min_price: 4480
+      max_price: 6720
+      mobs: "Special Alnoldi (Lv 143)"
+    - id: 1035
+      name: "Dragon Canine"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Rigid Earth Deleter (Lv 173)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Killer Mantis (Lv 141)"
+    - id: 1048
+      name: "Horrendous Hair"
+      min_price: 6400
+      max_price: 9600
+      mobs: "Wicked Chimera (Lv 150)"
+    - id: 7326
+      name: "Fluorescent Liquid"
+      min_price: 5696
+      max_price: 8544
+      mobs: "Plaga (Lv 164)"
+    - id: 7298
+      name: "Fig Leaf"
+      min_price: 4304
+      max_price: 6456
+      mobs: "Special Alnoldi (Lv 143)"
+    - id: 903
+      name: "Reptile Tongue"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Green Pitaya (Lv 166)"
+    - id: 7107
+      name: "Antelope Skin"
+      min_price: 6048
+      max_price: 9072
+      mobs: "Ashen Goat (Lv 168)"
+    - id: 25129
+      name: "Unstable Energy Particle"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Seyren Windsor (Lv 142)"
+    - id: 25130
+      name: "Sinister Energy Particle"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Randel (Lv 141)"
+    - id: 1026
+      name: "Acorn"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Petal (Lv 141)"
+    - id: 6559
+      name: "Eye Drops"
+      min_price: 14240
+      max_price: 21360
+      mobs: "Faithful Manager (Lv 155)"
+    - id: 7940
+      name: "Special Alloy Trap"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Nightmare Mimic (Lv 143)"
+    - id: 7938
+      name: "Light Granule"
+      min_price: 12000
+      max_price: 18000
+      mobs: "Nightmare Mimic (Lv 143)"
+    - id: 6469
+      name: "Warrior's Will"
+      min_price: 8000
+      max_price: 12000
+      mobs: "Solid Cecil Damon (Lv 141)"
+    - id: 7215
+      name: "Broken Needle"
+      min_price: 5520
+      max_price: 8280
+      mobs: "Malicious Baby Ghost (Lv 145)"
+    - id: 7217
+      name: "Spool"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Malicious Baby Ghost (Lv 145)"
+    - id: 7213
+      name: "Needle Packet"
+      min_price: 6656
+      max_price: 9984
+      mobs: "Malicious Baby Ghost (Lv 145)"
+    - id: 1769
+      name: "Mute Arrow"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Mutant Gargoyle (Lv 150)"
+    - id: 7512
+      name: "Burnt Part"
+      min_price: 12800
+      max_price: 19200
+      mobs: "Can Robot (Lv 155)"
+    - id: 25313
+      name: "Old Shell"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ominous Assulter (Lv 160)"
+    - id: 25617
+      name: "Fine Chonchon Doll"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Blue Teddy Bear (Lv 152)"
+    - id: 6244
+      name: "Gun Powder"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Hardworking Pitman (Lv 154)"
+    - id: 25618
+      name: "Gothic Porcelain Doll"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Soul Fragment (Lv 153)"
+    - id: 25642
+      name: "Vulnerable Worm"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Tri Joint (Lv 164)"
+    - id: 25641
+      name: "Hard Mud"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Stalactic Golem (Lv 167)"
+    - id: 25640
+      name: "Potted Stone"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Megalith (Lv 166)"
+    - id: 25637
+      name: "Leaf-like Hair"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Stone Shooter (Lv 166)"
+    - id: 25636
+      name: "Shooting Stone"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Wootan Shooter (Lv 164)"
+    - id: 25635
+      name: "Wootan Warrior's Fur"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Ancient Wootan Fighter (Lv 167)"
+    - id: 7123
+      name: "Dragon Skin"
+      min_price: 8192
+      max_price: 12288
+      mobs: "Rigid Earth Deleter (Lv 173)"
+    - id: 7198
+      name: "Huge Leaf"
+      min_price: 4880
+      max_price: 7320
+      mobs: "Special Alnoldi (Lv 143)"
+    - id: 7100
+      name: "Sharp Leaf"
+      min_price: 6448
+      max_price: 9672
+      mobs: "Special Alnoldi (Lv 143)"
+    - id: 911
+      name: "Scell"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Released Spell (Lv 144)"
+    - id: 25893
+      name: "Deep Sea Fish's Tail"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Deep Sea Sropho (Lv 147)"
+    - id: 25894
+      name: "Rotten Deep Sea Fish"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Deep Sea Obeaune (Lv 149)"
+    - id: 25892
+      name: "Deep Sea Shell"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Deep Sea Deviace (Lv 150)"
+    - id: 962
+      name: "Tentacle"
+      min_price: 4000
+      max_price: 6000
+      mobs: "Deep Sea Marse (Lv 149)"
+    - id: 25895
+      name: "Deep Sea Starfish"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Deep Sea Marse (Lv 149)"
+    - id: 1054
+      name: "Ancient Lips"
+      min_price: 8000
+      max_price: 12000
+      mobs: "Deep Sea Merman (Lv 148)"
+    - id: 25896
+      name: "Deep Sea Crab"
+      min_price: 6720
+      max_price: 10080
+      mobs: "Deep Sea Merman (Lv 148)"
+
+tier_5:
+  name: "3rd Class End & Illusion (Lv 176 - 200)"
+  min_level: 176
+  max_level: 200
+  items:
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Ashring (Lv 185)"
+    - id: 940
+      name: "Grasshopper's Leg"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Ashhopper (Lv 185)"
+    - id: 1033
+      name: "Maneater Root"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Tumblering (Lv 185)"
+    - id: 920
+      name: "Wolf Claw"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Grey Wolf (Lv 187)"
+    - id: 7054
+      name: "Brigan"
+      min_price: 6714
+      max_price: 10071
+      mobs: "Contaminated Raydric Ar (Lv 184)"
+    - id: 932
+      name: "Skel-Bone"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Ice Ghost (Lv 189)"
+    - id: 712
+      name: "Flower"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Papila (Lv 188)"
+    - id: 7326
+      name: "Fluorescent Liquid"
+      min_price: 6408
+      max_price: 9612
+      mobs: "Mutant Plaga (Lv 178)"
+    - id: 7097
+      name: "Burning Heart"
+      min_price: 8316
+      max_price: 12474
+      mobs: "Volcaring (Lv 185)"
+    - id: 7312
+      name: "Jubilee"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Toxious (Lv 188)"
+    - id: 7168
+      name: "Giant Butterfly Wing"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Aries (Lv 190)"
+    - id: 25159
+      name: "Heart Hunter's Seal"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Heart Hunter Skirmisher (Lv 176)"
+    - id: 25892
+      name: "Deep Sea Shell"
+      min_price: 7560
+      max_price: 11340
+      mobs: "Deep Sea Sedora (Lv 199)"
+    - id: 25893
+      name: "Deep Sea Fish's Tail"
+      min_price: 7560
+      max_price: 11340
+      mobs: "Deep Sea Swordfish (Lv 199)"
+    - id: 25894
+      name: "Rotten Deep Sea Fish"
+      min_price: 7560
+      max_price: 11340
+      mobs: "Deep Sea Phen (Lv 199)"
+    - id: 6691
+      name: "Burning Feather"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Firewind Kite (Lv 188)"
+    - id: 7005
+      name: "Skull"
+      min_price: 9396
+      max_price: 14094
+      mobs: "Corrupted Wanderer (Lv 187)"
+    - id: 912
+      name: "Zargon"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Flame Ghost (Lv 189)"
+    - id: 7316
+      name: "Insect Leg"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Jewelry Ant (Lv 191)"
+    - id: 7120
+      name: "Burning Horseshoe"
+      min_price: 7398
+      max_price: 11097
+      mobs: "Rigid Nightmare Terror (Lv 179)"
+    - id: 7565
+      name: "Sticky Poison"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Mutant Venenum (Lv 176)"
+    - id: 998
+      name: "Iron"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Assistant Bot (Lv 187)"
+    - id: 924
+      name: "Powder of Butterfly"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Papila (Lv 188)"
+    - id: 1000225
+      name: "Potato Chips"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Spell Addicted Sanare (Lv 194)"
+    - id: 962
+      name: "Tentacle"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Deep Sea Sedora (Lv 199)"
+    - id: 963
+      name: "Sharp Scale"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Deep Sea Swordfish (Lv 199)"
+    - id: 1098
+      name: "Manacles"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Prison Breaker (Lv 186)"
+    - id: 1014
+      name: "Ant Jaw"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Jewelry Ant (Lv 191)"
+    - id: 7001
+      name: "Mould Powder"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Poisonous (Lv 188)"
+    - id: 7320
+      name: "Dust Pollutant"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Poisonous (Lv 188)"
+    - id: 7119
+      name: "Bacillus"
+      min_price: 9216
+      max_price: 13824
+      mobs: "Poisonous (Lv 188)"
+    - id: 1052
+      name: "Single Cell"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Toxious (Lv 188)"
+    - id: 7321
+      name: "Crystal Fragment"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Green Mineral (Lv 190)"
+    - id: 7318
+      name: "Old Pick"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Abyssman (Lv 190)"
+    - id: 7188
+      name: "Brown Root"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Dry Rafflesia (Lv 190)"
+    - id: 7098
+      name: "Live Coal"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Rigid Blazer (Lv 178)"
+    - id: 7298
+      name: "Fig Leaf"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Special Alnoldi (Lv 193)"
+    - id: 1059
+      name: "Fabric"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Phantom Wolf (Lv 186)"
+    - id: 7123
+      name: "Dragon Skin"
+      min_price: 9216
+      max_price: 13824
+      mobs: "Mutant Plaga (Lv 178)"
+    - id: 7004
+      name: "Mud Lump"
+      min_price: 7884
+      max_price: 11826
+      mobs: "Contaminated Sting (Lv 180)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 6000
+      max_price: 9000
+      mobs: "White Porcellio (Lv 188)"
+    - id: 7198
+      name: "Huge Leaf"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Senior Dry Rafflesia (Lv 190)"
+    - id: 7100
+      name: "Sharp Leaf"
+      min_price: 7254
+      max_price: 10881
+      mobs: "Senior Dry Rafflesia (Lv 190)"
+    - id: 7194
+      name: "Soft Blade of Grass"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Verporte (Lv 186)"
+    - id: 911
+      name: "Scell"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Powerful Spell (Lv 193)"
+    - id: 1024
+      name: "Squid Ink"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Deep Sea Sedora (Lv 199)"
+    - id: 951
+      name: "Fin"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Deep Sea Phen (Lv 199)"
+    - id: 908
+      name: "Spawn"
+      min_price: 6000
+      max_price: 9000
+      mobs: "Ash Toad (Lv 179)"
+
+tier_6:
+  name: "4th Class Master (Lv 201 - 250)"
+  min_level: 201
+  max_level: 250
+  items:
+    - id: 920
+      name: "Wolf Claw"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Hot Molar (Lv 212)"
+    - id: 25895
+      name: "Deep Sea Starfish"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deep Sea Strouf (Lv 201)"
+    - id: 25896
+      name: "Deep Sea Crab"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deep Sea King Dramoh (Lv 205)"
+    - id: 916
+      name: "Feather of Birds"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Fillia (Lv 229)"
+    - id: 7096
+      name: "Lava"
+      min_price: 11080
+      max_price: 16620
+      mobs: "Lavaeter (Lv 243)"
+    - id: 7194
+      name: "Soft Blade of Grass"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Litus (Lv 228)"
+    - id: 1001085
+      name: "Cool Liquid"
+      min_price: 14600
+      max_price: 21900
+      mobs: "Vanilaqus (Lv 230)"
+    - id: 938
+      name: "Sticky Mucus"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Vanilaqus (Lv 230)"
+    - id: 7565
+      name: "Sticky Poison"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Venedi (Lv 213)"
+    - id: 1001084
+      name: "Blaze Stone"
+      min_price: 14800
+      max_price: 22200
+      mobs: "Lavaeter (Lv 243)"
+    - id: 1001086
+      name: "Blue Crystal Shard"
+      min_price: 14800
+      max_price: 22200
+      mobs: "Litus (Lv 228)"
+    - id: 1001087
+      name: "Bright Shining Crystal"
+      min_price: 16000
+      max_price: 24000
+      mobs: "Fulgor (Lv 244)"
+    - id: 947
+      name: "Horn"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Fulgor (Lv 244)"
+    - id: 1001089
+      name: "Aromatic Flower"
+      min_price: 16800
+      max_price: 25200
+      mobs: "Napeo (Lv 244)"
+    - id: 1001088
+      name: "Fresh Pear"
+      min_price: 16400
+      max_price: 24600
+      mobs: "Galensis (Lv 244)"
+    - id: 1001083
+      name: "Maple Leaves"
+      min_price: 16400
+      max_price: 24600
+      mobs: "Amitera (Lv 227)"
+    - id: 7225
+      name: "Pumpkin Lantern"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Lude Gal (Lv 213)"
+    - id: 951
+      name: "Fin"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deep Sea Strouf (Lv 201)"
+    - id: 928
+      name: "Insect Feeler"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Napeo (Lv 244)"
+    - id: 1050
+      name: "Tendon"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Giant Caput (Lv 213)"
+    - id: 6089
+      name: "Dark Piece"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Giant Caput (Lv 213)"
+    - id: 7123
+      name: "Dragon Skin"
+      min_price: 10240
+      max_price: 15360
+      mobs: "Plagarion (Lv 215)"
+    - id: 1037
+      name: "Dragon Tail"
+      min_price: 12000
+      max_price: 18000
+      mobs: "Plagarion (Lv 215)"
+    - id: 7069
+      name: "Destroyed Armor"
+      min_price: 10420
+      max_price: 15630
+      mobs: "Gan Ceann (Lv 215)"
+    - id: 7205
+      name: "Piece of Black Cloth"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Ghost Cube (Lv 213)"
+    - id: 1001079
+      name: "Monstrous Tentacles"
+      min_price: 15200
+      max_price: 22800
+      mobs: "Dolorian (Lv 214)"
+    - id: 1001073
+      name: "Ectoplasmic Stone"
+      min_price: 14600
+      max_price: 21900
+      mobs: "Lude Gal (Lv 213)"
+    - id: 1001074
+      name: "Heavy Chain"
+      min_price: 14800
+      max_price: 22200
+      mobs: "Brutal Murderer (Lv 214)"
+    - id: 919
+      name: "Animal Skin"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Galensis (Lv 244)"
+    - id: 7067
+      name: "Stone Fragment"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Litus (Lv 228)"
+    - id: 1044
+      name: "Zenorc's Fang"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Giant Caput (Lv 213)"
+    - id: 1001081
+      name: "Slimy Fluid"
+      min_price: 15600
+      max_price: 23400
+      mobs: "Giant Caput (Lv 213)"
+    - id: 1001082
+      name: "Monster's Stone"
+      min_price: 17200
+      max_price: 25800
+      mobs: "Plagarion (Lv 215)"
+    - id: 1001075
+      name: "Evil Minded Ruby"
+      min_price: 15000
+      max_price: 22500
+      mobs: "Deadre (Lv 214)"
+    - id: 1001080
+      name: "Congealed Poison"
+      min_price: 16000
+      max_price: 24000
+      mobs: "Venedi (Lv 213)"
+    - id: 960
+      name: "Nipper"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deep Sea King Dramoh (Lv 205)"
+    - id: 943
+      name: "Solid Shell"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deep Sea King Dramoh (Lv 205)"
+    - id: 25159
+      name: "Heart Hunter's Seal"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deadre (Lv 214)"
+    - id: 1020
+      name: "Black Hair"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Deadre (Lv 214)"
+    - id: 1001072
+      name: "Evil Orb"
+      min_price: 14800
+      max_price: 22200
+      mobs: "Ghost Cube (Lv 213)"
+    - id: 908
+      name: "Spawn"
+      min_price: 10000
+      max_price: 15000
+      mobs: "Lava Toad (Lv 211)"
+    - id: 7208
+      name: "Rusty Kitchen Knife"
+      min_price: 17800
+      max_price: 26700
+      mobs: "Brutal Murderer (Lv 214)"
+
