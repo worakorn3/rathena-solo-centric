@@ -1,5 +1,5 @@
 import { query } from "../db/pool";
-import { KillRecord, LootRecord, ProgressionSummary } from "@rathena/shared";
+import { KillRecord, LootRecord, ProgressionSummary, GameNames } from "@rathena/shared";
 
 // Standard Ragnarok MvP & Mini-Boss ID Sets
 const MVP_MOB_IDS = new Set([
@@ -13,55 +13,7 @@ const MINI_BOSS_IDS = new Set([
   1096, 1120, 1158, 1262, 1289, 1307, 1404, 1494, 1518, 1582, 1681, 1731
 ]);
 
-const KNOWN_MOBS: Record<number, string> = {
-  1002: "Poring",
-  1007: "Fabre",
-  1008: "Pupa",
-  1010: "Condor",
-  1011: "Willow",
-  1012: "Rocker",
-  1013: "Spore",
-  1014: "Zombie",
-  1015: "Thief Bug",
-  1019: "Poporing",
-  1023: "Mandragora",
-  1026: "Flora",
-  1031: "Smokie",
-  1038: "Osiris",
-  1039: "Baphomet",
-  1046: "Doppelganger",
-  1049: "Whisper",
-  1059: "Mistress",
-  1063: "Lunatic",
-  1086: "Golden Thief Bug",
-  1087: "Orc Hero",
-  1112: "Drake",
-  1115: "Eddga",
-  1147: "Maya",
-  1150: "Moonlight Flower",
-  1157: "Pharaoh",
-  1159: "Phreeoni",
-  1190: "Orc Lord",
-  1251: "Knight of Windstorm",
-  1252: "Garm",
-  1272: "Dark Lord",
-  1312: "Turtle General",
-  1373: "Lord of Death",
-  1389: "Dracula",
-  1418: "Evil Snake Lord",
-  1492: "Incantation Samurai",
-  1511: "Amon Ra",
-  1623: "RSX-0806",
-  1630: "Bacsojin",
-  1685: "Valkyrie",
-  1719: "Gloom Under Night",
-  1768: "Valkyrie Randgris",
-  1779: "Ktullanux",
-  1785: "Atroce",
-  1874: "Beelzebub",
-  1885: "Fallen Bishop",
-  1917: "Ifrit"
-};
+
 
 interface PersistenceRow {
   target_id: number;
@@ -115,7 +67,7 @@ export class TrackingService {
 
       return {
         mobId,
-        mobName: KNOWN_MOBS[mobId] || `Monster #${mobId}`,
+        mobName: GameNames[mobId] || `Monster #${mobId}`,
         count,
         category,
         lastKilled: r.tstamp ? new Date(r.tstamp).toLocaleString() : undefined,
@@ -124,7 +76,7 @@ export class TrackingService {
 
     const lootRecords: LootRecord[] = lootRows.map((r) => ({
       itemId: Number(r.target_id),
-      itemName: `Item #${r.target_id}`,
+      itemName: GameNames[Number(r.target_id)] || `Item #${r.target_id}`,
       count: Number(r.value) || 0,
       lastLooted: r.tstamp ? new Date(r.tstamp).toLocaleString() : undefined,
     }));

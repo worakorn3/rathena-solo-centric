@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CharacterItem, PaperdollData } from "@rathena/shared";
+import { CharacterItem, PaperdollData, GameNames } from "@rathena/shared";
 import { getItemIconUrl, getCardImgUrl } from "../../lib/assets";
 import { Shield, Sparkles, ExternalLink } from "lucide-react";
 
@@ -45,9 +45,8 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
     return (
       <div
         key={slotDef.key}
-        className="flex items-center space-x-2 my-1"
-        onMouseEnter={() => item && setHoveredItem({ item, label: slotDef.label })}
-        onMouseLeave={() => setHoveredItem(null)}
+        className="flex items-center space-x-2 my-1 cursor-pointer"
+        onClick={() => item && setHoveredItem({ item, label: slotDef.label })}
       >
         <div
           className={`ro-paperdoll-slot ${
@@ -100,7 +99,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
             {item ? (
               <span>
                 {item.refine > 0 ? `+${item.refine} ` : ""}
-                Item #{item.nameId}
+                {GameNames[item.nameId] || `Item #${item.nameId}`}
               </span>
             ) : (
               <span className="text-slate-500 italic">None</span>
@@ -112,7 +111,10 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
   };
 
   return (
-    <div className="ro-window flex flex-col h-full relative">
+    <div 
+      className="ro-window flex flex-col h-full relative"
+      onMouseLeave={() => setHoveredItem(null)}
+    >
       {/* Title Bar */}
       <div className="ro-titlebar">
         <div className="flex items-center space-x-2">
@@ -139,7 +141,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
                 <Sparkles size={12} />
                 <span>
                   {hoveredItem.item.refine > 0 ? `+${hoveredItem.item.refine} ` : ""}
-                  Item #{hoveredItem.item.nameId}
+                  {GameNames[hoveredItem.item.nameId] || `Item #${hoveredItem.item.nameId}`}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">({hoveredItem.label})</span>
               </div>
@@ -181,7 +183,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
           </div>
         ) : (
           <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-ro-borderLight/10 font-mono">
-            Hover over any equipped gear slot for live Divine Pride inspect details.
+            Click on any equipped gear slot for live Divine Pride inspect details.
           </div>
         )}
       </div>
