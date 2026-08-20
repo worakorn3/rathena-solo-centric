@@ -13,7 +13,8 @@ const files = [
   "mob_db.yml",
 ];
 
-const names: Record<number, string> = {};
+const itemNames: Record<number, string> = {};
+const mobNames: Record<number, string> = {};
 
 console.log(`Extracting IDs and Names from ${dbPath}...`);
 
@@ -28,6 +29,8 @@ for (const file of files) {
   const lines = content.split("\n");
   
   let currentId = 0;
+  const isMob = file === "mob_db.yml";
+  const targetDict = isMob ? mobNames : itemNames;
   
   for (const line of lines) {
     const idMatch = line.match(/^\s*-\s*Id:\s*(\d+)/);
@@ -44,7 +47,7 @@ for (const file of files) {
         if (name.startsWith("'") && name.endsWith("'")) name = name.slice(1, -1);
         if (name.startsWith('"') && name.endsWith('"')) name = name.slice(1, -1);
         
-        names[currentId] = name;
+        targetDict[currentId] = name;
         currentId = 0; // Reset after finding name
       }
     }
@@ -54,5 +57,8 @@ for (const file of files) {
 const outDir = resolve(webDir, "packages/shared/src/data");
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
-writeFileSync(resolve(outDir, "names.ts"), `export const GameNames: Record<number, string> = ${JSON.stringify(names, null, 2)};`);
-console.log(`Extracted ${Object.keys(names).length} names to packages/shared/src/data/names.ts`);
+const output = `export const ItemNames: Record<number, string> = ${JSON.stringify(itemNames, null, 2)};\n` +
+               `export const MobNames: Record<number, string> = ${JSON.stringify(mobNames, null, 2)};\n`;
+
+writeFileSync(resolve(outDir, "names.ts"), output);
+console.log(`Extracted ${Object.keys(itemNames).length} item names and ${Object.keys(mobNames).length} mob names to packages/shared/src/data/names.ts`);

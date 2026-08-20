@@ -1,5 +1,5 @@
 import { query } from "../db/pool";
-import { KillRecord, LootRecord, ProgressionSummary, GameNames } from "@rathena/shared";
+import { KillRecord, LootRecord, ProgressionSummary, ItemNames, MobNames } from "@rathena/shared";
 
 // Standard Ragnarok MvP & Mini-Boss ID Sets
 const MVP_MOB_IDS = new Set([
@@ -67,7 +67,7 @@ export class TrackingService {
 
       return {
         mobId,
-        mobName: GameNames[mobId] || `Monster #${mobId}`,
+        mobName: MobNames[mobId] || `Monster #${mobId}`,
         count,
         category,
         lastKilled: r.tstamp ? new Date(r.tstamp).toLocaleString() : undefined,
@@ -76,7 +76,7 @@ export class TrackingService {
 
     const lootRecords: LootRecord[] = lootRows.map((r) => ({
       itemId: Number(r.target_id),
-      itemName: GameNames[Number(r.target_id)] || `Item #${r.target_id}`,
+      itemName: ItemNames[Number(r.target_id)] || `Item #${r.target_id}`,
       count: Number(r.value) || 0,
       lastLooted: r.tstamp ? new Date(r.tstamp).toLocaleString() : undefined,
     }));

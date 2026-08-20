@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CharacterItem, PaperdollData, GameNames } from "@rathena/shared";
+import { CharacterItem, PaperdollData, ItemNames } from "@rathena/shared";
 import { getItemIconUrl, getCardImgUrl } from "../../lib/assets";
 import { Shield, Sparkles, ExternalLink } from "lucide-react";
 
@@ -99,7 +99,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
             {item ? (
               <span>
                 {item.refine > 0 ? `+${item.refine} ` : ""}
-                {GameNames[item.nameId] || `Item #${item.nameId}`}
+                {ItemNames[item.nameId] || `Item #${item.nameId}`}
               </span>
             ) : (
               <span className="text-slate-500 italic">None</span>
@@ -141,7 +141,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
                 <Sparkles size={12} />
                 <span>
                   {hoveredItem.item.refine > 0 ? `+${hoveredItem.item.refine} ` : ""}
-                  {GameNames[hoveredItem.item.nameId] || `Item #${hoveredItem.item.nameId}`}
+                  {ItemNames[hoveredItem.item.nameId] || `Item #${hoveredItem.item.nameId}`}
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">({hoveredItem.label})</span>
               </div>
