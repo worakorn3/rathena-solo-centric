@@ -58,4 +58,30 @@ export interface NetWorthSummary {
   holdings: StockHolding[];
   quotes: StockMarketQuote[];
   bank: BankData;
+  activeEvents?: StockActiveEvent[];
+  latestEvent?: StockEventLog | null;
+}
+
+export interface StockEventLog {
+  logId: number;
+  eventId: string;
+  eventName: string;
+  category: string;
+  tickerTarget: string;
+  headline: string;
+  details: string;
+  triggeredBy: string;
+  createdAt: string;
+}
+
+export interface StockActiveEvent {
+  id: number;
+  eventId: string;
+  ticker: string;
+  startTime: number;
+  endTime: number;
+  remainingShifts: number;
+  taxRateOverride: number;
+  moodOverride: number;
+  headline: string;
 }

@@ -39,12 +39,22 @@ OnInit:
 	}
 
 	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_meta` (`mkey` VARCHAR(32) PRIMARY KEY, `mval` INT DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_events_def` (`event_id` VARCHAR(32) PRIMARY KEY, `category` VARCHAR(32) NOT NULL, `event_name` VARCHAR(64) NOT NULL, `ticker_target` VARCHAR(10) DEFAULT '', `price_pct_change` INT DEFAULT 0, `ticker_secondary` VARCHAR(10) DEFAULT '', `price_secondary_pct_change` INT DEFAULT 0, `dividend_change` INT DEFAULT 0, `direct_payout_per_share` INT DEFAULT 0, `mood_override` TINYINT DEFAULT 0, `duration_shifts` INT DEFAULT 0, `reverse_split_ratio` INT DEFAULT 0, `tax_rate_override` INT DEFAULT -1, `headline` VARCHAR(255) NOT NULL, `description` TEXT, `weight` INT DEFAULT 10, `enabled` TINYINT DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_events_active` (`id` INT AUTO_INCREMENT PRIMARY KEY, `event_id` VARCHAR(32) NOT NULL, `ticker` VARCHAR(10) NOT NULL, `start_time` INT UNSIGNED NOT NULL, `end_time` INT UNSIGNED NOT NULL, `remaining_shifts` INT DEFAULT 0, `tax_rate_override` INT DEFAULT -1, `mood_override` TINYINT DEFAULT 0, `headline` VARCHAR(255) NOT NULL, INDEX `idx_active_event` (`event_id`), INDEX `idx_active_ticker` (`ticker`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+	query_sql "CREATE TABLE IF NOT EXISTS `solo_stock_events_log` (`log_id` BIGINT AUTO_INCREMENT PRIMARY KEY, `event_id` VARCHAR(32) NOT NULL, `event_name` VARCHAR(64) NOT NULL, `category` VARCHAR(32) NOT NULL, `ticker_target` VARCHAR(10) NOT NULL, `headline` VARCHAR(255) NOT NULL, `details` TEXT, `triggered_by` VARCHAR(32) DEFAULT 'MIDNIGHT_CRON', `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX `idx_log_created` (`created_at`), INDEX `idx_log_ticker` (`ticker_target`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+	// Seed Events if empty
+	set .@ev_cnt, 0;
+	query_sql "SELECT COUNT(*) FROM `solo_stock_events_def`", .@ev_cnt;
+	if (.@ev_cnt == 0) {
+		callsub L_SeedEventsDef;
+	}
 
 	// Initialize Market Data
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		query_sql "INSERT IGNORE INTO `solo_stock_market` (ticker) VALUES ('" + $StockCities$[.@i] + "')";
 	}
-	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0), ('DivTaxRate', 10)";
+	query_sql "INSERT IGNORE INTO `solo_stock_meta` (mkey, mval) VALUES ('MarketMood', 1), ('MarketDrift', 0), ('LastUpdate', 0), ('DivTaxRate', 10), ('BlackSwanChance', 2), ('LatestEventTime', 0)";
 
 	// Catch-up logic for missed midnights
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'LastUpdate'", $StockLastUpdate;
@@ -66,7 +76,7 @@ OnInit:
 				for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
 					query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
 				}
-				set $MarketDrift, rand(-4, 6);
+				set $MarketDrift, rand(-4, 4);
 				query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 				callsub L_MidnightProc;
 			}
@@ -84,20 +94,36 @@ OnClock0000:
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
 		query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
 	}
-	set $MarketDrift, rand(-4, 6);
+	set $MarketDrift, rand(-4, 4);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
 	set $StockLastUpdate, gettimetick(2);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 	end;
 
+OnClock0100:
+OnClock0200:
 OnClock0300:
+OnClock0400:
+OnClock0500:
 OnClock0600:
+OnClock0700:
+OnClock0800:
 OnClock0900:
+OnClock1000:
+OnClock1100:
 OnClock1200:
+OnClock1300:
+OnClock1400:
 OnClock1500:
+OnClock1600:
+OnClock1700:
 OnClock1800:
+OnClock1900:
+OnClock2000:
 OnClock2100:
+OnClock2200:
+OnClock2300:
 	callsub L_ShiftProc;
 	end;
 
@@ -110,12 +136,16 @@ OnMidnightManual:
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) { 
 		query_sql "UPDATE `solo_stock_market` SET price_old = price WHERE ticker = '" + .@names$[.@i] + "'";
 	}
-	set $MarketDrift, rand(-4, 6);
+	set $MarketDrift, rand(-4, 4);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketDrift + " WHERE mkey = 'MarketDrift'";
 	callsub L_MidnightProc;
 	set $StockLastUpdate, gettimetick(2);
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $StockLastUpdate + " WHERE mkey = 'LastUpdate'";
 	announce "MARKET NEWS: Admin has triggered a Midnight Cycle. Dividends updated.", bc_all;
+	end;
+
+OnBlackSwanManual:
+	callsub L_RollBlackSwan, "GM_ADMIN";
 	end;
 
 L_ShiftProc:
@@ -126,14 +156,21 @@ L_ShiftProc:
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketDrift'", $MarketDrift;
 
+	// Check Active Event Overrides
+	set .@active_mood, 0;
+	query_sql "SELECT mood_override FROM `solo_stock_events_active` WHERE mood_override > 0 AND remaining_shifts > 0 ORDER BY id DESC LIMIT 1", .@active_mood;
+	if (.@active_mood > 0) {
+		set $MarketMood, .@active_mood;
+	}
+
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
 		query_sql "SELECT price, dividend, split_count FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@sc;
 		
-		set .@f, $MarketDrift + rand(-10, 10);
-		if ($MarketMood == 1) set .@f, .@f + 3;
-		else if ($MarketMood == 2) set .@f, .@f - 3;
-		else if ($MarketMood == 3) set .@f, .@f + rand(-20, 30);
+		set .@f, $MarketDrift + rand(-6, 6);
+		if ($MarketMood == 1) set .@f, .@f + 2;
+		else if ($MarketMood == 2) set .@f, .@f - 2;
+		else if ($MarketMood == 3) set .@f, .@f + rand(-15, 20);
 		
 		set .@new, .@p + (.@p * .@f / 100);
 		if (.@new < 50) set .@new, 50; 
@@ -147,10 +184,23 @@ L_ShiftProc:
 		}
 		if (.@new > .@p) set .@u, .@u + 1;
 	}
-	if (rand(1, 100) <= 8) set $MarketMood, 3; 
-	else if (.@u >= 2) set $MarketMood, 1; 
-	else set $MarketMood, 2;
+	if (.@active_mood == 0) {
+		if (rand(1, 100) <= 8) set $MarketMood, 3; 
+		else if (.@u >= 3) set $MarketMood, 1; 
+		else set $MarketMood, 2;
+	}
 	
+	// Decrement active events
+	query_sql "UPDATE `solo_stock_events_active` SET remaining_shifts = remaining_shifts - 1 WHERE remaining_shifts > 0";
+	query_sql "DELETE FROM `solo_stock_events_active` WHERE remaining_shifts <= 0";
+
+	// Restore default tax if active tax holiday expired
+	set .@active_tax, -1;
+	query_sql "SELECT tax_rate_override FROM `solo_stock_events_active` WHERE tax_rate_override >= 0 LIMIT 1", .@active_tax;
+	if (.@active_tax < 0) {
+		query_sql "UPDATE `solo_stock_meta` SET mval = 10 WHERE mkey = 'DivTaxRate' AND mval = 0";
+	}
+
 	query_sql "UPDATE `solo_stock_meta` SET mval = " + $MarketMood + " WHERE mkey = 'MarketMood'";
 	announce "MARKET NEWS: Stock shift complete. Trend: " + callfunc("F_MoodNameStr") + ".", bc_all;
 	freeloop(0);
@@ -158,13 +208,22 @@ L_ShiftProc:
 
 L_MidnightProc:
 	freeloop(1);
+	
+	// Roll Black Swan Event Chance (default 2% daily)
+	set .@bsc, 2;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'BlackSwanChance'", .@bsc;
+	if (.@bsc <= 0) set .@bsc, 2;
+	if (rand(1, 100) <= .@bsc) {
+		callsub L_RollBlackSwan, "MIDNIGHT_CRON";
+	}
+
 	setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
 		set .@cn$, .@c$[.@i];
 		query_sql "SELECT price, dividend, div_acc FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@div, .@divacc;
 		
-		set .@target, (.@p * 25) / 1000;
+		set .@target, (.@p * 5) / 1000;
 		if (.@target < 1) set .@target, 1;
 		
 		if (rand(1, 100) <= 30) {
@@ -211,6 +270,137 @@ L_MidnightProc:
 			}
 		}
 	}
+	freeloop(0);
+	return;
+
+L_RollBlackSwan:
+	freeloop(1);
+	.@trigger_by$ = getarg(0, "MIDNIGHT_CRON");
+	set .@ev_id$, ""; set .@ev_cat$, ""; set .@ev_name$, ""; set .@ev_target$, ""; set .@ev_price_pct, 0; set .@ev_sec_target$, ""; set .@ev_sec_pct, 0; set .@ev_div_chg, 0; set .@ev_payout, 0; set .@ev_mood, 0; set .@ev_dur, 0; set .@ev_rev, 0; set .@ev_tax, -1; set .@ev_hl$, ""; set .@ev_desc$, "";
+	
+	query_sql "SELECT event_id, category, event_name, ticker_target, price_pct_change, ticker_secondary, price_secondary_pct_change, dividend_change, direct_payout_per_share, mood_override, duration_shifts, reverse_split_ratio, tax_rate_override, headline, description FROM `solo_stock_events_def` WHERE enabled = 1 ORDER BY RAND() LIMIT 1", .@ev_id$, .@ev_cat$, .@ev_name$, .@ev_target$, .@ev_price_pct, .@ev_sec_target$, .@ev_sec_pct, .@ev_div_chg, .@ev_payout, .@ev_mood, .@ev_dur, .@ev_rev, .@ev_tax, .@ev_hl$, .@ev_desc$;
+
+	if (.@ev_id$ == "") { freeloop(0); return; }
+
+	setarray .@all$[0], "PRT", "GEF", "MOR", "PAY", "ALB";
+
+	// 1. Primary Target Execution
+	if (.@ev_target$ == "ALL") {
+		for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+			set .@t$, .@all$[.@i];
+			query_sql "SELECT price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@t$ + "'", .@cur_p, .@cur_d;
+			if (.@ev_price_pct != 0) {
+				set .@new_p, .@cur_p + (.@cur_p * .@ev_price_pct / 100);
+				if (.@new_p < 50) set .@new_p, 50;
+				if (.@new_p >= 1000) {
+					set .@new_p, .@new_p / 10;
+					query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + ", price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = '" + .@t$ + "'";
+					query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = '" + .@t$ + "'";
+				} else {
+					query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + " WHERE ticker = '" + .@t$ + "'";
+				}
+			}
+			if (.@ev_div_chg != 0) {
+				set .@new_d, .@cur_d + .@ev_div_chg;
+				if (.@new_d < 0) set .@new_d, 0;
+				if (.@new_d > 500) set .@new_d, 500;
+				query_sql "UPDATE `solo_stock_market` SET dividend = " + .@new_d + " WHERE ticker = '" + .@t$ + "'";
+			}
+		}
+	} else {
+		set .@target_t$, .@ev_target$;
+		if (.@ev_target$ == "LOWEST") {
+			query_sql "SELECT ticker FROM `solo_stock_market` ORDER BY price ASC LIMIT 1", .@target_t$;
+		}
+		
+		if (.@ev_rev > 1) {
+			query_sql "UPDATE `solo_stock_market` SET price = price * " + .@ev_rev + ", dividend = dividend * " + .@ev_rev + " WHERE ticker = '" + .@target_t$ + "'";
+			query_sql "UPDATE `solo_stock_player` SET shares = GREATEST(1, FLOOR(shares / " + .@ev_rev + ")) WHERE ticker = '" + .@target_t$ + "' AND shares > 0";
+		} else {
+			query_sql "SELECT price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@target_t$ + "'", .@cur_p, .@cur_d;
+			if (.@ev_price_pct != 0) {
+				set .@new_p, .@cur_p + (.@cur_p * .@ev_price_pct / 100);
+				if (.@new_p < 50) set .@new_p, 50;
+				if (.@new_p >= 1000) {
+					set .@new_p, .@new_p / 10;
+					query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + ", price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = '" + .@target_t$ + "'";
+					query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = '" + .@target_t$ + "'";
+				} else {
+					query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + " WHERE ticker = '" + .@target_t$ + "'";
+				}
+			}
+			if (.@ev_div_chg != 0) {
+				set .@new_d, .@cur_d + .@ev_div_chg;
+				if (.@new_d < 0) set .@new_d, 0;
+				if (.@new_d > 500) set .@new_d, 500;
+				query_sql "UPDATE `solo_stock_market` SET dividend = " + .@new_d + " WHERE ticker = '" + .@target_t$ + "'";
+			}
+		}
+	}
+
+	// 2. Secondary Target (Trade Wars)
+	if (.@ev_sec_target$ != "") {
+		if (.@ev_sec_target$ == "ALL") {
+			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
+				set .@t$, .@all$[.@i];
+				if (.@t$ != .@ev_target$) {
+					query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@t$ + "'", .@cur_p;
+					set .@new_p, .@cur_p + (.@cur_p * .@ev_sec_pct / 100);
+					if (.@new_p < 50) set .@new_p, 50;
+					query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + " WHERE ticker = '" + .@t$ + "'";
+				}
+			}
+		} else {
+			query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@ev_sec_target$ + "'", .@cur_p;
+			set .@new_p, .@cur_p + (.@cur_p * .@ev_sec_pct / 100);
+			if (.@new_p < 50) set .@new_p, 50;
+			query_sql "UPDATE `solo_stock_market` SET price = " + .@new_p + " WHERE ticker = '" + .@ev_sec_target$ + "'";
+		}
+	}
+
+	// 3. Direct Cash Payout (Special Windfall)
+	if (.@ev_payout > 0) {
+		if (.@ev_target$ == "ALL") {
+			query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * " + .@ev_payout + ") WHERE shares > 0";
+		} else {
+			query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * " + .@ev_payout + ") WHERE ticker = '" + .@ev_target$ + "' AND shares > 0";
+		}
+	}
+
+	// 4. Mood & Tax Overrides
+	if (.@ev_mood > 0) {
+		set $MarketMood, .@ev_mood;
+		query_sql "UPDATE `solo_stock_meta` SET mval = " + .@ev_mood + " WHERE mkey = 'MarketMood'";
+	}
+	if (.@ev_tax >= 0) {
+		query_sql "UPDATE `solo_stock_meta` SET mval = " + .@ev_tax + " WHERE mkey = 'DivTaxRate'";
+	}
+
+	// 5. Active Event Duration Tracking
+	if (.@ev_dur > 0) {
+		set .@now_ts, gettimetick(2);
+		set .@end_ts, .@now_ts + (.@ev_dur * 3600);
+		query_sql "INSERT INTO `solo_stock_events_active` (`event_id`, `ticker`, `start_time`, `end_time`, `remaining_shifts`, `tax_rate_override`, `mood_override`, `headline`) VALUES ('" + .@ev_id$ + "', '" + .@ev_target$ + "', " + .@now_ts + ", " + .@end_ts + ", " + .@ev_dur + ", " + .@ev_tax + ", " + .@ev_mood + ", '" + escape_sql(.@ev_hl$) + "')";
+	}
+
+	// 6. Log & Metadata Update
+	query_sql "INSERT INTO `solo_stock_events_log` (`event_id`, `event_name`, `category`, `ticker_target`, `headline`, `details`, `triggered_by`) VALUES ('" + .@ev_id$ + "', '" + escape_sql(.@ev_name$) + "', '" + .@ev_cat$ + "', '" + .@ev_target$ + "', '" + escape_sql(.@ev_hl$) + "', '" + escape_sql(.@ev_desc$) + "', '" + .@trigger_by$ + "')";
+	query_sql "REPLACE INTO `solo_stock_meta` (`mkey`, `mval`) VALUES ('LatestEventTime', " + gettimetick(2) + ")";
+
+	// 7. Global Announcement
+	announce "⚡ [BLACK SWAN EVENT]: " + .@ev_name$ + " - " + .@ev_hl$, bc_all;
+	freeloop(0);
+	return;
+
+L_SeedEventsDef:
+	freeloop(1);
+	query_sql "INSERT IGNORE INTO `solo_stock_events_def` (`event_id`, `category`, `event_name`, `ticker_target`, `price_pct_change`, `dividend_change`, `headline`, `description`, `weight`) VALUES ('PRT_BOOM_ROYAL_GRANT', 'MUNICIPAL_BOOM', 'Royal Monopoly Grant', 'PRT', 75, 10, 'PRT Capital awarded exclusive royal trade and sovereign banking charter!', 'The Crown designates Prontera Capital as the sole treasury underwriter for the Kingdom, sending stock prices soaring.', 10), ('PRT_CRISIS_EMBEZZLEMENT', 'MUNICIPAL_CRISIS', 'High Court Embezzlement', 'PRT', -50, -5, 'High Court Auditor caught embezzling royal reserves; PRT assets frozen!', 'Corruption scandal in the capital forces emergency liquidity restrictions and panics municipal investors.', 10), ('GEF_BOOM_TRANSMUTATION', 'MUNICIPAL_BOOM', 'Transmutation Breakthrough', 'GEF', 85, 15, 'Geffen Alchemist Guild discovers stable synthetic gold catalyst!', 'Revolutionary arcane chemistry drastically cuts magical fabrication costs, causing explosive equity growth.', 10), ('GEF_CRISIS_MANA_LEAK', 'MUNICIPAL_CRISIS', 'Tower Mana Core Breach', 'GEF', -55, -10, 'Geffen Tower magical reactor breach halts all arcanetech operations!', 'Dangerous mana radiation leaks force the evacuation of upper laboratories and suspend fabrication contracts.', 10), ('MOR_BOOM_SILK_ROAD', 'MUNICIPAL_BOOM', 'Ancient Silk Road Unearthed', 'MOR', 90, 20, 'Deep desert explorers uncover lost subterranean spice & relic vaults!', 'Morroc merchant guilds secure monopoly rights over newly discovered ancient trade corridors across the Sograt desert.', 10), ('MOR_CRISIS_SATAN_RIFTS', 'MUNICIPAL_CRISIS', 'Satan Morroc Resurrection Rifts', 'MOR', -60, -15, 'Dimensional seismic rifts tear through the central Morroc bazaar!', 'Catastrophic tremors and dark energy emissions swallow commercial warehouses and disrupt trading caravans.', 10), ('PAY_BOOM_IRONWOOD', 'MUNICIPAL_BOOM', 'Sacred Ironwood Discovery', 'PAY', 70, 10, 'Forest rangers discover untouched groves of impenetrable Ironwood!', 'Payon craft guilds sign lucrative continental contracts to supply sacred timber for imperial fortifications.', 10), ('PAY_CRISIS_WILDFIRE', 'MUNICIPAL_CRISIS', 'Great Woodland Wildfire', 'PAY', -50, -5, 'Raging forest inferno incinerates Payon lumber mills and craft shops!', 'Dry seasonal winds spark an uncontrollable blaze across the northern woods, destroying timber reserves.', 10), ('ALB_BOOM_TRADE_WIND', 'MUNICIPAL_BOOM', 'Trade Wind Corridor Found', 'ALB', 80, 15, 'Navigators map new oceanic trade winds, halving voyage times to Amatsu!', 'Alberta shipping fleets achieve record export throughput, boosting maritime corporate revenues.', 10), ('ALB_CRISIS_GHOST_FLEET', 'MUNICIPAL_CRISIS', 'Ghost Fleet Armada Siege', 'ALB', -55, -10, 'Pirate King Drake and undead armada blockade the Alberta harbour!', 'Ghost ships sink multiple merchant galleons, paralyzing port commerce and triggering emergency maritime insurance claims.', 10)";
+
+	query_sql "INSERT IGNORE INTO `solo_stock_events_def` (`event_id`, `category`, `event_name`, `ticker_target`, `price_pct_change`, `ticker_secondary`, `price_secondary_pct_change`, `headline`, `description`, `weight`) VALUES ('WAR_ALB_OVER_MOR', 'TRADE_WAR', 'Maritime Route Hegemony', 'ALB', 70, 'MOR', -45, 'Alberta opens direct sea lanes, bypassing overland desert caravan tariffs!', 'Merchants abandon expensive desert toll routes in favor of ocean shipping, transferring market capitalization from Morroc to Alberta.', 8), ('WAR_MOR_OVER_ALB', 'TRADE_WAR', 'Desert Silk Road Monopoly', 'MOR', 70, 'ALB', -45, 'Morroc desert guild signs exclusive trade treaty with foreign sultans!', 'Overland spice routes flourish while offshore tariffs penalize maritime shipments, shifting wealth into Morroc.', 8), ('WAR_GEF_OVER_PAY', 'TRADE_WAR', 'Arcane Automation Wave', 'GEF', 65, 'PAY', -40, 'Geffen enchanted tool fabrication replaces traditional timber craftsmanship!', 'Automated arcane apparatuses flood the market, dampening demand for Payon hand-carved woodware.', 8), ('WAR_PAY_OVER_GEF', 'TRADE_WAR', 'Nature Craft Renaissance', 'PAY', 65, 'GEF', -40, 'Kingdom-wide anti-magic sentiment sparks a massive surge in authentic Payon crafts!', 'Nobility rejects volatile magical gadgets in favor of time-honored Payon artisan woodwork.', 8), ('WAR_PRT_IMPERIAL_TAX', 'TRADE_WAR', 'Royal Imperial Centralization', 'PRT', 50, 'ALL', -15, 'Crown levies special provincial development tariffs to enrich the Capital!', 'Prontera seizes provincial municipal reserves to fund imperial expansion, boosting PRT while cooling provincial shares.', 6)";
+
+	query_sql "INSERT IGNORE INTO `solo_stock_events_def` (`event_id`, `category`, `event_name`, `ticker_target`, `price_pct_change`, `direct_payout_per_share`, `tax_rate_override`, `duration_shifts`, `reverse_split_ratio`, `headline`, `description`, `weight`) VALUES ('FIN_SHORT_SQUEEZE', 'STRUCTURAL', 'The Great Midgard Short Squeeze', 'LOWEST', 180, 0, -1, 0, 0, 'Speculative guild syndicate triggers a massive historic short squeeze!', 'Aggressive retail speculation corners the lowest-valued stock in Midgard, driving astronomical overnight price gains.', 8), ('FIN_MEGA_DIVIDEND', 'STRUCTURAL', 'Special Cash Windfall Dividend', 'ALL', 0, 50, -1, 0, 0, 'Corporate liquidations release a massive +50z/share special cash dividend!', 'Municipal enterprises distribute overseas asset liquidation proceeds directly to all active shareholders.', 8), ('FIN_TAX_HOLIDAY', 'STRUCTURAL', 'Royal Dividend Tax Holiday', 'ALL', 0, 0, 0, 72, 0, 'King Tristan III declares a 72-hour 0% Dividend Tax Holiday!', 'All dividend withholding taxes are suspended kingdom-wide to celebrate sovereign prosperity.', 8), ('FIN_REVERSE_SPLIT', 'STRUCTURAL', 'Distressed Equity Capital Restructuring', 'LOWEST', 0, 0, -1, 0, 5, 'Municipal regulators approve 1:5 reverse stock split for distressed enterprises!', 'Troubled low-cost shares are consolidated 1:5 at 5x price to stabilize market liquidity and capitalization.', 6)";
+
+	query_sql "INSERT IGNORE INTO `solo_stock_events_def` (`event_id`, `category`, `event_name`, `ticker_target`, `price_pct_change`, `mood_override`, `duration_shifts`, `headline`, `description`, `weight`) VALUES ('MACRO_GOLDEN_JUBILEE', 'MACRO_GLOBAL', 'Midgard Golden Age Jubilee', 'ALL', 35, 1, 48, 'Kingdom-wide prosperity pact sparks unprecedented economic expansion across all sectors!', 'Festive celebrations, record harvest yields, and open trade corridors lift every municipal stock in Midgard.', 7), ('MACRO_GREAT_RECESSION', 'MACRO_GLOBAL', 'Continental Liquidity Crisis', 'ALL', -35, 2, 48, 'Severe rune shortage and banking panic trigger a kingdom-wide market recession!', 'Liquidity crunch forces mass liquidations, dragging down all municipal equities across Midgard.', 7), ('MACRO_MJOLNIR_METEOR', 'MACRO_GLOBAL', 'Mjolnir Meteor Shock', 'ALL', 0, 3, 48, 'Celestial fragments rain across Mt. Mjolnir, triggering extreme market volatility!', 'Astrological panic locks the market into Chaos Mood (Mood 3) with intensified hourly fluctuations.', 6), ('MACRO_VALHALLA_BLESSING', 'MACRO_GLOBAL', 'Valhalla Fortune Blessing', 'ALL', 20, 1, 48, 'Valkyries bestow divine favor upon Midgard, initiating a 48-hour Hyper-Bull run!', 'Unstoppable investor optimism locks the market into Bullish Mood (Mood 1) with amplified upward momentum.', 6), ('MACRO_RAGNAROK_ECLIPSE', 'MACRO_GLOBAL', 'Ragnarok Eclipse Dividend Freeze', 'ALL', -15, 3, 48, 'Solar eclipse darkens Midgard skies; all corporate dividend payouts frozen for 48 hours!', 'Superstitious commercial shutdowns and temple sacrifices bring corporate distributions to a complete standstill.', 6)";
 	freeloop(0);
 	return;
 }
@@ -275,10 +465,14 @@ L_ClaimDiv:
 
 L_Admin:
 	mes "[GM Admin Console]";
-	switch(select("Force 3-Hr Price Shift:Force Midnight Cycle:Set Dividend Tax:Reset My Portfolio:Reset Index:Back")) {
+	switch(select("Force Hourly Price Shift:Force Midnight Cycle:Trigger Black Swan Event:Set Dividend Tax:Reset My Portfolio:Reset Index:Back")) {
 		case 1: donpcevent "StockExchangeSetup::OnShiftManual"; close;
 		case 2: donpcevent "StockExchangeSetup::OnMidnightManual"; close;
 		case 3:
+			mes "Triggering a random Black Swan Event...";
+			donpcevent "StockExchangeSetup::OnBlackSwanManual";
+			close;
+		case 4:
 			query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@current_tax;
 			mes "Current Dividend Tax: " + .@current_tax + "%";
 			mes "Input new tax rate (0-100):";
@@ -287,11 +481,11 @@ L_Admin:
 			query_sql "UPDATE `solo_stock_meta` SET mval = " + .@new_tax + " WHERE mkey = 'DivTaxRate'";
 			mes "Dividend Tax updated to " + .@new_tax + "%.";
 			next; goto L_Admin;
-		case 4:
+		case 5:
 			.@account_id = getcharid(3);
 			query_sql "DELETE FROM `solo_stock_player` WHERE account_id = " + .@account_id;
 			mes "Portfolio wiped."; next; goto L_MenuMain;
-		case 5: 
+		case 6: 
 			query_sql "UPDATE `solo_stock_market` SET price = 100, price_old = 100, dividend = 3, div_acc = 0, split_count = 0";
 			mes "Market Index reset."; next; goto L_MenuMain;
 		default: goto L_MenuMain;

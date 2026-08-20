@@ -2,6 +2,8 @@ import { query } from "../db/pool";
 import {
   BankData,
   NetWorthSummary,
+  StockActiveEvent,
+  StockEventLog,
   StockHolding,
   StockMarketQuote,
   getJobName
@@ -53,6 +55,30 @@ interface StockPlayerRow {
   total_cost: number;
   last_claim_acc: number;
   split_processed: number;
+}
+
+interface StockActiveEventRow {
+  id: number;
+  event_id: string;
+  ticker: string;
+  start_time: number;
+  end_time: number;
+  remaining_shifts: number;
+  tax_rate_override: number;
+  mood_override: number;
+  headline: string;
+}
+
+interface StockEventLogRow {
+  log_id: number;
+  event_id: string;
+  event_name: string;
+  category: string;
+  ticker_target: string;
+  headline: string;
+  details: string;
+  triggered_by: string;
+  created_at: string;
 }
 
 export class EconomyService {
@@ -203,6 +229,18 @@ export class EconomyService {
 
     const totalNetWorth = liquidZeny + bankTotal + stockMarketValue;
 
+    // 5. Active & Latest Events
+    let activeEvents: StockActiveEvent[] = [];
+    let latestEvent: StockEventLog | null = null;
+    try {
+      activeEvents = await this.getActiveEvents();
+      const history = await this.getEventHistory(1);
+      latestEvent = history.length > 0 ? history[0] : null;
+    } catch {
+      activeEvents = [];
+      latestEvent = null;
+    }
+
     return {
       totalNetWorth,
       liquidZeny,
@@ -217,6 +255,8 @@ export class EconomyService {
       holdings,
       quotes,
       bank,
+      activeEvents,
+      latestEvent,
     };
   }
 
@@ -244,6 +284,51 @@ export class EconomyService {
           splitCount: Number(m.split_count) || 0,
         };
       });
+    } catch {
+      return [];
+    }
+  }
+
+  static async getActiveEvents(): Promise<StockActiveEvent[]> {
+    try {
+      const rows = await query<StockActiveEventRow>(
+        "SELECT id, event_id, ticker, start_time, end_time, remaining_shifts, tax_rate_override, mood_override, headline FROM `solo_stock_events_active` WHERE remaining_shifts > 0 ORDER BY id DESC"
+      );
+
+      return rows.map((r) => ({
+        id: Number(r.id),
+        eventId: r.event_id,
+        ticker: r.ticker,
+        startTime: Number(r.start_time),
+        endTime: Number(r.end_time),
+        remainingShifts: Number(r.remaining_shifts),
+        taxRateOverride: Number(r.tax_rate_override),
+        moodOverride: Number(r.mood_override),
+        headline: r.headline,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  static async getEventHistory(limit = 20): Promise<StockEventLog[]> {
+    try {
+      const rows = await query<StockEventLogRow>(
+        "SELECT log_id, event_id, event_name, category, ticker_target, headline, details, triggered_by, created_at FROM `solo_stock_events_log` ORDER BY log_id DESC LIMIT ?",
+        [limit]
+      );
+
+      return rows.map((r) => ({
+        logId: Number(r.log_id),
+        eventId: r.event_id,
+        eventName: r.event_name,
+        category: r.category,
+        tickerTarget: r.ticker_target,
+        headline: r.headline,
+        details: r.details,
+        triggeredBy: r.triggered_by,
+        createdAt: String(r.created_at),
+      }));
     } catch {
       return [];
     }

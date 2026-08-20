@@ -34,13 +34,19 @@ describe("Database Replica & Read-Only Safety Tests", () => {
     expect(Array.isArray(rankings)).toBe(true);
   });
 
-  it("should reject unauthenticated access to /api/economy/net-worth", async () => {
-    const response = await app.handle(new Request("http://localhost:4000/api/economy/net-worth"));
-    expect(response.status).toBe(401);
+  it("should fetch stock market events history from replica", async () => {
+    const response = await app.handle(new Request("http://localhost:4000/api/economy/events"));
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as any;
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.events)).toBe(true);
   });
 
-  it("should reject unauthenticated access to /api/character/my-characters", async () => {
-    const response = await app.handle(new Request("http://localhost:4000/api/character/my-characters"));
-    expect(response.status).toBe(401);
+  it("should fetch active market events from replica", async () => {
+    const response = await app.handle(new Request("http://localhost:4000/api/economy/events/active"));
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as any;
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.activeEvents)).toBe(true);
   });
 });

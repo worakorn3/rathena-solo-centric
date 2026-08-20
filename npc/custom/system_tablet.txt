@@ -141,6 +141,15 @@ OnUse:
 			mes "Global Equity Index Trends:";
 			query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", $MarketMood;
 			mes "Market Sentiment: ^0000FF" + callfunc("F_MoodNameStr") + "^000000";
+			
+			// Latest Breaking News
+			set .@ev_hl$, ""; set .@ev_name$, "";
+			query_sql "SELECT event_name, headline FROM `solo_stock_events_log` ORDER BY log_id DESC LIMIT 1", .@ev_name$, .@ev_hl$;
+			if (.@ev_name$ != "") {
+				mes "Latest Headline: ^FF8800" + .@ev_name$ + "^000000";
+				mes "  ^777777\"" + .@ev_hl$ + "\"^000000";
+			}
+			
 			mes "---------------------------";
 			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
 			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {

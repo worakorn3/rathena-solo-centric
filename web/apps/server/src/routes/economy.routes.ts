@@ -14,6 +14,15 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     const quotes = await EconomyService.getMarketQuotes();
     return { success: true, quotes };
   })
+  .get("/events", async ({ query }) => {
+    const limit = query && query.limit ? Number(query.limit) : 20;
+    const events = await EconomyService.getEventHistory(limit);
+    return { success: true, events };
+  })
+  .get("/events/active", async () => {
+    const activeEvents = await EconomyService.getActiveEvents();
+    return { success: true, activeEvents };
+  })
   .get("/net-worth", async ({ headers, jwt, set }) => {
     const authHeader = headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
