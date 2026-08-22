@@ -110,6 +110,29 @@ Inside event labels that are triggered asynchronously by the system (such as `On
 
 ---
 
+### D. Dialogue Box Pagination Mandate (Dynamic Lists & SQL Queries)
+Standard Ragnarok Online game clients render approximately 6–8 lines of text per dialogue box before lines clip off-screen.
+* **Rule:** When displaying dynamic SQL query results, long item catalogs, stock tickers, or portfolio lists, you **must paginate** the output (maximum 4–5 items per page) with `[Page X/Y]` headers and `next;` transitions.
+* **Pattern:**
+  ```rAthena
+  .@total_pages = (.@item_count + 4) / 5;
+  for (.@page = 0; .@page < .@total_pages; .@page++) {
+      clear;
+      mes "[List Overview - Page " + (.@page + 1) + "/" + .@total_pages + "]";
+      mes "---------------------------";
+      .@start_idx = .@page * 5;
+      .@end_idx = .@start_idx + 5;
+      if (.@end_idx > .@item_count) .@end_idx = .@item_count;
+      for (.@i = .@start_idx; .@i < .@end_idx; .@i++) {
+          mes "- " + .@items$[.@i] + ": " + .@details$[.@i];
+      }
+      next;
+  }
+  ```
+* **Anti-Pattern:** Never dump 8+ items in a single unpaginated `mes` loop or terminate a multi-item dump directly with `close;` without `next;`.
+
+---
+
 ## 5. Coding Style & Optimization Best Practices
 
 1. **Avoid Nested If-Else Chains:**

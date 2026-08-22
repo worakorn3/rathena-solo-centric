@@ -149,20 +149,32 @@ OnUse:
 				mes "Latest Headline: ^FF8800" + .@ev_name$ + "^000000";
 				mes "  ^777777\"" + .@ev_hl$ + "\"^000000";
 			}
+			next;
 			
-			mes "---------------------------";
 			deletearray .@tab_tickers$[0], getarraysize(.@tab_tickers$);
 			deletearray .@tab_prices[0], getarraysize(.@tab_prices);
 			deletearray .@tab_price_olds[0], getarraysize(.@tab_price_olds);
 			.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
-			for (.@i = 0; .@i < .@tab_stock_cnt; .@i++) {
-				.@p = .@tab_prices[.@i];
-				.@po = .@tab_price_olds[.@i];
-				.@diff = .@p - .@po;
-				if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+"+.@diff+"z)"; }
-				else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "("+.@diff+"z)"; }
-				else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
-				mes "- " + .@tab_tickers$[.@i] + ": " + .@clr$ + .@p + "z^000000 " + .@d$;
+			
+			.@tab_per_page = 5;
+			.@tab_total_pages = (.@tab_stock_cnt + .@tab_per_page - 1) / .@tab_per_page;
+			for (.@p = 0; .@p < .@tab_total_pages; .@p++) {
+				clear;
+				mes "[Market Pulse - Page " + (.@p + 1) + "/" + .@tab_total_pages + "]";
+				mes "---------------------------";
+				.@start_idx = .@p * .@tab_per_page;
+				.@end_idx = .@start_idx + .@tab_per_page;
+				if (.@end_idx > .@tab_stock_cnt) .@end_idx = .@tab_stock_cnt;
+				for (.@i = .@start_idx; .@i < .@end_idx; .@i++) {
+					.@price = .@tab_prices[.@i];
+					.@price_old = .@tab_price_olds[.@i];
+					.@diff = .@price - .@price_old;
+					if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+" + .@diff + "z)"; }
+					else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "(" + .@diff + "z)"; }
+					else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
+					mes "- " + .@tab_tickers$[.@i] + ": " + .@clr$ + .@price + "z^000000 " + .@d$;
+				}
+				next;
 			}
 			close;
 		case 4:

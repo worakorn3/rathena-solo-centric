@@ -3399,4 +3399,31 @@ This cuts out an entire microservice, removes the need for internal RPCs, and ac
 | **`NIF`** | **Nifflheim** (*Underworld Relics & Distressed Assets*) | Distressed Debt / High-Risk "Junk Bond" | **0.0%** | **Extreme (Beta 2.5)** | Occult rifts, zero regulatory protection, asymmetric boom/bust. |
 | **`DIC` / `SPL` / `MAN`** | **Ash Vacuum Frontier** (*Sapha & Laphine Resource Alliance*) | Extraplanar Mining & Seed Venture | **0.0% – 1.0%** | **Extreme (Beta 2.2)** | Refined Bradium / Manuk ore yields, Yggdrasil seed harvesting. |
 
+---
+
+## 🏛️ Phase 8: Database-Backed Municipal Lore & Scalable Stock Detail Modal
+
+> [!NOTE]
+> Extract and store municipal lore and corporate profiles directly in the MySQL database (`solo_stock_market`), update server endpoints and shared types, and implement a zero-bloat, highly scalable click-to-open detail modal in the web client.
+
+### Objectives
+1. **DB Persistence:** Seed all 27 municipal stock tickers (Phase 0 to Phase 5) with canon Ragnarok Online municipal lore in `solo_schema_migrations.sql`.
+2. **API & Shared Types:** Expose `broker_title` and `lore` directly through `@rathena/shared` and `economy.service.ts`.
+3. **Ponytail UI Component:** Implement click-to-open detail modal in `MarketWatch.tsx` with zero third-party tooltip dependencies.
+
+---
+
+## 📈 Phase 9: Stock Market Multi-Phase Visibility & In-Game Dialogue Pagination
+
+> [!NOTE]
+> Ensure all active municipal tickers across Phase 0 (Midgard Core), Phase 1 (Schwarzwald), and Phase 2 (Domestic Expansion) are visible without text overflow or dialog truncation in NPC conversations and the System Tablet app.
+
+### Objectives
+1. **Dialogue Pagination:** Implement 4–5 items per page with `next;` transitions in `npc/custom/stock_exchange.txt` and `npc/custom/system_tablet.txt`.
+2. **Expansion Tickers Activation:** Enable Phase 1 (`LHZ`, `EIN`, `YUN`, `HUG`) and Phase 2 (`ADB`, `CMD`, `IZL`, `LUT`) in `solo_schema_migrations.sql` and MariaDB.
+3. **City Brokers Placement:** Place physical broker NPCs in Aldebaran, Comodo, Izlude, and Lutie.
+4. **CI & Integration Validation:** Update `npc/test/stock_exchange_ci_test.txt` and verify live web API responses.
+
+
+
 

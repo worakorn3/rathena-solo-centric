@@ -4,3 +4,4 @@ export * from "./types/auth";
 export * from "./types/economy";
 export * from "./types/progression";
 export * from "./data/names";
+export * from "./data/municipalLore";

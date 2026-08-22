@@ -41,19 +41,25 @@ L_MenuMain:
 		close;
 	}
 
-	clear;
-	mes "Standard Index (Trends Today):";
-	mes "---------------------------";
-	for (.@i = 0; .@i < .@stock_count; .@i++) {
-		.@p = .@prices[.@i];
-		.@po = .@price_olds[.@i];
-		.@diff = .@p - .@po;
-		if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+" + .@diff + "z)"; }
-		else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "(" + .@diff + "z)"; }
-		else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
-		mes "- " + .@tickers$[.@i] + " (" + .@names$[.@i] + "): " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Div: " + .@divs[.@i] + "z]";
+	.@total_pages = (.@stock_count + 4) / 5;
+	for (.@page = 0; .@page < .@total_pages; .@page++) {
+		clear;
+		mes "Standard Index [Page " + (.@page + 1) + "/" + .@total_pages + "]:";
+		mes "---------------------------";
+		.@start_idx = .@page * 5;
+		.@end_idx = .@start_idx + 5;
+		if (.@end_idx > .@stock_count) .@end_idx = .@stock_count;
+		for (.@i = .@start_idx; .@i < .@end_idx; .@i++) {
+			.@p = .@prices[.@i];
+			.@po = .@price_olds[.@i];
+			.@diff = .@p - .@po;
+			if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+" + .@diff + "z)"; }
+			else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "(" + .@diff + "z)"; }
+			else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
+			mes "- " + .@tickers$[.@i] + " (" + .@names$[.@i] + "): " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Div: " + .@divs[.@i] + "z]";
+		}
+		next;
 	}
-	next;
 
 	if (getgmlevel() >= 99) {
 		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:DRIP Settings:^FF0000[Admin Tools]^000000:Exit")) {
@@ -237,30 +243,38 @@ L_MenuPort:
 		next; goto L_MenuMain;
 	}
 
-	mes "[My Portfolio]";
-	for (.@i = 0; .@i < .@port_count; .@i++) {
-		.@cn$ = .@port_tickers$[.@i];
-		.@s = .@port_shares[.@i];
-		.@tc = .@port_costs[.@i];
-		.@pending = .@port_pending[.@i];
-		.@p = 0; .@div = 0; .@sname$ = "";
-		query_sql "SELECT name, price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@sname$, .@p, .@div;
+	.@port_per_page = 2;
+	.@port_pages = (.@port_count + .@port_per_page - 1) / .@port_per_page;
+	for (.@p = 0; .@p < .@port_pages; .@p++) {
+		clear;
+		mes "[My Portfolio - Page " + (.@p + 1) + "/" + .@port_pages + "]";
+		mes "---------------------------";
+		.@start_p = .@p * .@port_per_page;
+		.@end_p = .@start_p + .@port_per_page;
+		if (.@end_p > .@port_count) .@end_p = .@port_count;
+		for (.@i = .@start_p; .@i < .@end_p; .@i++) {
+			.@cn$ = .@port_tickers$[.@i];
+			.@s = .@port_shares[.@i];
+			.@tc = .@port_costs[.@i];
+			.@pending = .@port_pending[.@i];
+			.@price = 0; .@div = 0; .@sname$ = "";
+			query_sql "SELECT name, price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@sname$, .@price, .@div;
 
-		.@avg = .@tc / .@s;
-		.@pl = .@p - .@avg;
-		if (.@pl > 0) .@pl$ = "^00FF00+" + .@pl + "z^000000";
-		else if (.@pl < 0) .@pl$ = "^FF0000" + .@pl + "z^000000";
-		else .@pl$ = "0z";
-		
-		if (.@avg > 0) { .@yoc_p = (.@div * 1000) / .@avg; .@yoc$ = (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%"; } else .@yoc$ = "0.0%";
-		if (.@p > 0) { .@cur_p = (.@div * 1000) / .@p; .@cur$ = (.@cur_p/10) + "." + (.@cur_p % 10) + "%"; } else .@cur$ = "0.0%";
-		
-		mes "- " + .@cn$ + " (" + .@sname$ + "): " + .@s + " shares";
-		mes "  Avg: " + .@avg + "z | Market: " + .@p + "z | P/L: " + .@pl$;
-		mes "  ^777777Yield: ^000000" + .@cur$ + " (Market) | ^0000FFYoC: " + .@yoc$ + " (Average)^000000";
-		mes "  ^0000FFPending Div: " + .@pending + "z^000000";
+			.@avg = .@tc / .@s;
+			.@pl = .@price - .@avg;
+			if (.@pl > 0) .@pl$ = "^00FF00+" + .@pl + "z^000000";
+			else if (.@pl < 0) .@pl$ = "^FF0000" + .@pl + "z^000000";
+			else .@pl$ = "0z";
+			
+			if (.@avg > 0) { .@yoc_p = (.@div * 1000) / .@avg; .@yoc$ = (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%"; } else .@yoc$ = "0.0%";
+			if (.@price > 0) { .@cur_p = (.@div * 1000) / .@price; .@cur$ = (.@cur_p/10) + "." + (.@cur_p % 10) + "%"; } else .@cur$ = "0.0%";
+			
+			mes "- " + .@cn$ + " (" + .@sname$ + "): " + .@s + " shares";
+			mes "  Avg: " + .@avg + "z | Market: " + .@price + "z | P/L: " + .@pl$;
+			mes "  ^777777Yield: ^000000" + .@cur$ + " | ^0000FFYoC: " + .@yoc$ + "^000000 | Pending: ^0000FF" + .@pending + "z^000000";
+		}
+		next;
 	}
-	next;
 	goto L_MenuMain;
 
 L_MenuDrip:

@@ -14,6 +14,8 @@
 | **HOT (3x)** | `DOCKER_TEST` | Test map-server without interrupting live port | `docker run ... --map-config conf/map_test.conf` on port 5122 |
 | **HOT (3x)** | `WIN_TOOLING` | Native AI tools only; avoid shell redirection | NEVER use `echo` / `>>` on Windows (UTF-16 bug); use built-in tools |
 | **HOT (2x)** | `WORKFLOW` | Never blind edit; plan & test locally first | Require planning on complex/spec changes; test before declaring success |
+| **HOT (1x)** | `NPC_PAGINATION` | Paginate all dynamic query loops | Max 4-5 items per page with `next;` in NPC dialogues |
+| **HOT (1x)** | `WEB_DEPLOY` | For every web change, always rebuild docker compose | Auto-run `docker compose ... up -d --build web-portal` on web edits |
 
 ## Hot Caveman Log
 - [2026-08-01] NPC_HEADER_TAB [FREQ: 4] | BAD: map-server crash `expected tab, found space` | WHY: space between header fields | FIX: single literal `\t` | RULE: strictly literal `\t` in NPC/warp/shop/monster headers
@@ -24,5 +26,8 @@
 - [2026-08-16] DOCKER_TEST_V2 [FREQ: 3] | BAD: test map-server port collision or downtime | WHY: test container port collision | FIX: pass temporary `conf/map_test.conf` overriding port to 5122 | RULE: test with temporary port override config
 - [2026-08-22] POWERSHELL_ECHO_CORRUPTION [FREQ: 3] | BAD: UTF-16 file corruption | WHY: shell `>>` / `echo` redirection on Windows | FIX: AI-native file tools | RULE: NEVER use shell redirection to write files on Windows
 - [2026-08-22] WORKFLOW_PLANNING [FREQ: 2] | BAD: unsolicited code edits without verification | WHY: assumed permission without plan/test | FIX: plan, confirm, test locally | RULE: explain approach first; test before finishing
+- [2026-08-23] DOCKER_COMPOSE_WEB_REBUILD [FREQ: 1] | BAD: web changes not active in live container | WHY: forgot compose rebuild after web edit | FIX: docker compose up -d --build web-portal | RULE: always trigger compose rebuild after web changes
+- [2026-08-23] DOCKERIGNORE_NESTED_NODE_MODULES [FREQ: 1] | BAD: ENOENT reading /app/apps/server/node_modules/elysia | WHY: .dockerignore had bare node_modules instead of **/node_modules; copied host Windows NTFS symlinks into Linux Alpine | FIX: use **/node_modules in .dockerignore | RULE: always use **/node_modules and **/dist in monorepo .dockerignore
+- [2026-08-23] NPC_DIALOGUE_OVERFLOW [FREQ: 1] | BAD: dynamic tickers/items clipped off-screen | WHY: unpaginated mes loop exceeded 6-8 line RO dialog height | FIX: 4-5 items per page with next; | RULE: always paginate dynamic lists to 4-5 items per dialog page
 
 *For historical 1-off debug logs and domain edge cases, see [MISTAKES_ARCHIVE.md](file:///E:/Games/Ragnarok/rathena-solo-centric/MISTAKES_ARCHIVE.md).*

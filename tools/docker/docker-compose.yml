@@ -154,9 +154,16 @@ services:
             DB_USER: "ro_user"
             DB_PASSWORD: "ro_password"
             DB_DATABASE: "ragnarok"
+            PRIMARY_DB_HOST: "db"
+            PRIMARY_DB_PORT: 3306
+            PRIMARY_DB_USER: "ragnarok"
+            PRIMARY_DB_PASSWORD: "ragnarok"
+            PRIMARY_DB_DATABASE: "ragnarok"
+            JWT_SECRET: "rathena_solo_portal_secret_key_2026_super_secure"
             PORT: 3000
         depends_on:
             - db-replica
+            - db
 
 
 

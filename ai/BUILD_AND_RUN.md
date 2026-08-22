@@ -19,5 +19,13 @@ Open `rAthena.sln` in Visual Studio 2017 or newer and build the solution in **Re
   - `status`: `./athena-start status`
   - `watch`: `./athena-start watch` (Auto-restart on crash)
 
+### Upstream Merges & Makefile Regeneration
+- **Crucial Rule:** Whenever pulling or merging upstream commits that touch `*.in`, `CMakeLists.txt`, or introduce new source directories/translation units (e.g. `src/map/skills/`), you **must re-run `./configure`** (or CMake) before executing `make`.
+- **Docker Command:**
+  ```bash
+  ./configure --enable-packetver=20250716 && make clean server
+  ```
+
 ### Web Server
 - **Docker Rebuild Rule:** For every web change, always rebuild the docker compose.
+
