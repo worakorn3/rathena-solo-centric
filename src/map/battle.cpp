@@ -2538,22 +2538,27 @@ static int64 battle_calc_base_damage(block_list *src, struct status_data *status
 		if (atkmin > atkmax)
 			atkmin = atkmax;
 	} else { //PCs
-		atkmax = wa->atk;
-		type = (wa == &status->lhw)?EQI_HAND_L:EQI_HAND_R;
+		if (flag&BDMG_MAGIC) {
+			atkmin = status->matk_min;
+			atkmax = status->matk_max;
+		} else {
+			atkmax = wa->atk;
+			type = (wa == &status->lhw)?EQI_HAND_L:EQI_HAND_R;
 
-		if (!(flag&BDMG_CRIT) || (flag&BDMG_ARROW)) { //Normal attacks
-			atkmin = status->dex;
+			if (!(flag&BDMG_CRIT) || (flag&BDMG_ARROW)) { //Normal attacks
+				atkmin = status->dex;
 
-			if (sd->equip_index[type] >= 0 && sd->inventory_data[sd->equip_index[type]] && sd->inventory_data[sd->equip_index[type]]->type == IT_WEAPON)
-				atkmin = atkmin*(80 + sd->inventory_data[sd->equip_index[type]]->weapon_level*20)/100;
+				if (sd->equip_index[type] >= 0 && sd->inventory_data[sd->equip_index[type]] != nullptr && sd->inventory_data[sd->equip_index[type]]->type == IT_WEAPON)
+					atkmin = atkmin*(80 + sd->inventory_data[sd->equip_index[type]]->weapon_level*20)/100;
 
-			if (atkmin > atkmax)
-				atkmin = atkmax;
-
-			if(flag&BDMG_ARROW) { //Bows
-				atkmin = atkmin*atkmax/100;
 				if (atkmin > atkmax)
-					atkmax = atkmin;
+					atkmin = atkmax;
+
+				if(flag&BDMG_ARROW) { //Bows
+					atkmin = atkmin*atkmax/100;
+					if (atkmin > atkmax)
+						atkmax = atkmin;
+				}
 			}
 		}
 	}
@@ -2615,9 +2620,7 @@ static int64 battle_calc_base_damage(block_list *src, struct status_data *status
 	}
 
 	//Finally, add baseatk
-	if(flag&BDMG_MAGIC)
-		damage += status->matk_min;
-	else
+	if(!(flag&BDMG_MAGIC))
 		damage += status->batk;
 
 	if (sd)
@@ -2707,10 +2710,11 @@ static int32 battle_range_type(const block_list* src, const block_list* target, 
 		case SS_SHIMIRU: // 11 cell cast range.
 		case SKE_STAR_LIGHT_KICK: // 7 cell cast range.
 			return BF_SHORT;
-		case CD_PETITIO: { // Skill range is 2 but damage is melee with books and ranged with mace.
-			const map_session_data* sd = BL_CAST(BL_PC,src);
+		case CD_EFFLIGO:	// Skill range is 2 but damage is melee with books and ranged with mace.
+		case CD_PETITIO: {
+			const map_session_data* sd = BL_CAST(BL_PC, src);
 
-			if (sd && (sd->status.weapon == W_MACE || sd->status.weapon == W_2HMACE))
+			if (sd != nullptr && (sd->status.weapon == W_MACE || sd->status.weapon == W_2HMACE))
 				return BF_LONG;
 
 			break;
