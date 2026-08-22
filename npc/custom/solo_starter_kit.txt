@@ -1,31 +1,47 @@
 //============================================================
 //= Solo Starter Kit
-//= Provides a baseline starter kit to every new character.
+//= Provides baseline starter supplies, System Tablet, and
+//= mount reins (Boarding Halter) to every adventurer.
 //============================================================
 
 -	script	SoloStarterKit	-1,{
 OnPCLoginEvent:
-	if (Char_StarterKit == 0) {
-		Char_StarterKit = 1;
-		getitem 501, 50;    // Red Potion
-		getitem 602, 10;    // Butterfly Wing
-		getitem 601, 20;    // Fly Wing
-		getitem 517, 30;    // Meat
-		Zeny += 5000;
-		dispbottom "Welcome! You've received a Starter Kit.";
-
-		// Support Class Mercenary Boost
-		// Acolyte (4), Bard (19), Dancer (20)
-		if (Class == 4 || Class == 19 || Class == 20) {
-			getitem 12194, 3; // Lancer Scroll 10
-			dispbottom "Support Soul: You've received 3 Mercenary Scrolls.";
+	// 1. Essential Utility Auto-Provision & Recovery
+	if (countitem(50000) == 0) {
+		if (checkweight(50000, 1)) {
+			getitem 50000, 1;   // System Tablet
+			dispbottom "System Tablet: Received your System Tablet utility item.";
 		}
 	}
-	
-	if (Char_StarterKit == 1) {
-		Char_StarterKit = 2;
-		getitem 12622, 1;   // Boarding Halter (Reins Of Mount)
-		dispbottom "Starter Kit Upgrade: Received a Boarding Halter for faster travel!";
+
+	if (countitem(12622) == 0) {
+		if (checkweight(12622, 1)) {
+			getitem 12622, 1;   // Boarding Halter (Reins Of Mount)
+			dispbottom "Travel Gear: Received a Boarding Halter for mount travel.";
+		}
+	}
+
+	// 2. First-Time Character Starter Supplies
+	if (Char_StarterKit == 0) {
+		if (checkweight(501, 50) && checkweight(602, 10) && checkweight(601, 20) && checkweight(517, 30)) {
+			Char_StarterKit = 1;
+			getitem 501, 50;    // Red Potion
+			getitem 602, 10;    // Butterfly Wing
+			getitem 601, 20;    // Fly Wing
+			getitem 517, 30;    // Meat
+			Zeny += 5000;
+			dispbottom "Welcome! You've received your Adventurer Starter Kit.";
+
+			// Support Class Mercenary Boost
+			// Acolyte (4), Bard (19), Dancer (20)
+			if (Class == 4 || Class == 19 || Class == 20) {
+				if (checkweight(12194, 3)) {
+					getitem 12194, 3; // Lancer Scroll 10
+					dispbottom "Support Soul: You've received 3 Mercenary Scrolls.";
+				}
+			}
+		}
 	}
 	end;
 }
+
