@@ -1,6 +1,8 @@
 export interface StockHolding {
   ticker: string;
   name: string;
+  sector?: string;
+  archetype?: string;
   shares: number;
   totalCost: number;
   avgBuyPrice: number;
@@ -18,6 +20,9 @@ export interface StockHolding {
 export interface StockMarketQuote {
   ticker: string;
   name: string;
+  sector?: string;
+  archetype?: string;
+  lore?: string;
   price: number;
   priceOld: number;
   changeAmount: number;
@@ -60,6 +65,8 @@ export interface NetWorthSummary {
   bank: BankData;
   activeEvents?: StockActiveEvent[];
   latestEvent?: StockEventLog | null;
+  marketMood?: number;
+  marketDrift?: number;
 }
 
 export interface StockEventLog {
@@ -84,4 +91,14 @@ export interface StockActiveEvent {
   taxRateOverride: number;
   moodOverride: number;
   headline: string;
+}
+
+export interface DailyBounty {
+  tier: number;
+  index: number;
+  itemId: number;
+  itemName: string;
+  price: number;
+  mobName: string;
+  mobLevel: number;
 }

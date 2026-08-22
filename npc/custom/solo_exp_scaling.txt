@@ -5,6 +5,25 @@
 
 -	script	SoloExpScaling	-1,{
 OnPCLoginEvent:
+	query_sql "SELECT `value` FROM `solo_server_config` WHERE `key` = 'expedition_cap_hours' LIMIT 1", .@cap_hours;
+	if (.@cap_hours <= 0) {
+		query_sql "SELECT `mval` FROM `solo_stock_meta` WHERE `mkey` = 'expedition_cap_hours' LIMIT 1", .@cap_hours;
+	}
+	if (.@cap_hours <= 0) .@cap_hours = 48;
+	.@cap_min = .@cap_hours * 60;
+
+	if (LastLogoutTime > 0) {
+		.@elapsed_min = (gettimetick(2) - LastLogoutTime) / 60;
+		UnclaimedRestMin += .@elapsed_min;
+		if (UnclaimedRestMin > .@cap_min) UnclaimedRestMin = .@cap_min;
+		LastLogoutTime = gettimetick(2);
+	} else {
+		LastLogoutTime = gettimetick(2);
+	}
+
+	if (UnclaimedRestMin > 0) {
+		dispbottom "System Tablet: You have " + (UnclaimedRestMin / 60) + "h " + (UnclaimedRestMin % 60) + "m of offline resting rewards ready to claim in System Tablet!";
+	}
 OnPCLoadMapEvent:
 OnPCBaseLvUpEvent:
 	// Scaling Solo-Centric EXP Rates
@@ -26,4 +45,9 @@ OnPCBaseLvUpEvent:
 	sc_start SC_EXPBOOST, 2000000000, .@boost; 
 	sc_start SC_JEXPBOOST, 2000000000, .@boost;
 	end;
+
+OnPCLogoutEvent:
+	LastLogoutTime = gettimetick(2);
+	end;
 }
+

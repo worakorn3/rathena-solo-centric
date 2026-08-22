@@ -23,19 +23,30 @@ interface RawCharRow {
   hp: number;
   max_sp: number;
   sp: number;
+  max_ap?: number;
+  ap?: number;
   str: number;
   agi: number;
   vit: number;
   int: number;
   dex: number;
   luk: number;
+  pow?: number;
+  sta?: number;
+  wis?: number;
+  spl?: number;
+  con?: number;
+  crt?: number;
   status_point: number;
   skill_point: number;
+  trait_point?: number;
   last_map: string;
   last_x: number;
   last_y: number;
   online: number;
   sex: "M" | "F";
+  last_logout_time?: number;
+  unclaimed_rest_min?: number;
 }
 
 interface RawInventoryRow {
@@ -70,26 +81,47 @@ function mapCharRowToSummary(row: RawCharRow): CharacterSummary {
     hp: row.hp,
     maxSp: row.max_sp,
     sp: row.sp,
+    maxAp: row.max_ap !== undefined ? Number(row.max_ap) : 0,
+    ap: row.ap !== undefined ? Number(row.ap) : 0,
     str: row.str,
     agi: row.agi,
     vit: row.vit,
     int: row.int,
     dex: row.dex,
     luk: row.luk,
+    pow: row.pow !== undefined ? Number(row.pow) : 0,
+    sta: row.sta !== undefined ? Number(row.sta) : 0,
+    wis: row.wis !== undefined ? Number(row.wis) : 0,
+    spl: row.spl !== undefined ? Number(row.spl) : 0,
+    con: row.con !== undefined ? Number(row.con) : 0,
+    crt: row.crt !== undefined ? Number(row.crt) : 0,
     statusPoint: row.status_point,
     skillPoint: row.skill_point,
+    traitPoint: row.trait_point !== undefined ? Number(row.trait_point) : 0,
     lastMap: row.last_map,
     lastX: row.last_x,
     lastY: row.last_y,
     online: Boolean(row.online),
     sex: row.sex || "M",
+    lastLogoutTime: row.last_logout_time ? Number(row.last_logout_time) : 0,
+    unclaimedRestMin: row.unclaimed_rest_min ? Number(row.unclaimed_rest_min) : 0,
   };
 }
 
 const CHAR_COLUMNS = `
   \`char_id\`, \`account_id\`, \`char_num\`, \`name\`, \`class\`, \`base_level\`, \`job_level\`,
-  \`base_exp\`, \`job_exp\`, \`zeny\`, \`max_hp\`, \`hp\`, \`max_sp\`, \`sp\`, \`str\`, \`agi\`, \`vit\`,
-  \`int\`, \`dex\`, \`luk\`, \`status_point\`, \`skill_point\`, \`last_map\`, \`last_x\`, \`last_y\`, \`online\`, \`sex\`
+  \`base_exp\`, \`job_exp\`, \`zeny\`, \`max_hp\`, \`hp\`, \`max_sp\`, \`sp\`, \`max_ap\`, \`ap\`,
+  \`str\`, \`agi\`, \`vit\`, \`int\`, \`dex\`, \`luk\`, \`pow\`, \`sta\`, \`wis\`, \`spl\`, \`con\`, \`crt\`,
+  \`status_point\`, \`skill_point\`, \`trait_point\`, \`last_map\`, \`last_x\`, \`last_y\`, \`online\`, \`sex\`,
+  COALESCE(
+    (SELECT CAST(\`value\` AS UNSIGNED) FROM \`char_reg_num\` WHERE \`char_id\` = \`char\`.\`char_id\` AND \`key\` = 'LastLogoutTime' LIMIT 1),
+    UNIX_TIMESTAMP(\`last_login\`),
+    UNIX_TIMESTAMP()
+  ) AS \`last_logout_time\`,
+  COALESCE(
+    (SELECT CAST(\`value\` AS UNSIGNED) FROM \`char_reg_num\` WHERE \`char_id\` = \`char\`.\`char_id\` AND \`key\` = 'UnclaimedRestMin' LIMIT 1),
+    0
+  ) AS \`unclaimed_rest_min\`
 `;
 
 export class CharacterService {
@@ -249,3 +281,5 @@ export class CharacterService {
     return rows.map(mapCharRowToSummary);
   }
 }
+
+

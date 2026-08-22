@@ -24,7 +24,7 @@ OnPCLoginEvent:
 	
 	if (Char_StarterKit == 1) {
 		Char_StarterKit = 2;
-		getitem 12921, 1;   // Boarding Halter
+		getitem 12622, 1;   // Boarding Halter (Reins Of Mount)
 		dispbottom "Starter Kit Upgrade: Received a Boarding Halter for faster travel!";
 	}
 	end;

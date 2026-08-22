@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Comparison: Option A vs Option B (100vh Non-Scrolling Demos)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#050507] text-primary h-screen max-h-screen overflow-hidden flex flex-col font-sans">
+
+  <!-- TOP CONTROL BAR (Layout Switcher) -->
+  <header class="h-12 bg-surface border-b border-border px-6 flex items-center justify-between shrink-0 z-50">
+    <div class="flex items-center space-x-3">
+      <span class="font-black text-sm uppercase tracking-wider text-accent flex items-center gap-2">
+        <i data-lucide="layers" class="w-4 h-4"></i> Layout Design Sandbox
+      </span>
+      <span class="text-xs text-muted">| 100vh Fixed-Viewport (No-Scroll) UI Comparison</span>
+    </div>
+
+    <!-- Toggle Buttons -->
+    <div class="flex items-center bg-background border border-border p-1 rounded-lg">
+      <button onclick="setLayout('a')" id="btn-layout-a" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md">
+        <i data-lucide="layout-panel-top" class="w-3.5 h-3.5"></i>
+        <span>Option A: Header-Integrated Tabs</span>
+      </button>
+      <button onclick="setLayout('b')" id="btn-layout-b" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
+        <i data-lucide="layout-panel-left" class="w-3.5 h-3.5"></i>
+        <span>Option B: Left Icon Rail</span>
+      </button>
+    </div>
+
+    <!-- Live Direct Links -->
+    <div class="flex items-center gap-3 text-xs">
+      <a href="demo-option-a.html" target="_blank" class="text-muted hover:text-accent flex items-center gap-1 transition-colors">
+        <span>Open A in Tab</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+      </a>
+      <span class="text-border">•</span>
+      <a href="demo-option-b.html" target="_blank" class="text-muted hover:text-accent flex items-center gap-1 transition-colors">
+        <span>Open B in Tab</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- LIVE EMBED IFRAME (Full 100vh Stage) -->
+  <div class="flex-1 min-h-0 bg-background relative">
+    <iframe id="demo-frame" src="demo-option-a.html" class="w-full h-full border-0"></iframe>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function setLayout(mode) {
+      const frame = document.getElementById('demo-frame');
+      const btnA = document.getElementById('btn-layout-a');
+      const btnB = document.getElementById('btn-layout-b');
+
+      if (mode === 'a') {
+        frame.src = 'demo-option-a.html';
+        btnA.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
+        btnB.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+      } else {
+        frame.src = 'demo-option-b.html';
+        btnB.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
+        btnA.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+      }
+    }
+  </script>
+</body>
+</html>

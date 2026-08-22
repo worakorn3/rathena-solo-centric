@@ -1,11 +1,12 @@
 import React from "react";
-import { Coins, Search, User, LogOut, RefreshCw, Shield, Database } from "lucide-react";
+import { Coins, Search, User, LogOut, Shield, Database } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { formatZeny } from "../../lib/assets";
+import { SyncButton } from "./SyncButton";
 
 interface HeaderProps {
   netWorth?: number;
-  onRefresh?: () => void;
+  onRefresh?: () => Promise<void> | void;
   isRefreshing?: boolean;
   onOpenSearch: () => void;
 }
@@ -13,36 +14,32 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   netWorth,
   onRefresh,
-  isRefreshing = false,
   onOpenSearch,
 }) => {
   const { user, openLoginModal, logout } = useAuth();
 
   return (
-    <header className="bg-[#151c27] border-b-2 border-ro-borderMedium px-4 py-2.5 shadow-roWindow relative z-20">
-      {/* Subtle top glare */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/10"></div>
-      
+    <header className="bg-surface border-b border-border px-4 py-2.5 relative z-20">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 relative z-10">
         {/* Logo & Title */}
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded shadow-roDeepInset bg-[#1a2332] border border-ro-gold flex items-center justify-center">
-            <Shield className="text-ro-gold" size={20} />
+          <div className="w-10 h-10 rounded-lg bg-surface2 border border-border flex items-center justify-center">
+            <Shield className="text-accent" size={20} />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-cinzel font-black text-sm sm:text-base tracking-widest text-slate-100 uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                Photonic <span className="text-ro-gold">Singularity</span>
+              <span className="font-bold text-sm sm:text-base text-primary uppercase">
+                Photonic <span className="text-accent">Singularity</span>
               </span>
-              <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1 shadow-inner">
+              <span className="bg-success/10 border border-success/20 text-success text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_5px_#34d399]" />
                 SOLO RO
               </span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-              <span className="font-sans tracking-wide text-slate-300">Player Portal</span>
-              <span className="text-ro-borderMedium">•</span>
-              <span className="flex items-center gap-1 text-sky-300/80 font-mono">
+            <div className="flex items-center gap-2 text-[11px] text-muted">
+              <span className="font-medium">Player Portal</span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-info font-mono">
                 <Database size={11} />
                 Replica :3307 (RO)
               </span>
@@ -52,11 +49,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center: Net Worth Ticker (if logged in) */}
         {user && netWorth !== undefined && (
-          <div className="hidden md:flex items-center space-x-2.5 bg-ro-bg border-2 border-ro-borderMedium shadow-roInset px-4 py-1.5 rounded-md">
-            <Coins className="text-ro-zeny" size={16} />
-            <span className="text-[11px] text-slate-300 font-bold uppercase tracking-wider">Net Worth:</span>
-            <span className="text-sm font-black font-mono text-ro-zeny drop-shadow-[0_1px_1px_rgba(0,0,0,1)]">
-              {formatZeny(netWorth)} <span className="text-[10px] text-amber-200/80 font-sans">Z</span>
+          <div className="hidden md:flex items-center space-x-2.5 bg-surface2 border border-border px-4 py-1.5 rounded-md">
+            <Coins className="text-accent" size={16} />
+            <span className="text-[11px] text-muted font-bold uppercase tracking-wider">Net Worth:</span>
+            <span className="text-sm font-bold font-mono text-accent">
+              {formatZeny(netWorth)} <span className="text-[10px] opacity-80 font-sans">Z</span>
             </span>
           </div>
         )}
@@ -66,51 +63,40 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Public Armory Search */}
           <button
             onClick={onOpenSearch}
-            className="ro-button flex items-center space-x-1.5 py-1 px-2.5"
+            className="flex items-center gap-1.5 py-1 px-2.5 rounded hover:bg-surface2 transition-colors text-muted hover:text-primary text-sm font-medium"
             title="Search character armory"
           >
-            <Search size={13} className="text-sky-300" />
+            <Search size={14} className="text-info" />
             <span className="hidden sm:inline">Armory Search</span>
           </button>
 
-          {/* Manual Refresh Button */}
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className={`ro-button flex items-center space-x-1.5 py-1 px-2.5 ${
-                isRefreshing ? "opacity-60 cursor-not-allowed" : ""
-              }`}
-              title="Manual Data Sync"
-            >
-              <RefreshCw size={13} className={isRefreshing ? "animate-spin text-ro-gold" : ""} />
-              <span className="hidden sm:inline">Sync</span>
-            </button>
-          )}
+          {/* Manual Refresh / Sync Button */}
+          {onRefresh && <SyncButton onSync={onRefresh} />}
+
 
           {/* User Status / Login */}
           {user ? (
             <div className="flex items-center space-x-2">
-              <div className="ro-inset px-2.5 py-1 flex items-center space-x-1.5 text-xs text-slate-200">
-                <User size={13} className="text-ro-gold" />
-                <span className="font-semibold text-slate-100">{user.userid}</span>
-                <span className="text-[10px] text-slate-400 font-mono">#{user.accountId}</span>
+              <div className="bg-surface2 border border-border px-2.5 py-1 rounded flex items-center space-x-1.5 text-xs">
+                <User size={13} className="text-accent" />
+                <span className="font-semibold text-primary">{user.userid}</span>
+                <span className="text-[10px] text-muted font-mono">#{user.accountId}</span>
               </div>
               <button
                 onClick={logout}
-                className="ro-button hover:border-red-500/50 hover:bg-red-950/40 p-1.5"
+                className="p-1.5 rounded hover:bg-danger/20 text-danger/70 hover:text-danger transition-colors"
                 title="Logout"
               >
-                <LogOut size={13} className="text-red-400" />
+                <LogOut size={14} />
               </button>
             </div>
           ) : (
             <button
               onClick={openLoginModal}
-              className="ro-button-gold flex items-center space-x-1.5 py-1 px-3"
+              className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-background font-bold py-1.5 px-3 rounded text-sm transition-colors"
             >
-              <User size={13} />
-              <span>Login</span>
+              <User size={14} />
+              <span>Log In</span>
             </button>
           )}
         </div>

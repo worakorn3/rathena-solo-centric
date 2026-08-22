@@ -16,19 +16,30 @@ export interface CharacterSummary {
   hp: number;
   maxSp: number;
   sp: number;
+  maxAp?: number;
+  ap?: number;
   str: number;
   agi: number;
   vit: number;
   int: number;
   dex: number;
   luk: number;
+  pow?: number;
+  sta?: number;
+  wis?: number;
+  spl?: number;
+  con?: number;
+  crt?: number;
   statusPoint: number;
   skillPoint: number;
+  traitPoint?: number;
   lastMap: string;
   lastX: number;
   lastY: number;
   online: boolean;
   sex: "M" | "F";
+  lastLogoutTime?: number;
+  unclaimedRestMin?: number;
 }
 
 export interface CharacterItem {

@@ -56,7 +56,13 @@
 ### ⏳ MVP 2: Remote Intel & Market Utilities (Planned)
 - **Monster Intel Web App:** Remote web version of System Tablet's Monster Intel app (drops, spawn locations, resistances).
 - **Collection Log Viewer:** Regional collection discovery progress by zone.
-- **Stock Market Alerts:** High/low price alerts and dividend distribution log.
+- **Stock Market Alerts & Analytics:** High/low price alerts, dividend logs, and sector index charts.
+- **Phased Municipal Stock Market Expansion:**
+  - **Phase 7.1 (Schwarzwald):** `LHZ` (Rekenber Biotech Pure Growth), `EIN` (Heavy Industrial CapEx), `YUN` (Deep-Tech Venture), `HUG` (Leisure Micro-Cap).
+  - **Phase 7.2 (Midgarts Expansion):** `ADB` (Kafra Blue-Chip Utility), `CMD` (High-Beta Casino/Leisure), `IZL` (Maritime Transport), `LUT` (Toy Factory Assembly).
+  - **Phase 7.3 (Theocratic Sovereign & Commodities):** `RAC` (Freya Sovereign Gold Trust), `VEI` (Volcanic Energy), `JAW` (Luxury Hospitality), `UMB` (Ecotourism Raw Commodities).
+  - **Phase 7.4 (Global Cultural & Agrarian Markets):** `LOU` (Herbal Healthcare), `MOS` (Forestry Value), `AMA`, `AYO`, `GON`, `BRA`, `DEW`, `MAL`.
+  - **Phase 7.5 (Outliers & Interdimensional Markets):** `NIF` (Distressed Junk Bond), `DIC`/`SPL`/`MAN` (Ash Vacuum Frontier).
 
 ### ⏳ MVP 3: Web Admin & Economy Balancer (Planned)
 - **Dynamic Pool Allocator:** Web interface to curate items in `custom_junk_pool` and daily junk sinks without touching scripts.

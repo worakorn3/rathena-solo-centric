@@ -7,10 +7,17 @@ import { authRoutes } from "./routes/auth.routes";
 import { economyRoutes } from "./routes/economy.routes";
 import { characterRoutes } from "./routes/character.routes";
 import { trackingRoutes } from "./routes/tracking.routes";
+import { assetsRoutes } from "./routes/assets.routes";
 import { config } from "./config";
+import { initMarketCron } from "./cron/marketCron";
 
 const clientDistPath = process.env.CLIENT_DIST_PATH || path.resolve(__dirname, "../../client/dist");
 const hasClientDist = fs.existsSync(clientDistPath);
+
+// Initialize Cron Jobs
+if (process.env.NODE_ENV !== "test") {
+  initMarketCron();
+}
 
 export const app = new Elysia()
   .use(
@@ -29,7 +36,8 @@ export const app = new Elysia()
   .use(authRoutes)
   .use(economyRoutes)
   .use(characterRoutes)
-  .use(trackingRoutes);
+  .use(trackingRoutes)
+  .use(assetsRoutes);
 
 // In production or container mode, serve static assets and SPA index fallback
 if (hasClientDist) {

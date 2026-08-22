@@ -58,6 +58,26 @@ services:
         environment:
             BUILDER_CONFIGURE: "--enable-packetver=20250716"
 
+    db-migrator:
+        image: "mariadb:noble"
+        container_name: "rathena-db-migrator"
+        restart: "no"
+        command: >
+            sh -c "
+            echo 'Waiting for database...' &&
+            until mariadb -h db -u ragnarok -pragnarok -e 'SELECT 1' >/dev/null 2>&1; do sleep 1; done &&
+            echo 'Applying custom migrations...' &&
+            for f in /sql-files/custom/*.sql; do 
+                echo \"Running $$f...\" &&
+                mariadb -h db -u ragnarok -pragnarok ragnarok < \"$$f\"; 
+            done &&
+            echo 'All custom migrations applied successfully!'
+            "
+        volumes:
+            - "../../sql-files:/sql-files:ro"
+        depends_on:
+            - db
+
     login:
         image: "rathena:local"
         container_name: "rathena-login"
@@ -137,6 +157,8 @@ services:
             PORT: 3000
         depends_on:
             - db-replica
+
+
 
 volumes:
     rathenadb:

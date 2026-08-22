@@ -12,8 +12,19 @@ export const config = {
     waitForConnections: true,
     queueLimit: 0,
   },
+  primaryDb: {
+    host: process.env.PRIMARY_DB_HOST || "127.0.0.1",
+    port: parseInt(process.env.PRIMARY_DB_PORT || "3306", 10),
+    user: process.env.PRIMARY_DB_USER || "ragnarok",
+    password: process.env.PRIMARY_DB_PASSWORD || "ragnarok",
+    database: process.env.PRIMARY_DB_DATABASE || "ragnarok",
+    connectionLimit: 10,
+    waitForConnections: true,
+    queueLimit: 0,
+  },
   server: {
     port: parseInt(process.env.PORT || "4000", 10),
     jwtSecret: process.env.JWT_SECRET || "rathena_solo_portal_secret_key_2026_super_secure",
   }
 };
+

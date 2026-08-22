@@ -6,26 +6,11 @@ import {
   StockEventLog,
   StockHolding,
   StockMarketQuote,
+  DailyBounty,
   getJobName
 } from "@rathena/shared";
 
-const STOCK_NAMES: Record<string, string> = {
-  PRT: "Prontera Capital Inc.",
-  GEF: "Geffen Arcanetech",
-  MOR: "Morroc Oasis Trading",
-  PAY: "Payon Timber & Craft",
-  ALB: "Alberta Maritime Logistics",
-  JIN: "Juno Industrial",
-  VNG: "Vanguard Security",
-  SHA: "Shadow Guild Guild",
-  RGC: "Ragnarok Global Corp",
-  PSC: "Prontera Steelworks",
-  GNG: "Geffenia Energy",
-  XRO: "X-Rune Corp",
-  GRM: "Goram Minerals",
-  DOP: "Doppelganger Logistics",
-  POR: "Poring Co."
-};
+// Ponytail: Metadata (names, sectors, lore) is loaded dynamically from `solo_stock_market`
 
 interface CharZenyRow {
   char_id: number;
@@ -42,6 +27,11 @@ interface AccRegRow {
 
 interface StockMarketRow {
   ticker: string;
+  name: string;
+  broker_title?: string;
+  sector?: string;
+  archetype?: string;
+  lore?: string;
   price: number;
   price_old: number;
   dividend: number;
@@ -141,7 +131,7 @@ export class EconomyService {
     let marketRows: StockMarketRow[] = [];
     try {
       marketRows = await query<StockMarketRow>(
-        "SELECT ticker, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
     } catch {
       // If table doesn't exist yet, return empty
@@ -156,7 +146,10 @@ export class EconomyService {
 
       return {
         ticker: m.ticker,
-        name: STOCK_NAMES[m.ticker] || `${m.ticker} Enterprises`,
+        name: m.name || `${m.ticker} Enterprises`,
+        sector: m.sector || undefined,
+        archetype: m.archetype || undefined,
+        lore: m.lore || undefined,
         price,
         priceOld,
         changeAmount,
@@ -207,7 +200,9 @@ export class EconomyService {
 
       return {
         ticker: p.ticker,
-        name: STOCK_NAMES[p.ticker] || `${p.ticker} Enterprises`,
+        name: quote ? quote.name : `${p.ticker} Enterprises`,
+        sector: quote?.sector,
+        archetype: quote?.archetype,
         shares,
         totalCost,
         avgBuyPrice,
@@ -229,13 +224,23 @@ export class EconomyService {
 
     const totalNetWorth = liquidZeny + bankTotal + stockMarketValue;
 
-    // 5. Active & Latest Events
+    // 5. Active & Latest Events + Market Meta
     let activeEvents: StockActiveEvent[] = [];
     let latestEvent: StockEventLog | null = null;
+    let marketMood = 0;
+    let marketDrift = 0;
     try {
       activeEvents = await this.getActiveEvents();
       const history = await this.getEventHistory(1);
       latestEvent = history.length > 0 ? history[0] : null;
+
+      const metaRows = await query<{ mkey: string; mval: number }>(
+        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')"
+      );
+      for (const row of metaRows) {
+        if (row.mkey === "MarketMood") marketMood = Number(row.mval);
+        if (row.mkey === "MarketDrift") marketDrift = Number(row.mval);
+      }
     } catch {
       activeEvents = [];
       latestEvent = null;
@@ -257,13 +262,15 @@ export class EconomyService {
       bank,
       activeEvents,
       latestEvent,
+      marketMood,
+      marketDrift,
     };
   }
 
   static async getMarketQuotes(): Promise<StockMarketQuote[]> {
     try {
       const marketRows = await query<StockMarketRow>(
-        "SELECT ticker, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
 
       return marketRows.map((m) => {
@@ -274,7 +281,10 @@ export class EconomyService {
 
         return {
           ticker: m.ticker,
-          name: STOCK_NAMES[m.ticker] || `${m.ticker} Enterprises`,
+          name: m.name || `${m.ticker} Enterprises`,
+          sector: m.sector || undefined,
+          archetype: m.archetype || undefined,
+          lore: m.lore || undefined,
           price,
           priceOld,
           changeAmount,
@@ -330,6 +340,41 @@ export class EconomyService {
         createdAt: String(r.created_at),
       }));
     } catch {
+      return [];
+    }
+  }
+
+  static async getDailyBounties(): Promise<DailyBounty[]> {
+    try {
+      const rows = await query<any>(`
+        SELECT 
+            m1.varname as var_item, 
+            CAST(m1.value AS UNSIGNED) as item_id, 
+            CAST(m2.value AS UNSIGNED) as price,
+            c.item_name,
+            c.mob_name,
+            c.mob_lv
+        FROM mapreg m1
+        JOIN mapreg m2 ON m2.varname = REPLACE(m1.varname, '$JunkT', '$JunkPriceT')
+        LEFT JOIN custom_junk_pool c ON c.item_id = CAST(m1.value AS UNSIGNED) AND c.tier = CAST(SUBSTRING(m1.varname, 7, 1) AS UNSIGNED)
+        WHERE m1.varname LIKE '$JunkT%'
+        ORDER BY m1.varname ASC
+      `);
+
+      return rows.map(r => {
+        const parts = r.var_item.replace('$JunkT', '').split('_');
+        return {
+          tier: Number(parts[0]),
+          index: Number(parts[1]),
+          itemId: r.item_id,
+          itemName: r.item_name || 'Unknown Item',
+          price: r.price,
+          mobName: r.mob_name || 'Unknown Monster',
+          mobLevel: Number(r.mob_lv) || 0
+        };
+      });
+    } catch (err) {
+      console.error("[EconomyService] Failed to fetch daily bounties", err);
       return [];
     }
   }

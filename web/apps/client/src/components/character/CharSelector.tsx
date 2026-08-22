@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CharacterSummary } from "@rathena/shared";
-import { User, Shield } from "lucide-react";
+import { Users, Search, ChevronDown, Compass, MapPin } from "lucide-react";
+import { formatZeny } from "../../lib/assets";
 
 interface CharSelectorProps {
   characters: CharacterSummary[];
@@ -13,56 +14,262 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
   selectedCharId,
   onSelect,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedChar =
+    characters.find((c) => c.charId === selectedCharId) || characters[0];
+
+  const onlineCount = characters.filter((c) => c.online).length;
+  const offlineCount = characters.length - onlineCount;
+
+  // Filtered characters
+  const filteredChars = characters.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase().trim()) ||
+      c.className.toLowerCase().includes(search.toLowerCase().trim())
+  );
+
+  // Close on Escape or Click Outside
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) setIsOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.addEventListener("mousedown", handleClickOutside);
+      searchInputRef.current?.focus();
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
   if (characters.length === 0) {
     return (
-      <div className="ro-inset p-4 text-center text-xs text-slate-400">
+      <div className="bento-card p-3 shrink-0 text-center text-xs font-medium text-muted">
         No characters found on this account.
       </div>
     );
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-      {characters.map((char) => {
-        const isSelected = char.charId === selectedCharId;
-        return (
-          <button
-            key={char.charId}
-            onClick={() => onSelect(char.charId)}
-            className={`ro-inset p-2.5 min-w-[170px] text-left transition-all relative select-none ${
-              isSelected
-                ? "border-ro-gold bg-[#243347] shadow-roWindow ring-1 ring-ro-gold"
-                : "hover:border-ro-borderLight/60 hover:bg-[#1d2737]"
-            }`}
-          >
-            {/* Online Pill */}
-            {char.online && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-            )}
+    <div className="bento-card p-3 shrink-0 flex items-center justify-between gap-4 relative z-40">
+      {/* Left: Active Hero Dropdown Trigger */}
+      <div className="flex items-center gap-3" ref={dropdownRef}>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5 shrink-0">
+          <Users className="w-3.5 h-3.5 text-accent" /> Roster:
+        </span>
 
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded bg-[#131b26] border border-ro-borderLight/40 flex items-center justify-center text-ro-gold">
-                <Shield size={16} />
+        {/* ACTIVE CHARACTER TRIGGER PILL */}
+        <div className="relative">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-surface2 border border-accent/60 text-accent font-bold text-xs shadow-sm hover:border-accent transition-all group focus:outline-none"
+            aria-expanded={isOpen}
+            aria-label="Select character from roster"
+          >
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                selectedChar?.online
+                  ? "bg-success shadow-[0_0_8px_#4ade80]"
+                  : "bg-accent animate-pulse"
+              }`}
+            />
+            <span className="text-primary font-bold">{selectedChar?.name}</span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface border border-border text-primary">
+              {selectedChar?.className}
+            </span>
+            <span className="text-[10px] font-mono text-muted">
+              (Lv {selectedChar?.baseLevel}/{selectedChar?.jobLevel})
+            </span>
+            <span className="text-[9px] font-mono font-semibold bg-background px-1.5 py-0.2 rounded text-muted border border-border ml-1">
+              {characters.length} Heroes
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-muted group-hover:text-accent transition-transform duration-200 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {/* FLOATING DROPDOWN CARD MENU */}
+          {isOpen && (
+            <div className="absolute left-0 top-full mt-2 w-80 sm:w-96 bento-card bg-surface p-3 shadow-2xl border-accent/40 rounded-xl flex flex-col gap-2 z-50 animate-in fade-in duration-150">
+              {/* Search Bar */}
+              <div className="flex items-center gap-2 bg-surface2 px-2.5 py-1.5 rounded-lg border border-border">
+                <Search className="w-3.5 h-3.5 text-muted shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search heroes by name or job..."
+                  className="bg-transparent text-xs text-primary placeholder:text-muted/60 focus:outline-none w-full font-sans"
+                />
+                <span className="text-[9px] text-muted font-mono bg-background px-1 py-0.5 rounded border border-border/40">
+                  ESC
+                </span>
               </div>
-              <div className="overflow-hidden">
-                <div className="text-xs font-bold text-slate-100 truncate">{char.name}</div>
-                <div className="text-[10px] text-ro-gold font-medium truncate">
-                  {char.className}
+
+              {/* Matrix Status Ticker */}
+              <div className="flex items-center justify-between text-[10px] font-bold text-muted border-b border-border pb-1.5 px-0.5">
+                <span>HERO MATRIX ({characters.length})</span>
+                <div className="flex gap-2 text-[9px] font-mono">
+                  <span className="text-success flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                    {onlineCount} Online
+                  </span>
+                  <span className="text-accent flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    {offlineCount} Resting
+                  </span>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 font-mono border-t border-ro-borderLight/20 pt-1.5">
-              <span>
-                Lv. <strong className="text-slate-200">{char.baseLevel}</strong>/{char.jobLevel}
-              </span>
-              <span className="text-amber-300 font-semibold truncate max-w-[80px]">
-                {char.lastMap}
-              </span>
+              {/* Character Cards Scroll List */}
+              <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
+                {filteredChars.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-muted">
+                    No heroes matching &ldquo;{search}&rdquo;
+                  </div>
+                ) : (
+                  filteredChars.map((char) => {
+                    const isSelected = char.charId === selectedCharId;
+                    const isOffline = !char.online;
+                    return (
+                      <button
+                        key={char.charId}
+                        type="button"
+                        onClick={() => {
+                          onSelect(char.charId);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all border ${
+                          isSelected
+                            ? "bg-surface2 border-accent/60 shadow-sm"
+                            : "bg-surface2/30 hover:bg-surface2/70 border-border/40 text-muted hover:text-primary"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              isSelected
+                                ? "bg-accent"
+                                : isOffline
+                                ? "bg-muted"
+                                : "bg-success"
+                            }`}
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`font-bold text-xs truncate ${
+                                  isSelected ? "text-accent" : "text-primary"
+                                }`}
+                              >
+                                {char.name}
+                              </span>
+                              <span className="text-[9px] font-mono px-1 rounded border bg-surface text-muted border-border">
+                                {char.className}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-muted font-mono truncate flex items-center gap-1 mt-0.5">
+                              <span>
+                                Lv {char.baseLevel}/{char.jobLevel}
+                              </span>
+                              <span>•</span>
+                              <span className="truncate">{char.lastMap}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 font-mono text-[10px]">
+                          <div className="font-bold text-accent">
+                            {formatZeny(char.zeny)} Z
+                          </div>
+                          {isOffline ? (
+                            <span className="text-accent text-[9px] flex items-center justify-end gap-0.5">
+                              <Compass className="w-2.5 h-2.5" /> Resting
+                            </span>
+                          ) : (
+                            <span className="text-success text-[9px]">
+                              ● Online
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="pt-1.5 border-t border-border flex justify-between items-center text-[10px] text-muted font-mono">
+                <span>Select active hero</span>
+                <span className="text-accent font-semibold">1-Click Switch</span>
+              </div>
             </div>
-          </button>
-        );
-      })}
+          )}
+        </div>
+      </div>
+
+      {/* Center: Character Quick Meta & Location */}
+      {selectedChar && (
+        <div className="hidden md:flex items-center gap-5 text-xs text-muted">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase font-bold text-muted">
+              Location:
+            </span>
+            <span className="font-mono text-primary font-semibold flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-info" /> {selectedChar.lastMap}
+            </span>
+          </div>
+          <div className="border-l border-border pl-4 flex items-center gap-1.5">
+            <span className="text-[10px] uppercase font-bold text-muted">
+              Death Penalty:
+            </span>
+            <span className="font-mono text-success font-semibold">
+              0.5% (Solo)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Right: Liquid Zeny & Offline Status Badge */}
+      {selectedChar && (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-surface2/60 border border-border px-3 py-1 rounded-md text-xs">
+            <span className="text-[10px] font-bold text-muted uppercase">
+              Zeny:
+            </span>
+            <span className="font-mono font-bold text-accent">
+              {formatZeny(selectedChar.zeny)} Z
+            </span>
+          </div>
+
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface2 text-muted border border-border text-[10px] font-bold">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                selectedChar.online ? "bg-success" : "bg-muted"
+              }`}
+            />
+            {selectedChar.online
+              ? "Online"
+              : "Offline (Expedition Active)"}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

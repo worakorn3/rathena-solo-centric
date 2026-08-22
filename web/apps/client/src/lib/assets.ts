@@ -1,16 +1,16 @@
 export function getItemIconUrl(nameId: number): string {
   if (!nameId || nameId <= 0) return "";
-  return `https://static.divine-pride.net/images/items/item/${nameId}.png`;
+  return `/api/assets/item/${nameId}`;
 }
 
 export function getCardImgUrl(cardId: number): string {
   if (!cardId || cardId <= 0) return "";
-  return `https://static.divine-pride.net/images/items/cards/${cardId}.png`;
+  return `/api/assets/item/${cardId}`;
 }
 
 export function getMobSpriteUrl(mobId: number): string {
   if (!mobId || mobId <= 0) return "";
-  return `https://static.divine-pride.net/images/mobs/png/${mobId}.png`;
+  return `/api/assets/mob/${mobId}`;
 }
 
 export function formatZeny(amount: number): string {

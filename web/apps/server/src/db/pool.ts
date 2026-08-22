@@ -59,3 +59,19 @@ export async function queryOne<T = any>(sql: string, params: any[] = []): Promis
   const rows = await query<T>(sql, params);
   return rows.length > 0 ? rows[0] : null;
 }
+
+export async function primaryQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  return query<T>(sql, params);
+}
+
+export async function primaryQueryOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
+  return queryOne<T>(sql, params);
+}
+
+export async function primaryExecute(sql: string, params: any[] = []): Promise<any> {
+  const p = await getDbPool();
+  const [result] = await p.execute(sql, params);
+  return result;
+}
+
+

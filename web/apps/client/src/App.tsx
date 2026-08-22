@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Header } from "./components/layout/Header";
+import { Sidebar, NavTab } from "./components/layout/Sidebar";
 import { NetWorthCard } from "./components/economy/NetWorthCard";
+import { AssetAllocationPie } from "./components/economy/AssetAllocationPie";
 import { BankWidget } from "./components/economy/BankWidget";
 import { StockPortfolio } from "./components/economy/StockPortfolio";
 import { MarketWatch } from "./components/economy/MarketWatch";
@@ -20,11 +21,25 @@ import {
   ProgressionSummary,
   StockMarketQuote,
 } from "@rathena/shared";
-import { Coins, Shield, Skull, Search, User, Sparkles, Target } from "lucide-react";
+import { Coins, Shield, Skull, Target, User } from "lucide-react";
+
+const VALID_TABS: Record<string, NavTab> = {
+  finance: "FINANCE",
+  character: "CHARACTER",
+  progression: "PROGRESSION",
+  bounties: "BOUNTIES",
+};
+
+const getTabFromHash = (): NavTab => {
+  if (typeof window === "undefined") return "FINANCE";
+  const hash = window.location.hash.replace("#", "").toLowerCase();
+  return VALID_TABS[hash] || "FINANCE";
+};
 
 export const App: React.FC = () => {
-  const { user, openLoginModal } = useAuth();
-  const [activeTab, setActiveTab] = useState<"FINANCE" | "CHARACTER" | "PROGRESSION" | "ARMORY" | "BOUNTIES">("FINANCE");
+  const { user, openLoginModal, logout } = useAuth();
+  // ponytail: url hash persistence for active tab across reload & back/forward history
+  const [activeTab, setActiveTab] = useState<NavTab>(getTabFromHash);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -42,11 +57,16 @@ export const App: React.FC = () => {
   const [latestEvent, setLatestEvent] = useState<any>(null);
   const [rankings, setRankings] = useState<CharacterSummary[]>([]);
 
-  // Load Public Data
   const loadPublicData = useCallback(async () => {
     try {
       const [qRes, rRes] = await Promise.all([
-        api.get<{ success: boolean; quotes: StockMarketQuote[]; marketMood?: number; marketDrift?: number; latestEvent?: any }>("/api/economy/quotes"),
+        api.get<{
+          success: boolean;
+          quotes: StockMarketQuote[];
+          marketMood?: number;
+          marketDrift?: number;
+          latestEvent?: any;
+        }>("/api/economy/quotes"),
         api.get<{ success: boolean; rankings: CharacterSummary[] }>("/api/character/rankings"),
       ]);
       if (qRes.success) {
@@ -56,12 +76,12 @@ export const App: React.FC = () => {
         if (qRes.latestEvent !== undefined) setLatestEvent(qRes.latestEvent);
       }
       if (rRes.success) setRankings(rRes.rankings);
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.error("Failed to refresh public market data:", err);
+      throw err;
     }
   }, []);
 
-  // Load Authenticated Player Data
   const loadUserData = useCallback(async () => {
     if (!user) return;
     setIsRefreshing(true);
@@ -77,25 +97,25 @@ export const App: React.FC = () => {
 
       if (charsRes.success && charsRes.characters.length > 0) {
         setCharacters(charsRes.characters);
-        // Default select first character if none selected
         if (!selectedCharId || !charsRes.characters.some((c) => c.charId === selectedCharId)) {
           setSelectedCharId(charsRes.characters[0].charId);
         }
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.error("Failed to refresh user data:", err);
+      throw err;
     } finally {
       setIsRefreshing(false);
     }
   }, [user, selectedCharId]);
 
-  // Load Selected Character Detail (with Paperdoll)
   useEffect(() => {
     if (!selectedCharId) {
       setSelectedCharDetail(null);
       return;
     }
-    api.get<{ success: boolean; character: CharacterDetail }>(`/api/character/${selectedCharId}`)
+    api
+      .get<{ success: boolean; character: CharacterDetail }>(`/api/character/${selectedCharId}`)
       .then((res) => {
         if (res.success) setSelectedCharDetail(res.character);
       })
@@ -118,174 +138,112 @@ export const App: React.FC = () => {
     }
   }, [user, loadUserData]);
 
+  const handleTabChange = (tab: NavTab) => {
+    setActiveTab(tab);
+    window.location.hash = tab.toLowerCase();
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTab(getTabFromHash());
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#121824] text-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
-      <Header
-        netWorth={netWorth?.totalNetWorth}
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-background text-primary font-sans antialiased select-none">
+      {/* 1. LEFT VERTICAL COCKPIT RAIL (Desktop) & TOP/BOTTOM BARS (Mobile) */}
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
         onRefresh={user ? loadUserData : loadPublicData}
         isRefreshing={isRefreshing}
         onOpenSearch={() => setIsSearchOpen(true)}
+        user={user}
+        openLoginModal={openLoginModal}
+        logout={logout}
       />
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-5 flex-1 flex flex-col">
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ro-borderDark pb-3 relative">
-          {/* Faux 3D ledge for tabs */}
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ro-borderLight/20 shadow-[0_1px_0_rgba(255,255,255,0.05)]"></div>
-          <div className="flex flex-wrap items-center gap-2 relative z-10">
-            <button
-              onClick={() => setActiveTab("FINANCE")}
-              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
-                activeTab === "FINANCE"
-                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
-                  : "opacity-80 hover:opacity-100"
-              }`}
-            >
-              <Coins size={15} className={activeTab === "FINANCE" ? "text-slate-950" : "text-amber-400"} />
-              <span className="font-cinzel tracking-wide text-sm">Financial HQ</span>
-              <span className="bg-amber-900/60 text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-500/30 uppercase font-bold text-amber-200 ml-1 shadow-inner">
-                Priority
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("CHARACTER")}
-              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
-                activeTab === "CHARACTER"
-                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
-                  : "opacity-80 hover:opacity-100"
-              }`}
-            >
-              <Shield size={15} className={activeTab === "CHARACTER" ? "text-slate-950" : "text-sky-400"} />
-              <span className="font-cinzel tracking-wide text-sm">Character</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("PROGRESSION")}
-              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
-                activeTab === "PROGRESSION"
-                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
-                  : "opacity-80 hover:opacity-100"
-              }`}
-            >
-              <Skull size={15} className={activeTab === "PROGRESSION" ? "text-slate-950" : "text-red-400"} />
-              <span className="font-cinzel tracking-wide text-sm">Progression</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("BOUNTIES")}
-              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
-                activeTab === "BOUNTIES"
-                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
-                  : "opacity-80 hover:opacity-100"
-              }`}
-            >
-              <Target size={15} className={activeTab === "BOUNTIES" ? "text-slate-950" : "text-emerald-400"} />
-              <span className="font-cinzel tracking-wide text-sm">Bounties</span>
-            </button>
-          </div>
-
-          {!user && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 hidden sm:inline">
-                Viewing public data. Log in to access your personal vault.
-              </span>
-              <button
-                onClick={openLoginModal}
-                className="ro-button-gold flex items-center gap-1.5 text-xs py-1 px-3"
-              >
-                <User size={13} />
-                <span>Account Login</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Tab 1: 💰 FINANCIAL HQ (Top Priority) */}
+      {/* 2. MAIN STAGE (Mobile: smooth vertical scroll; Desktop: zero body scrolling cockpit) */}
+      <main className="flex-1 min-w-0 h-auto md:h-screen overflow-y-auto md:overflow-hidden p-3 md:p-4 pb-20 md:pb-4 relative flex flex-col">
+        {/* ==================== TAB 1: 💰 FINANCIAL HQ ==================== */}
         {activeTab === "FINANCE" && (
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
             {user && netWorth ? (
               <>
+                {/* Hero Net Worth Bar */}
                 <NetWorthCard summary={netWorth} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <BankWidget bank={netWorth.bank} />
-                  <StockPortfolio holdings={netWorth.holdings} />
+
+                {/* 5:7 Balanced Bento Grid */}
+                <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
+                  {/* Left 5 Cols: Top Sub-row (Donut + Bank) & Expanded Municipal Portfolio */}
+                  <div className="col-span-12 lg:col-span-5 flex flex-col gap-3 min-h-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
+                      <AssetAllocationPie
+                        liquidZeny={netWorth.liquidZeny}
+                        bankTotal={netWorth.bankTotal}
+                        stockMarketValue={netWorth.stockMarketValue}
+                        totalNetWorth={netWorth.totalNetWorth}
+                      />
+                      <BankWidget bank={netWorth.bank} />
+                    </div>
+                    <StockPortfolio holdings={netWorth.holdings} />
+                  </div>
+
+                  {/* Right 7 Cols: Full Stock Exchange Terminal */}
+                  <div className="col-span-12 lg:col-span-7 min-h-0">
+                    <MarketWatch
+                      quotes={netWorth.quotes}
+                      marketMood={netWorth.marketMood}
+                      marketDrift={netWorth.marketDrift}
+                      latestEvent={netWorth.latestEvent}
+                    />
+                  </div>
                 </div>
-                <MarketWatch 
-                  quotes={netWorth.quotes} 
-                  marketMood={netWorth.marketMood} 
-                  marketDrift={netWorth.marketDrift} 
-                  latestEvent={netWorth.latestEvent} 
-                />
               </>
             ) : (
               /* Public / Logged Out Finance Preview */
-              <div className="space-y-4">
-                <div className="ro-window p-6 text-center space-y-3 bg-[#1e2736]">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-ro-gold mx-auto flex items-center justify-center">
-                    <Coins className="text-ro-gold" size={24} />
+              <div className="flex-1 min-h-0 flex flex-col gap-3">
+                <div className="bento-card text-center space-y-3 py-8 shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 mx-auto flex items-center justify-center">
+                    <Coins className="text-accent w-6 h-6" />
                   </div>
-                  <h2 className="font-cinzel font-bold text-base text-slate-100 uppercase">
-                    Personal Economy & Wealth Dashboard
-                  </h2>
-                  <p className="text-xs text-slate-300 max-w-md mx-auto">
-                    Track your combined Net Worth across characters, calculate real-time Investment Bank accrued interest, and manage your Midgard Municipal stock positions.
-                  </p>
+                  <div>
+                    <h2 className="font-bold text-lg text-primary mb-1">
+                      Personal Economy & Wealth Dashboard
+                    </h2>
+                    <p className="text-xs text-muted font-medium max-w-md mx-auto">
+                      Track your combined Net Worth across characters, calculate real-time Investment Bank accrued interest, and manage your Midgard Municipal stock positions.
+                    </p>
+                  </div>
                   <button
                     onClick={openLoginModal}
-                    className="ro-button-gold py-1.5 px-5 text-xs font-semibold"
+                    className="bg-accent hover:bg-accent/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors inline-block mt-2"
                   >
                     Log In to View Your Assets
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <MarketWatch 
-                    quotes={quotes} 
-                    marketMood={marketMood} 
-                    marketDrift={marketDrift} 
-                    latestEvent={latestEvent} 
+                <div className="flex-1 min-h-0">
+                  <MarketWatch
+                    quotes={quotes}
+                    marketMood={marketMood}
+                    marketDrift={marketDrift}
+                    latestEvent={latestEvent}
                   />
-                  <div className="ro-window p-4 space-y-3">
-                    <div className="ro-titlebar -mx-4 -mt-4 mb-3">
-                      <span className="font-cinzel font-bold text-xs uppercase text-slate-100">
-                        Solo Economy Highlights
-                      </span>
-                    </div>
-                    <ul className="space-y-2 text-xs text-slate-300">
-                      <li className="flex items-start gap-2">
-                        <Sparkles size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                        <span>
-                          <strong>Investment Bank (Prontera 165, 180):</strong> Earn 1% daily interest on deposited Zeny (capped at 10% after 10 days).
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Sparkles size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                        <span>
-                          <strong>Midgard Stock Exchange:</strong> Buy shares in Prontera, Geffen, Morroc, and Payon municipal enterprises. Collect daily dividends.
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Sparkles size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                        <span>
-                          <strong>Zero Game Impact:</strong> Live queries run 100% on the Read-Only Replica (:3307).
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 2: ⚔️ CHARACTER & GEAR */}
+        {/* ==================== TAB 2: ⚔️ HERO / CHARACTER & GEAR ==================== */}
         {activeTab === "CHARACTER" && (
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
             {user ? (
               <>
+                {/* Top Character Selector & Location Strip */}
                 <CharSelector
                   characters={characters}
                   selectedCharId={selectedCharId}
@@ -293,35 +251,44 @@ export const App: React.FC = () => {
                 />
 
                 {selectedCharDetail ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <StatusWindow char={selectedCharDetail} />
-                    <Paperdoll paperdoll={selectedCharDetail.paperdoll} />
+                  /* 6:6 Balanced Split: Left Combat Sheet & Expedition, Right 10-Slot Paperdoll & Inspector */
+                  <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
+                    <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                      <StatusWindow char={selectedCharDetail} />
+                    </div>
+                    <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                      <Paperdoll paperdoll={selectedCharDetail.paperdoll} />
+                    </div>
                   </div>
                 ) : (
-                  <div className="ro-inset p-8 text-center text-xs text-slate-400 font-mono">
-                    Select a character above to inspect equipment paperdoll and status.
+                  <div className="bento-card flex-1 flex items-center justify-center text-xs text-muted font-medium">
+                    Select a character above to inspect equipment paperdoll and combat telemetry.
                   </div>
                 )}
               </>
             ) : (
-              <div className="ro-window p-6 text-center space-y-3 bg-[#1e2736]">
-                <Shield className="mx-auto text-sky-400" size={32} />
-                <h2 className="font-cinzel font-bold text-base text-slate-100 uppercase">
-                  Character & Paperdoll Viewer
-                </h2>
-                <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Log in to inspect your character status, equipped gear, refinement levels, and slotted cards. Or use Armory Search to inspect public players.
-                </p>
+              <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
+                <div className="w-14 h-14 rounded-full bg-info/10 border border-info/20 mx-auto flex items-center justify-center">
+                  <Shield className="text-info w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-primary mb-1">
+                    Character & Equipment Paperdoll
+                  </h2>
+                  <p className="text-xs font-medium text-muted max-w-md mx-auto">
+                    Log in to inspect your character status, equipped gear, refinement levels, and slotted cards. Or use Armory Search to inspect public players.
+                  </p>
+                </div>
                 <div className="flex justify-center gap-3 pt-2">
                   <button
                     onClick={openLoginModal}
-                    className="ro-button-gold py-1.5 px-4 text-xs font-semibold"
+                    className="bg-primary hover:bg-primary/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors"
                   >
                     Log In
                   </button>
                   <button
                     onClick={() => setIsSearchOpen(true)}
-                    className="ro-button py-1.5 px-4 text-xs font-semibold"
+                    className="bg-surface2 hover:bg-surface2/80 text-primary font-bold py-2 px-5 rounded-md border border-border text-xs transition-colors"
                   >
                     Search Public Armory
                   </button>
@@ -331,23 +298,27 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: 📜 SOLO PROGRESSION */}
+        {/* ==================== TAB 3: 📜 SOLO PROGRESSION & HUNT TRACKER ==================== */}
         {activeTab === "PROGRESSION" && (
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 flex flex-col">
             {user && progression ? (
               <KillTracker progression={progression} />
             ) : (
-              <div className="ro-window p-6 text-center space-y-3 bg-[#1e2736]">
-                <Skull className="mx-auto text-red-400" size={32} />
-                <h2 className="font-cinzel font-bold text-base text-slate-100 uppercase">
-                  Solo Persistence & Monster Hunt Tracker
-                </h2>
-                <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Silently records your lifetime monster kills and rare loot discoveries directly into the solo persistence log. Log in to view your milestones.
-                </p>
+              <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
+                <div className="w-14 h-14 rounded-full bg-danger/10 border border-danger/20 mx-auto flex items-center justify-center">
+                  <Skull className="text-danger w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-primary mb-1">
+                    Solo Persistence & Hunt Tracker
+                  </h2>
+                  <p className="text-xs font-medium text-muted max-w-md mx-auto">
+                    Silently records your lifetime monster kills, MvP triumphs, and rare loot discoveries directly into the solo persistence log. Log in to view your hunting milestones.
+                  </p>
+                </div>
                 <button
                   onClick={openLoginModal}
-                  className="ro-button-gold py-1.5 px-5 text-xs font-semibold"
+                  className="bg-danger hover:bg-danger/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors mt-2"
                 >
                   Log In to View Hunting Records
                 </button>
@@ -356,20 +327,15 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: 🎯 DAILY BOUNTIES */}
+        {/* ==================== TAB 4: 🎯 DAILY BOUNTIES ==================== */}
         {activeTab === "BOUNTIES" && (
-          <div className="h-[calc(100vh-200px)]">
+          <div className="flex-1 min-h-0 flex flex-col">
             <BountyBoard />
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-ro-borderLight/20 py-3 px-4 bg-[#0e141e] text-center text-[11px] text-slate-500 font-mono">
-        Photonic Singularity • Ragnarok Solo-Centric Portal • Connected to MariaDB Replica (:3307)
-      </footer>
-
-      {/* Modals */}
+      {/* Global Modals */}
       <LoginModal />
       <PublicSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>

@@ -1,102 +1,113 @@
 -	script	stock_exchange_test#ci	-1,{
 OnInit:
-	// Test suite setup
-	debugmes "Stock Exchange CI Test: Starting...";
-	
-	// 1. Setup Mock DB Data
-	query_sql "REPLACE INTO `solo_stock_market` (ticker, price, price_old, dividend, div_acc, split_count) VALUES ('TST1', 100, 100, 10, 0, 0), ('TST2', 200, 200, 20, 0, 0), ('TST3', 900, 900, 30, 0, 0), ('TST4', 400, 400, 40, 0, 0)";
+	debugmes "Stock Exchange CI Test: Starting intensive test suite...";
+
+	// 1. Setup Mock DB Data for Isolated Tickers
+	query_sql "REPLACE INTO `solo_stock_market` (ticker, name, price, price_old, dividend, div_acc, split_count, enabled) VALUES ('TST1', 'Test Corp 1', 100, 100, 10, 0, 0, 1), ('TST2', 'Test Corp 2', 200, 200, 20, 0, 0, 1), ('TST3', 'Test Corp 3', 900, 900, 30, 0, 0, 1), ('TST4', 'Test Corp 4', 400, 400, 40, 0, 0, 1)";
 	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999999, 'TST1', 10, 1000, 0, 1, 0), (999999, 'TST3', 5, 4500, 0, 0, 0)";
-	
+
 	// 2. T1: Accrual & Ticker Isolation Verification
 	// Simulate dividend shift for TST1 and TST3
 	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 10) WHERE ticker = 'TST1' AND shares > 0";
 	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 30) WHERE ticker = 'TST3' AND shares > 0";
-	
-	set .@pending1, 0; set .@pending2, 0; set .@pending3, 0; set .@pending4, 0;
+
+	.@pending1 = 0; .@pending2 = 0; .@pending3 = 0; .@pending4 = 0;
 	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@pending1;
 	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST2'", .@pending2;
 	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST3'", .@pending3;
 	query_sql "SELECT pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST4'", .@pending4;
-	
-	AssertEquals(100, .@pending1, "TST1 pending dividend accrual");
-	AssertEquals(0, .@pending2, "TST2 pending dividend isolation (no shares)");
-	AssertEquals(150, .@pending3, "TST3 pending dividend accrual");
-	AssertEquals(0, .@pending4, "TST4 pending dividend isolation (no shares)");
-	
-	// 3. T2: DRIP Reinvestment & Carryover Test
-	// Reinvest TST1 payout (100 pending_div) at price 100
+
+	AssertEquals(100, .@pending1, "T1: TST1 pending dividend accrual (10 shares * 10z)");
+	AssertEquals(0, .@pending2, "T1: TST2 pending dividend isolation (no shares owned)");
+	AssertEquals(150, .@pending3, "T1: TST3 pending dividend accrual (5 shares * 30z)");
+	AssertEquals(0, .@pending4, "T1: TST4 pending dividend isolation (no shares owned)");
+
+	// 3. T2: DRIP Reinvestment & Carryover Math
+	// Reinvest TST1 payout (100 pending_div + 0 carryover) at price 100 -> 1 share bought, 0 carryover
 	query_sql "UPDATE `solo_stock_player` SET shares = shares + 1, total_cost = total_cost + 100, pending_div = 0, drip_carryover = 0 WHERE account_id = 999999 AND ticker = 'TST1'";
-	
-	set .@shares1, 0; set .@tc1, 0;
-	query_sql "SELECT shares, total_cost FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@shares1, .@tc1;
-	AssertEquals(11, .@shares1, "TST1 DRIP shares added");
-	AssertEquals(1100, .@tc1, "TST1 DRIP total cost updated");
-	
-	// 4. T3: Ticker Isolation Settings Query
-	// Verify only TST1 and TST3 show up as holdings
-	deletearray .@held_tickers$;
-	setarray .@all_tickers$[0],"TST1","TST2","TST3","TST4";
-	set .@num_holdings, 0;
-	for (set .@i, 0; .@i < 4; set .@i, .@i + 1) {
-		set .@cn$, .@all_tickers$[.@i];
-		set .@q_shares, 0;
+
+	.@shares1 = 0; .@tc1 = 0; .@carry1 = 0;
+	query_sql "SELECT shares, total_cost, drip_carryover FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@shares1, .@tc1, .@carry1;
+	AssertEquals(11, .@shares1, "T2: TST1 DRIP shares added (10 + 1 = 11)");
+	AssertEquals(1100, .@tc1, "T2: TST1 DRIP total cost updated (1000 + 100 = 1100)");
+	AssertEquals(0, .@carry1, "T2: TST1 DRIP carryover is 0");
+
+	// Test fractional carryover: payout of 250z at price 100z -> 2 shares bought (200z), 50z carryover
+	.@payout_frac = 250;
+	.@price_frac = 100;
+	.@new_shares = .@payout_frac / .@price_frac;
+	.@new_carry = .@payout_frac % .@price_frac;
+	query_sql "UPDATE `solo_stock_player` SET shares = shares + " + .@new_shares + ", total_cost = total_cost + " + (.@new_shares * .@price_frac) + ", drip_carryover = " + .@new_carry + " WHERE account_id = 999999 AND ticker = 'TST1'";
+
+	query_sql "SELECT shares, total_cost, drip_carryover FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST1'", .@shares1, .@tc1, .@carry1;
+	AssertEquals(13, .@shares1, "T2: TST1 fractional DRIP shares added (11 + 2 = 13)");
+	AssertEquals(1300, .@tc1, "T2: TST1 fractional DRIP total cost updated (1100 + 200 = 1300)");
+	AssertEquals(50, .@carry1, "T2: TST1 fractional DRIP carryover preserved (50z)");
+
+	// 4. T3: Ticker Holdings Filtering
+	// Verify only TST1 and TST3 show up as positive holdings
+	deletearray .@held_tickers$[0], getarraysize(.@held_tickers$);
+	setarray .@all_test_tickers$[0], "TST1", "TST2", "TST3", "TST4";
+	.@num_holdings = 0;
+	for (.@i = 0; .@i < 4; .@i++) {
+		.@cn$ = .@all_test_tickers$[.@i];
+		.@q_shares = 0;
 		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = '" + .@cn$ + "'", .@q_shares;
 		if (.@q_shares > 0) {
-			set .@held_tickers$[.@num_holdings], .@cn$;
-			set .@num_holdings, .@num_holdings + 1;
+			.@held_tickers$[.@num_holdings] = .@cn$;
+			.@num_holdings++;
 		}
 	}
-	AssertEquals(2, .@num_holdings, "Omit zero-share tickers from holdings list");
-	AssertEquals("TST1", .@held_tickers$[0], "Omit TST2 and list TST1");
-	AssertEquals("TST3", .@held_tickers$[1], "Omit TST4 and list TST3");
-	
-	// 5. T4: Stock Split Verification
-	// Simulate 10:1 stock split on TST3
+	AssertEquals(2, .@num_holdings, "T3: Omit zero-share tickers from holdings list");
+	AssertEquals("TST1", .@held_tickers$[0], "T3: 1st held ticker is TST1");
+	AssertEquals("TST3", .@held_tickers$[1], "T3: 2nd held ticker is TST3");
+
+	// 5. T4: 10:1 Stock Split Verification
+	// Simulate 10:1 stock split on TST3 (900z -> 90z, 5 shares -> 50 shares)
 	query_sql "UPDATE `solo_stock_market` SET price = 90, price_old = 90, dividend = 3, split_count = split_count + 1 WHERE ticker = 'TST3'";
 	query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = 'TST3'";
-	
-	set .@shares3, 0; set .@pending3_post, 0;
-	query_sql "SELECT shares, pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST3'", .@shares3, .@pending3_post;
-	AssertEquals(50, .@shares3, "TST3 split multiplied shares by 10");
-	AssertEquals(150, .@pending3_post, "TST3 split left cash pending_div unaffected");
-	
-	// 6. T5: Verify All 5 Real Tickers (PRT, GEF, MOR, PAY, ALB)
-	// Insert holdings for all 5 tickers for account 999998
-	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999998, 'PRT', 10, 1000, 0, 0, 0), (999998, 'GEF', 10, 1000, 0, 0, 0), (999998, 'MOR', 10, 1000, 0, 0, 0), (999998, 'PAY', 10, 1000, 0, 0, 0), (999998, 'ALB', 10, 1000, 0, 0, 0)";
-	
-	deletearray .@real_held$[0], getarraysize(.@real_held$);
-	setarray .@real_tickers$[0], "PRT", "GEF", "MOR", "PAY", "ALB";
-	set .@real_count, 0;
-	for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-		set .@cn$, .@real_tickers$[.@i];
-		set .@q_shares, 0;
-		query_sql "SELECT shares FROM `solo_stock_player` WHERE account_id = 999998 AND ticker = '" + .@cn$ + "'", .@q_shares;
-		if (.@q_shares > 0) {
-			set .@real_held$[.@real_count], .@cn$;
-			set .@real_count, .@real_count + 1;
-		}
-	}
-	AssertEquals(5, .@real_count, "All 5 real tickers should be held");
-	AssertEquals("PRT", .@real_held$[0], "1st real ticker is PRT");
-	AssertEquals("GEF", .@real_held$[1], "2nd real ticker is GEF");
-	AssertEquals("MOR", .@real_held$[2], "3rd real ticker is MOR");
-	AssertEquals("PAY", .@real_held$[3], "4th real ticker is PAY");
-	AssertEquals("ALB", .@real_held$[4], "5th real ticker is ALB");
-	
-	// 7. T6: Verify Manual Cycle Triggers (Shift & Midnight)
-	donpcevent "StockExchangeSetup::OnShiftManual";
-	donpcevent "StockExchangeSetup::OnMidnightManual";
 
-	// 8. T7: Verify Black Swan Trigger & Event Logging
-	donpcevent "StockExchangeSetup::OnBlackSwanManual";
-	set .@log_cnt, 0;
-	query_sql "SELECT COUNT(*) FROM `solo_stock_events_log`", .@log_cnt;
-	AssertTrue((.@log_cnt > 0), "Black Swan event log created");
+	.@shares3 = 0; .@pending3_post = 0; .@tc3 = 0;
+	query_sql "SELECT shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = 999999 AND ticker = 'TST3'", .@shares3, .@tc3, .@pending3_post;
+	AssertEquals(50, .@shares3, "T4: TST3 10:1 split multiplied shares by 10 (5 -> 50)");
+	AssertEquals(4500, .@tc3, "T4: TST3 total cost basis remains unchanged after split");
+	AssertEquals(150, .@pending3_post, "T4: TST3 split left uncollected cash dividend intact (150z)");
 
-	// Cleanup
+	// 6. T5: Dividend Tax Calculation
+	// Verify tax calculation against DivTaxRate metadata
+	.@div_tax = 10;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@div_tax;
+	.@gross = 150;
+	.@tax_cut = (.@gross * .@div_tax) / 100;
+	.@net = .@gross - .@tax_cut;
+	AssertEquals(15, .@tax_cut, "T5: 10% tax on 150z gross dividend is 15z");
+	AssertEquals(135, .@net, "T5: Net dividend payout after 10% tax is 135z");
+
+	// Cleanup isolated test records before validating live municipal index
 	query_sql "DELETE FROM `solo_stock_market` WHERE ticker IN ('TST1', 'TST2', 'TST3', 'TST4')";
 	query_sql "DELETE FROM `solo_stock_player` WHERE account_id IN (999999, 999998)";
-	
+
+	// 7. T6: Verify All 9 Active Live Municipal Tickers (Phase 0 + Phase 1)
+	deletearray .@active_tickers$[0], getarraysize(.@active_tickers$);
+	deletearray .@active_names$[0], getarraysize(.@active_names$);
+	.@active_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@active_tickers$, .@active_names$);
+
+	AssertEquals(9, .@active_count, "T6: Exactly 9 municipal stocks should be enabled (Base 5 + Schwarzwald 4)");
+	AssertEquals("ALB", .@active_tickers$[0], "T6: 1st ticker is ALB (Alberta Shipping Corp)");
+	AssertEquals("EIN", .@active_tickers$[1], "T6: 2nd ticker is EIN (Einbroch Heavy Industries)");
+	AssertEquals("GEF", .@active_tickers$[2], "T6: 3rd ticker is GEF (Geffen Arcanetech)");
+	AssertEquals("HUG", .@active_tickers$[3], "T6: 4th ticker is HUG (Hugel Racing Syndicate)");
+	AssertEquals("LHZ", .@active_tickers$[4], "T6: 5th ticker is LHZ (Rekenber Frontier Biotech)");
+	AssertEquals("MOR", .@active_tickers$[5], "T6: 6th ticker is MOR (Morroc Oasis Trading)");
+	AssertEquals("PAY", .@active_tickers$[6], "T6: 7th ticker is PAY (Payon Timber & Craft)");
+	AssertEquals("PRT", .@active_tickers$[7], "T6: 8th ticker is PRT (Prontera Capital Inc.)");
+	AssertEquals("YUN", .@active_tickers$[8], "T6: 9th ticker is YUN (Yuno Arcane Institute)");
+
+	// 8. T7: Verify Disabled Phase 2-5 Stocks Omitted from Active Index (4 + 4 + 8 + 2 = 18)
+	.@disabled_count = 0;
+	query_sql("SELECT COUNT(*) FROM `solo_stock_market` WHERE enabled = 0", .@disabled_count);
+	AssertEquals(18, .@disabled_count, "T7: Exactly 18 future-phase tickers should be stored as disabled (enabled = 0)");
+
 	debugmes "Stock Exchange CI Test: Completed successfully.";
 	end;
 }

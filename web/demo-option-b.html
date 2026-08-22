@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Option B: Tactical Cockpit (UI/UX Pro Max Complete Edition)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            ro: {
+              str: '#f87171',
+              agi: '#fbbf24',
+              vit: '#4ade80',
+              int: '#60a5fa',
+              dex: '#c084fc',
+              luk: '#fb923c'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+      box-shadow: 0 4px 20px -2px rgba(0,0,0,0.4);
+    }
+    @keyframes spin-once {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-click {
+      animation: spin-once 0.6s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased h-screen max-h-screen overflow-hidden flex select-none">
+
+  <!-- ==================== LEFT VERTICAL COCKPIT RAIL (Pure Nav & Actions) ==================== -->
+  <aside class="w-16 bg-surface border-r border-border flex flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-full">
+    
+    <!-- Top Section: Brand & Nav Tabs -->
+    <div class="flex flex-col items-center gap-4 w-full">
+      
+      <!-- Brand Logo -->
+      <div class="w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors" title="Photonic Singularity Solo RO">
+        <i data-lucide="shield" class="w-5 h-5 text-accent"></i>
+      </div>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-col items-center gap-2.5 w-full">
+        
+        <!-- Tab 1: Finance -->
+        <button onclick="switchTab('finance')" id="rail-finance" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all bg-accent/15 text-accent border border-accent/30 shadow-sm group" title="Financial HQ">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span class="text-[8px] font-bold mt-0.5 tracking-tight">Finance</span>
+          <span class="indicator absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+
+        <!-- Tab 2: Character -->
+        <button onclick="switchTab('character')" id="rail-character" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Character & Paperdoll">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hero</span>
+          <span class="indicator hidden absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+
+        <!-- Tab 3: Progression -->
+        <button onclick="switchTab('progression')" id="rail-progression" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Hunt Tracker">
+          <i data-lucide="skull" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hunt</span>
+          <span class="indicator hidden absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+
+        <!-- Tab 4: Bounties -->
+        <button onclick="switchTab('bounties')" id="rail-bounties" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Daily Bounties">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Bounty</span>
+          <span class="indicator hidden absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+
+      </nav>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- Action Group -->
+      <div class="flex flex-col items-center gap-2">
+        
+        <!-- REFRESH BUTTON (Integrated into sidebar with live spin animation) -->
+        <button onclick="handleRefresh(this)" class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-muted hover:text-primary transition-all group" title="Sync MariaDB Data (:3307)">
+          <i data-lucide="refresh-cw" id="sync-icon" class="w-4 h-4 text-accent transition-transform"></i>
+        </button>
+
+        <!-- Armory Search -->
+        <button class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-muted hover:text-primary transition-all" title="Armory Search">
+          <i data-lucide="search" class="w-4 h-4 text-info"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Section: Status & User Profile -->
+    <div class="flex flex-col items-center gap-3 w-full">
+      <!-- DB Health Status Dot -->
+      <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface2 border border-border" title="MariaDB Replica :3307 Connected">
+        <span class="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_#4ade80]"></span>
+      </div>
+
+      <!-- User Avatar -->
+      <div class="w-10 h-10 rounded-xl bg-surface2 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs shadow-inner cursor-pointer" title="Logged in as Kaiser (#2000001)">
+        K
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== 100% UNBROKEN FULL-HEIGHT MAIN STAGE ==================== -->
+  <main class="flex-1 min-w-0 h-screen overflow-hidden p-4 relative flex flex-col">
+
+    <!-- ==================== TAB 1: FINANCIAL HQ ==================== -->
+    <div id="view-finance" class="tab-view flex-1 min-h-0 flex flex-col gap-3">
+      
+      <!-- 1. HERO NET WORTH & ASSET ALLOCATION BAR -->
+      <div class="bento-card p-3.5 shrink-0 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Left: Hero Net Worth -->
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
+          </div>
+          <div>
+            <div class="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-2">
+              <span>Total Global Net Worth</span>
+              <span class="text-success text-[10px] font-mono font-bold bg-success/10 px-1.5 py-0.2 rounded border border-success/20">+50,000 Z today</span>
+            </div>
+            <div class="text-2xl font-black font-mono text-primary flex items-baseline gap-1.5 mt-0.5">
+              <span>14,850,200</span>
+              <span class="text-accent text-xs font-sans font-bold">Zeny</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: 3 Asset Breakdown Metrics -->
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-accent"></span>
+            <div>
+              <div class="text-[9px] text-muted font-bold uppercase">Liquid Cash</div>
+              <div class="font-mono text-xs font-bold text-primary">2,450,000 Z <span class="text-muted text-[10px]">(16.5%)</span></div>
+            </div>
+          </div>
+
+          <div class="border-l border-border pl-5 flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-info"></span>
+            <div>
+              <div class="text-[9px] text-muted font-bold uppercase">Investment Bank</div>
+              <div class="font-mono text-xs font-bold text-primary">10,000,000 Z <span class="text-muted text-[10px]">(67.3%)</span></div>
+            </div>
+          </div>
+
+          <div class="border-l border-border pl-5 flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-success"></span>
+            <div>
+              <div class="text-[9px] text-muted font-bold uppercase">Stock Market</div>
+              <div class="font-mono text-xs font-bold text-success">+2,400,200 Z <span class="text-muted text-[10px]">(16.2%)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Visual Asset Track -->
+        <div class="w-44 hidden lg:flex flex-col gap-1.5">
+          <div class="flex justify-between text-[9px] text-muted font-mono font-medium">
+            <span>Asset Spread</span>
+            <span class="text-accent font-bold">3 Accounts</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden flex bg-surface2">
+            <div class="bg-accent h-full w-[16.5%]" title="Liquid (16.5%)"></div>
+            <div class="bg-info h-full w-[67.3%]" title="Bank (67.3%)"></div>
+            <div class="bg-success h-full w-[16.2%]" title="Stocks (16.2%)"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. MAIN BENTO GRID (4-col Left Stack + 8-col Right Terminal) -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+        
+        <!-- LEFT COLUMN: BANK & PORTFOLIO (4 Cols) -->
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-3 min-h-0">
+          
+          <!-- Bank Widget -->
+          <div class="bento-card p-3.5 flex flex-col justify-between shrink-0">
+            <div class="flex items-center justify-between border-b border-border pb-2 mb-2.5">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="landmark" class="w-4 h-4 text-accent"></i> Investment Bank
+              </h3>
+              <span class="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20">+0.5% Daily</span>
+            </div>
+
+            <div class="space-y-2">
+              <div class="p-2.5 rounded-lg bg-surface2/40 border border-border flex justify-between items-center">
+                <div>
+                  <div class="text-[9px] text-muted font-bold uppercase">Principal Deposit</div>
+                  <div class="text-base font-bold font-mono text-primary">10,000,000 Z</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[9px] text-muted font-bold uppercase">Next Dividend</div>
+                  <div class="text-xs font-bold font-mono text-accent">+50,000 Z</div>
+                </div>
+              </div>
+
+              <!-- Payout Progress Tracker -->
+              <div class="p-2 rounded-lg bg-surface2/20 border border-border space-y-1">
+                <div class="flex justify-between text-[10px] font-mono text-muted">
+                  <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-info"></i> Payout Timer</span>
+                  <span class="text-primary font-bold">06h 12m remaining</span>
+                </div>
+                <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-info h-1.5 rounded-full w-[74%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Portfolio -->
+          <div class="bento-card p-3.5 flex-1 min-h-0 flex flex-col">
+            <div class="flex items-center justify-between border-b border-border pb-2 mb-2.5 shrink-0">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-4 h-4 text-info"></i> Municipal Portfolio
+              </h3>
+              <span class="text-[10px] font-mono text-muted">2 Positions</span>
+            </div>
+
+            <div class="space-y-2 flex-1 overflow-y-auto pr-1">
+              <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex justify-between items-center hover:border-accent/30 transition-colors">
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-info"></span> KAFRA (Kafra Corp)
+                  </div>
+                  <div class="text-[10px] text-muted font-mono mt-0.5">1,000 shares • Avg 1,250 Z</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs font-bold font-mono text-success">+8.2% (+102k)</div>
+                  <div class="text-[11px] font-bold font-mono text-primary">1,352,000 Z</div>
+                </div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex justify-between items-center hover:border-accent/30 transition-colors">
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-accent"></span> RZEL (Rekenber Corp)
+                  </div>
+                  <div class="text-[10px] text-muted font-mono mt-0.5">500 shares • Avg 2,100 Z</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs font-bold font-mono text-success">+3.5% (+36.7k)</div>
+                  <div class="text-[11px] font-bold font-mono text-primary">1,086,750 Z</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: MIDGARD STOCK EXCHANGE TERMINAL (8 Cols) -->
+        <div class="col-span-12 lg:col-span-8 bento-card p-3.5 flex flex-col min-h-0">
+          
+          <!-- Terminal Header -->
+          <div class="flex items-center justify-between border-b border-border pb-2.5 mb-2.5 shrink-0">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-accent"></i> Midgard Stock Exchange
+              </h3>
+              <span class="text-[11px] text-muted hidden md:inline">| Live Order Book</span>
+            </div>
+
+            <span class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-bold font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+              Sentiment: Bullish (+1.4%)
+            </span>
+          </div>
+
+          <!-- Live Market Event Banner -->
+          <div class="mb-2.5 p-2.5 rounded-lg bg-info/10 border border-info/20 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-accent shrink-0"></i>
+              <div>
+                <span class="text-xs font-bold text-info mr-1.5">[Einbroch Smelting Boom]</span>
+                <span class="text-[11px] text-primary/80 font-medium">Mining yields +20%. Oridecon & Coal stocks surging.</span>
+              </div>
+            </div>
+            <span class="text-[9px] text-muted font-mono shrink-0">Today</span>
+          </div>
+
+          <!-- Stock Exchange Full Table -->
+          <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+            <table class="w-full text-xs text-left">
+              <thead class="text-[10px] text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface">
+                <tr>
+                  <th class="pb-2 font-bold">Ticker</th>
+                  <th class="pb-2 font-bold text-right">Price</th>
+                  <th class="pb-2 font-bold text-right">24h Change</th>
+                  <th class="pb-2 font-bold text-right">24h High/Low</th>
+                  <th class="pb-2 font-bold text-center">Trend</th>
+                  <th class="pb-2 font-bold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border/60 font-mono">
+                <tr class="hover:bg-surface2/40 transition-colors">
+                  <td class="py-2.5 font-sans">
+                    <div class="font-bold text-primary text-xs flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-info"></span> KAFRA
+                      <span class="text-[10px] text-muted font-normal">Kafra Logistics</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 text-right font-bold text-primary">1,352 Z</td>
+                  <td class="py-2.5 text-right font-bold text-success">+2.4%</td>
+                  <td class="py-2.5 text-right text-muted text-[11px]">1,380 / 1,310 Z</td>
+                  <td class="py-2.5 text-center">
+                    <span class="px-2 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold">▲ Strong</span>
+                  </td>
+                  <td class="py-2.5 text-right">
+                    <button class="px-2 py-0.5 rounded bg-surface2 hover:bg-accent hover:text-background text-primary font-sans font-bold text-[10px] border border-border transition-colors">Trade</button>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-surface2/40 transition-colors">
+                  <td class="py-2.5 font-sans">
+                    <div class="font-bold text-primary text-xs flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-accent"></span> RZEL
+                      <span class="text-[10px] text-muted font-normal">Rekenber Lab</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 text-right font-bold text-primary">2,173 Z</td>
+                  <td class="py-2.5 text-right font-bold text-success">+1.1%</td>
+                  <td class="py-2.5 text-right text-muted text-[11px]">2,210 / 2,140 Z</td>
+                  <td class="py-2.5 text-center">
+                    <span class="px-2 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold">▲ Stable</span>
+                  </td>
+                  <td class="py-2.5 text-right">
+                    <button class="px-2 py-0.5 rounded bg-surface2 hover:bg-accent hover:text-background text-primary font-sans font-bold text-[10px] border border-border transition-colors">Trade</button>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-surface2/40 transition-colors">
+                  <td class="py-2.5 font-sans">
+                    <div class="font-bold text-primary text-xs flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-danger"></span> COAL
+                      <span class="text-[10px] text-muted font-normal">Einbroch Mining</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 text-right font-bold text-primary">840 Z</td>
+                  <td class="py-2.5 text-right font-bold text-danger">-0.8%</td>
+                  <td class="py-2.5 text-right text-muted text-[11px]">865 / 830 Z</td>
+                  <td class="py-2.5 text-center">
+                    <span class="px-2 py-0.5 rounded bg-danger/10 text-danger text-[9px] font-bold">▼ Dip</span>
+                  </td>
+                  <td class="py-2.5 text-right">
+                    <button class="px-2 py-0.5 rounded bg-surface2 hover:bg-accent hover:text-background text-primary font-sans font-bold text-[10px] border border-border transition-colors">Trade</button>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-surface2/40 transition-colors">
+                  <td class="py-2.5 font-sans">
+                    <div class="font-bold text-primary text-xs flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-success"></span> ORICH
+                      <span class="text-[10px] text-muted font-normal">Prontera Smith</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 text-right font-bold text-primary">4,520 Z</td>
+                  <td class="py-2.5 text-right font-bold text-success">+5.3%</td>
+                  <td class="py-2.5 text-right text-muted text-[11px]">4,550 / 4,280 Z</td>
+                  <td class="py-2.5 text-center">
+                    <span class="px-2 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold">▲ Surge</span>
+                  </td>
+                  <td class="py-2.5 text-right">
+                    <button class="px-2 py-0.5 rounded bg-surface2 hover:bg-accent hover:text-background text-primary font-sans font-bold text-[10px] border border-border transition-colors">Trade</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: HERO / CHARACTER & GEAR (RE-ENGINEERED BENTO COCKPIT) ==================== -->
+    <div id="view-character" class="tab-view hidden flex-1 min-h-0 flex flex-col gap-3">
+      
+      <!-- 1. HERO IDENTITY & QUICK ROSTER SWITCHER BAR (Compact 54px Header) -->
+      <div class="bento-card p-3 shrink-0 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Left: Character Selector Pills -->
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-accent"></i> Roster:
+          </span>
+          
+          <div class="flex items-center gap-2">
+            <!-- Active Char Pill -->
+            <button onclick="selectHero('kaiser')" id="pill-kaiser" class="hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2 border border-accent/60 text-accent font-bold text-xs shadow-sm transition-all">
+              <span class="w-2 h-2 rounded-full bg-accent"></span>
+              <span>Kaiser</span>
+              <span class="text-[10px] font-mono opacity-80">(LK Lv 99)</span>
+            </button>
+
+            <!-- Inactive Char Pill -->
+            <button onclick="selectHero('aura')" id="pill-aura" class="hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2/40 border border-border text-muted hover:text-primary font-medium text-xs transition-all">
+              <span class="w-2 h-2 rounded-full bg-muted"></span>
+              <span>Aura</span>
+              <span class="text-[10px] font-mono opacity-80">(HP Lv 85)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Center: Character Quick Meta & Location -->
+        <div class="flex items-center gap-5 text-xs text-muted">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] uppercase font-bold text-muted">Location:</span>
+            <span class="font-mono text-primary font-semibold">prt_fild08 (Prontera)</span>
+          </div>
+          <div class="border-l border-border pl-4 flex items-center gap-1.5">
+            <span class="text-[10px] uppercase font-bold text-muted">Weight:</span>
+            <span class="font-mono text-primary font-semibold">2,450 / 4,800 <span class="text-success text-[10px]">(51%)</span></span>
+          </div>
+          <div class="border-l border-border pl-4 flex items-center gap-1.5">
+            <span class="text-[10px] uppercase font-bold text-muted">Death Penalty:</span>
+            <span class="font-mono text-success font-semibold">0.5% (Solo)</span>
+          </div>
+        </div>
+
+        <!-- Right: Liquid Zeny & Offline Status Badge -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 bg-surface2/60 border border-border px-3 py-1 rounded-md text-xs">
+            <span class="text-[10px] font-bold text-muted uppercase">Zeny:</span>
+            <span class="font-mono font-bold text-accent">2,450,000 Z</span>
+          </div>
+
+          <span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface2 text-muted border border-border text-[10px] font-bold">
+            <span class="w-1.5 h-1.5 rounded-full bg-muted"></span>
+            Offline (Expedition Active)
+          </span>
+        </div>
+
+      </div>
+
+      <!-- 2. MAIN SPLIT: LEFT STATS & EXPEDITION (6 COLS) + RIGHT 10-SLOT PAPERDOLL & INSPECTOR (6 COLS) -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+        
+        <!-- LEFT HALF: COMBAT SHEET & OFFLINE EXPEDITION CONSOLE (6 Cols) -->
+        <div class="col-span-12 lg:col-span-6 flex flex-col gap-3 min-h-0">
+          
+          <!-- Card 1: Vitals & Combat Matrix -->
+          <div class="bento-card p-4 flex-1 min-h-0 flex flex-col justify-between">
+            
+            <div class="space-y-3">
+              <!-- HP / SP Gauges with Regen Rate -->
+              <div class="space-y-2">
+                <div>
+                  <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-success text-[11px] flex items-center gap-1">
+                      <i data-lucide="heart" class="w-3.5 h-3.5"></i> HP (Health)
+                    </span>
+                    <span class="font-mono text-[11px] text-primary">18,450 / 18,450 <span class="text-success text-[10px]">(+52/s)</span></span>
+                  </div>
+                  <div class="w-full bg-surface2 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div class="bg-success h-2 rounded-full w-full shadow-[0_0_8px_rgba(74,222,128,0.5)]"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-info text-[11px] flex items-center gap-1">
+                      <i data-lucide="zap" class="w-3.5 h-3.5"></i> SP (Mana)
+                    </span>
+                    <span class="font-mono text-[11px] text-primary">890 / 890 <span class="text-info text-[10px]">(+8/s)</span></span>
+                  </div>
+                  <div class="w-full bg-surface2 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div class="bg-info h-2 rounded-full w-full shadow-[0_0_8px_rgba(96,165,250,0.5)]"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6 Core Attributes Grid -->
+              <div>
+                <div class="text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5 flex justify-between">
+                  <span>Primary Attributes</span>
+                  <span class="text-accent font-mono text-[10px]">Points Left: 0</span>
+                </div>
+                <div class="grid grid-cols-6 gap-1.5 text-center text-xs">
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-str block">STR</span>
+                    <span class="font-mono font-bold text-sm text-primary">99<span class="text-[10px] text-ro-str">+15</span></span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-agi block">AGI</span>
+                    <span class="font-mono font-bold text-sm text-primary">70<span class="text-[10px] text-ro-agi">+8</span></span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-vit block">VIT</span>
+                    <span class="font-mono font-bold text-sm text-primary">85<span class="text-[10px] text-ro-vit">+10</span></span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-int block">INT</span>
+                    <span class="font-mono font-bold text-sm text-primary">20<span class="text-[10px] text-ro-int">+2</span></span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-dex block">DEX</span>
+                    <span class="font-mono font-bold text-sm text-primary">50<span class="text-[10px] text-ro-dex">+9</span></span>
+                  </div>
+                  <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                    <span class="text-[9px] font-bold text-ro-luk block">LUK</span>
+                    <span class="font-mono font-bold text-sm text-primary">1<span class="text-[10px] text-ro-luk">+3</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Combat Performance Sub-Ratings -->
+              <div>
+                <div class="text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">Combat Performance</div>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs font-mono">
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">ATK</div>
+                    <div class="font-bold text-primary">485 + 120</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">DEF</div>
+                    <div class="font-bold text-primary">68 + 45</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">HIT</div>
+                    <div class="font-bold text-primary">185</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">CRIT</div>
+                    <div class="font-bold text-accent">24%</div>
+                  </div>
+
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">MATK</div>
+                    <div class="font-bold text-primary">120 ~ 180</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">MDEF</div>
+                    <div class="font-bold text-primary">15 + 8</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">FLEE</div>
+                    <div class="font-bold text-primary">144 + 2</div>
+                  </div>
+                  <div class="p-2 rounded bg-surface2/20 border border-border">
+                    <div class="text-[8px] text-muted font-sans font-bold uppercase">ASPD</div>
+                    <div class="font-bold text-accent">182.4 <span class="text-[9px] text-muted">(2.8/s)</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Bottom Bar -->
+            <div class="flex justify-between text-[10px] text-muted border-t border-border pt-2 font-mono">
+              <span>Skill Points: <strong class="text-primary">0</strong></span>
+              <span>Solo Centric Auto-Heal: <strong class="text-success">Active (+15% On Kill)</strong></span>
+            </div>
+          </div>
+
+          <!-- Card 2: Offline Rest & Expedition Console (Full Width at Bottom of Left Half) -->
+          <div class="bento-card p-3.5 shrink-0 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-border pb-2 mb-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="compass" class="w-4 h-4 text-accent"></i>
+                <h3 class="text-xs font-bold text-primary uppercase tracking-wider">Offline Expedition & Rest Yields</h3>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+                04h 12m elapsed (12h Cap)
+              </span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Live Progress Track -->
+              <div>
+                <div class="flex justify-between text-[10px] font-mono text-muted mb-1">
+                  <span>Expedition Progress: <strong class="text-primary">35%</strong></span>
+                  <span class="text-accent font-semibold">Yield Rate: ~1,000 EXP/min</span>
+                </div>
+                <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-accent h-1.5 rounded-full w-[35%] shadow-[0_0_8px_rgba(251,191,36,0.5)]"></div>
+                </div>
+              </div>
+
+              <!-- Accrued Rewards Summary -->
+              <div class="grid grid-cols-3 gap-2 text-center pt-1">
+                <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[9px] uppercase font-bold text-muted">Accrued Base EXP</div>
+                  <div class="font-mono text-sm font-bold text-primary mt-0.5">+252,000</div>
+                </div>
+                <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[9px] uppercase font-bold text-muted">Accrued Job EXP</div>
+                  <div class="font-mono text-sm font-bold text-primary mt-0.5">+126,000</div>
+                </div>
+                <div class="p-2 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[9px] uppercase font-bold text-muted">Accrued Zeny</div>
+                  <div class="font-mono text-sm font-bold text-accent mt-0.5">+50,400 Z</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-[10px] text-muted flex items-center gap-1.5 justify-center border-t border-border pt-2 mt-2">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-success"></i>
+              <span>Accruing automatically while logged out. Claim rewards in-game via System Tablet.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT HALF: 10-SLOT EQUIPMENT PAPERDOLL & ACTIVE GEAR INSPECTOR (6 Cols) -->
+        <div class="col-span-12 lg:col-span-6 bento-card p-4 flex flex-col justify-between min-h-0">
+          
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-accent"></i> Equipment Paperdoll (10 Slots)
+              </h3>
+              <span class="text-[10px] text-muted">Click any slot to inspect item & slotted cards</span>
+            </div>
+
+            <!-- 2-COLUMN PAPERDOLL GRID (Classic RO Layout) -->
+            <div class="grid grid-cols-2 gap-2">
+              
+              <!-- Slot 1: Head Upper -->
+              <div onclick="inspectGear('sun_god')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">TOP</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">+7 Helm of Sun God [1]</div>
+                  <div class="text-[10px] text-info truncate">Deviruchi Card</div>
+                </div>
+              </div>
+
+              <!-- Slot 2: Head Mid/Lower -->
+              <div onclick="inspectGear('fin_helm')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">MID</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">Fin Helm [0]</div>
+                  <div class="text-[10px] text-muted truncate">DEF +2</div>
+                </div>
+              </div>
+
+              <!-- Slot 3: Armor -->
+              <div onclick="inspectGear('legion_armor')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">ARM</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">+8 Legion Plate Armor [1]</div>
+                  <div class="text-[10px] text-info truncate">Peco Peco Card</div>
+                </div>
+              </div>
+
+              <!-- Slot 4: Shield / Left Hand -->
+              <div onclick="inspectGear('shield_empty')" class="p-2 rounded-lg bg-surface2/20 border border-border/40 hover:border-border cursor-pointer flex items-center gap-2.5 transition-all opacity-60">
+                <div class="w-8 h-8 rounded bg-background border border-border/50 flex items-center justify-center text-[9px] font-bold text-muted shrink-0">SHD</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-muted italic truncate">None (2-Handed Weapon)</div>
+                  <div class="text-[10px] text-muted truncate">Left Hand Free</div>
+                </div>
+              </div>
+
+              <!-- Slot 5: Weapon (Right Hand) - Active Selected Highlight -->
+              <div onclick="inspectGear('executioner')" id="slot-executioner" class="p-2 rounded-lg bg-danger/10 border border-danger/60 hover:border-danger cursor-pointer flex items-center gap-2.5 transition-all shadow-sm">
+                <div class="w-8 h-8 rounded bg-background border border-danger/40 flex items-center justify-center text-[9px] font-bold text-danger shrink-0">WEP</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-danger truncate">+10 Executioner [2]</div>
+                  <div class="text-[10px] text-info truncate">2x Abysmal Knight Card</div>
+                </div>
+              </div>
+
+              <!-- Slot 6: Garment -->
+              <div onclick="inspectGear('pauldron')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">GAR</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">+7 Pauldron [1]</div>
+                  <div class="text-[10px] text-info truncate">Raydric Card</div>
+                </div>
+              </div>
+
+              <!-- Slot 7: Footwear -->
+              <div onclick="inspectGear('greaves')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">SHOE</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">+7 Greaves [1]</div>
+                  <div class="text-[10px] text-info truncate">Matyr Card</div>
+                </div>
+              </div>
+
+              <!-- Slot 8: Accessory 1 -->
+              <div onclick="inspectGear('flame_lord')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">ACC1</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">Ring of Flame Lord [0]</div>
+                  <div class="text-[10px] text-accent truncate">Autocast Combat Skills</div>
+                </div>
+              </div>
+
+              <!-- Slot 9: Accessory 2 -->
+              <div onclick="inspectGear('resonance')" class="p-2 rounded-lg bg-surface2/40 border border-border hover:border-accent cursor-pointer flex items-center gap-2.5 transition-all">
+                <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[9px] font-bold text-muted shrink-0">ACC2</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-primary truncate">Ring of Resonance [0]</div>
+                  <div class="text-[10px] text-accent truncate">Autocast Magic Skills</div>
+                </div>
+              </div>
+
+              <!-- Slot 10: Costume / Ammo -->
+              <div onclick="inspectGear('costume')" class="p-2 rounded-lg bg-surface2/20 border border-border/40 hover:border-border cursor-pointer flex items-center gap-2.5 transition-all opacity-60">
+                <div class="w-8 h-8 rounded bg-background border border-border/50 flex items-center justify-center text-[9px] font-bold text-muted shrink-0">COS</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-muted italic truncate">Costume: Aura Wings</div>
+                  <div class="text-[10px] text-muted truncate">Visual Garment</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 3. SELECTED GEAR INSPECTION CARD (Divine Pride Database Terminal) -->
+          <div id="gear-inspector" class="mt-3 p-3.5 bg-surface2/40 rounded-xl border border-border flex flex-col gap-2">
+            <div class="flex items-center justify-between border-b border-border pb-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-danger"></i>
+                <h4 id="gear-title" class="text-xs font-bold text-danger">+10 Executioner [2] (Two-Handed Sword)</h4>
+              </div>
+              <a href="https://www.divine-pride.net/database/item/1168" target="_blank" class="text-[10px] font-semibold text-info hover:text-primary flex items-center gap-1 transition-colors">
+                <span>Divine Pride #1168</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </div>
+
+            <!-- Item Stats & Description -->
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between text-muted text-[11px] font-mono">
+                <span>Base ATK: <strong class="text-primary">250</strong> (+70 Refine ATK)</span>
+                <span>Weapon Level: <strong class="text-primary">4</strong></span>
+                <span>Required Level: <strong class="text-primary">70</strong></span>
+              </div>
+
+              <!-- Card Affixes -->
+              <div class="p-2 rounded bg-surface2/60 border border-border/60 space-y-1">
+                <div class="text-[10px] font-bold text-accent flex items-center gap-1">
+                  <i data-lucide="award" class="w-3 h-3 text-accent"></i> Slotted Cards:
+                </div>
+                <div class="text-[11px] text-info">
+                  • <strong>Abysmal Knight Card</strong>: +25% Physical damage against Boss-type monsters.
+                </div>
+                <div class="text-[11px] text-info">
+                  • <strong>Abysmal Knight Card</strong>: +25% Physical damage against Boss-type monsters.
+                </div>
+              </div>
+
+              <!-- Special Effects -->
+              <div class="text-[10px] text-muted">
+                <strong class="text-primary">Special:</strong> Ignores 100% of Demi-Human monster DEF. Adds small chance to cause Curse on target.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 3: HUNT TRACKER / PROGRESSION ==================== -->
+    <div id="view-progression" class="tab-view hidden flex-1 min-h-0 flex flex-col gap-3">
+      
+      <!-- 1. HERO HUNT KPI BAR (Top 4 Metrics) -->
+      <div class="grid grid-cols-4 gap-3 shrink-0">
+        <div class="bento-card p-3 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center shrink-0">
+            <i data-lucide="skull" class="w-5 h-5 text-danger"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase">Total Defeated</div>
+            <div class="text-xl font-black font-mono text-primary">24,510</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="crown" class="w-5 h-5 text-accent"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase text-accent">MvP Bosses</div>
+            <div class="text-xl font-black font-mono text-accent">38</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+            <i data-lucide="swords" class="w-5 h-5 text-info"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase text-info">Mini-Bosses</div>
+            <div class="text-xl font-black font-mono text-info">142</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
+            <i data-lucide="award" class="w-5 h-5 text-success"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase text-success">Rare Card Drops</div>
+            <div class="text-xl font-black font-mono text-success">5 Cards</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MAIN PROGRESSION STAGE -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+        
+        <!-- Left: Top Defeated Monsters (7 cols) -->
+        <div class="col-span-12 lg:col-span-7 bento-card p-3.5 flex flex-col min-h-0">
+          <div class="flex items-center justify-between border-b border-border pb-2.5 mb-2.5 shrink-0">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+              <i data-lucide="target" class="w-4 h-4 text-accent"></i> Top Hunted Targets
+            </h3>
+            
+            <div class="flex gap-1.5">
+              <button class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent text-background">All</button>
+              <button class="text-[10px] font-medium px-2 py-0.5 rounded bg-surface2 text-muted hover:text-primary">MvP</button>
+              <button class="text-[10px] font-medium px-2 py-0.5 rounded bg-surface2 text-muted hover:text-primary">Mini</button>
+              <button class="text-[10px] font-medium px-2 py-0.5 rounded bg-surface2 text-muted hover:text-primary">Normal</button>
+            </div>
+          </div>
+
+          <div class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex items-center justify-between hover:border-accent/40 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-surface2 flex items-center justify-center text-xl shrink-0">🐐</div>
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <i data-lucide="crown" class="w-3.5 h-3.5 text-accent"></i> Baphomet (Lv. 81)
+                    <span class="text-[9px] font-bold bg-accent/20 text-accent px-1.5 py-0.2 rounded">MvP</span>
+                  </div>
+                  <div class="w-44 bg-surface2 rounded-full h-1.5 mt-1.5">
+                    <div class="bg-accent h-1.5 rounded-full w-[80%]"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-bold text-sm text-accent">14 Kills</div>
+                <div class="text-[9px] text-muted">prt_maze03</div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex items-center justify-between hover:border-info/40 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-surface2 flex items-center justify-center text-xl shrink-0">👻</div>
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <i data-lucide="swords" class="w-3.5 h-3.5 text-info"></i> Ghostring (Lv. 60)
+                    <span class="text-[9px] font-bold bg-info/20 text-info px-1.5 py-0.2 rounded">Mini-Boss</span>
+                  </div>
+                  <div class="w-44 bg-surface2 rounded-full h-1.5 mt-1.5">
+                    <div class="bg-info h-1.5 rounded-full w-[55%]"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-bold text-sm text-info">28 Kills</div>
+                <div class="text-[9px] text-muted">pay_fild04</div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex items-center justify-between hover:border-danger/40 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-surface2 flex items-center justify-center text-xl shrink-0">🐕</div>
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    Anubis (Lv. 75)
+                    <span class="text-[9px] font-medium bg-surface2 text-muted px-1.5 py-0.2 rounded">Normal</span>
+                  </div>
+                  <div class="w-44 bg-surface2 rounded-full h-1.5 mt-1.5">
+                    <div class="bg-danger/80 h-1.5 rounded-full w-[95%]"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-bold text-sm text-primary">3,420 Kills</div>
+                <div class="text-[9px] text-muted">in_sphinx4</div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex items-center justify-between hover:border-danger/40 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-surface2 flex items-center justify-center text-xl shrink-0">🗡️</div>
+                <div>
+                  <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    Raydric (Lv. 67)
+                    <span class="text-[9px] font-medium bg-surface2 text-muted px-1.5 py-0.2 rounded">Normal</span>
+                  </div>
+                  <div class="w-44 bg-surface2 rounded-full h-1.5 mt-1.5">
+                    <div class="bg-danger/80 h-1.5 rounded-full w-[85%]"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-bold text-sm text-primary">2,150 Kills</div>
+                <div class="text-[9px] text-muted">gl_knt01</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Hunt Milestones (5 cols) -->
+        <div class="col-span-12 lg:col-span-5 bento-card p-3.5 flex flex-col justify-between min-h-0">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-border pb-2">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="award" class="w-4 h-4 text-accent"></i> Hunt Milestones
+              </h3>
+              <span class="text-[10px] text-muted font-mono">Solo Persistence</span>
+            </div>
+
+            <div class="space-y-2.5">
+              <div class="p-2.5 rounded-lg bg-surface2/30 border border-border space-y-1.5">
+                <div class="flex justify-between text-xs font-bold">
+                  <span class="text-primary flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5 text-accent"></i> Centurion Slayer (MvPs)</span>
+                  <span class="text-accent font-mono">38 / 50</span>
+                </div>
+                <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-accent h-1.5 rounded-full w-[76%]"></div>
+                </div>
+                <div class="text-[10px] text-muted">Reward: +10% Boss Drop Rate permanently</div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-surface2/30 border border-border space-y-1.5">
+                <div class="flex justify-between text-xs font-bold">
+                  <span class="text-primary flex items-center gap-1.5"><i data-lucide="skull" class="w-3.5 h-3.5 text-danger"></i> Undead Exterminator</span>
+                  <span class="text-primary font-mono">3,420 / 5,000</span>
+                </div>
+                <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-danger h-1.5 rounded-full w-[68%]"></div>
+                </div>
+                <div class="text-[10px] text-muted">Reward: 500,000 Zeny bonus payout</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[10px] text-muted text-center border-t border-border pt-2 font-mono">
+            Logs saved passively to MariaDB Replica (:3307)
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: DAILY BOUNTIES ==================== -->
+    <div id="view-bounties" class="tab-view hidden flex-1 min-h-0 flex flex-col gap-3">
+      
+      <!-- Top Banner -->
+      <div class="bento-card p-3.5 shrink-0 flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-sm font-bold text-primary flex items-center gap-2">
+            <i data-lucide="target" class="w-4 h-4 text-accent"></i> Daily Junk Trader Bounties
+          </h2>
+          <div class="text-[11px] text-muted mt-0.5">Hunt target monsters and sell their drops to the Junk Trader for massive payouts. Resets at 00:00 server time.</div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-[9px] text-muted uppercase font-bold">Daily Quota</div>
+            <div class="text-sm font-bold font-mono text-accent">35 / 100 Turn-ins</div>
+          </div>
+          <div class="w-24 bg-surface2 rounded-full h-2 overflow-hidden">
+            <div class="bg-accent h-2 rounded-full w-[35%]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-Card Board -->
+      <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-1">
+        
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 1</span>
+              <h4 class="font-bold text-sm text-primary">Sticky Mucus</h4>
+              <div class="text-[11px] text-muted">Target: Poring (Lv. 1) • <span class="font-mono text-muted/80">prt_fild08</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">💧</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">1,500 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 2</span>
+              <h4 class="font-bold text-sm text-primary">Poison Spore</h4>
+              <div class="text-[11px] text-muted">Target: Poison Spore (Lv. 19) • <span class="font-mono text-muted/80">gef_fild01</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">🍄</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">5,000 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 3</span>
+              <h4 class="font-bold text-sm text-primary">Immortal Heart</h4>
+              <div class="text-[11px] text-muted">Target: Verit (Lv. 38) • <span class="font-mono text-muted/80">moc_pryd04</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">❤️</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">12,000 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 4</span>
+              <h4 class="font-bold text-sm text-primary">Evil Horn</h4>
+              <div class="text-[11px] text-muted">Target: Baphomet Jr (Lv. 46) • <span class="font-mono text-muted/80">prt_maze02</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">😈</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">25,000 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 5</span>
+              <h4 class="font-bold text-sm text-primary">Fabric</h4>
+              <div class="text-[11px] text-muted">Target: Wraith (Lv. 62) • <span class="font-mono text-muted/80">gl_church</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">🧣</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">45,000 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-3.5 flex flex-col justify-between border-accent/20 bg-accent/5 hover:border-accent/50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 6</span>
+              <h4 class="font-bold text-sm text-primary">Dragon Canine</h4>
+              <div class="text-[11px] text-muted">Target: Petite (Lv. 73) • <span class="font-mono text-muted/80">gef_fild06</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center text-xl shrink-0">🐉</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-border flex justify-between items-center text-xs">
+            <span class="text-muted">Payout / item:</span>
+            <span class="font-mono font-bold text-accent text-sm">65,000 Z</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.rail-btn').forEach(btn => {
+        btn.className = 'rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group';
+        const ind = btn.querySelector('.indicator');
+        if (ind) ind.classList.add('hidden');
+      });
+
+      const activeBtn = document.getElementById('rail-' + tabId);
+      activeBtn.className = 'rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all bg-accent/15 text-accent border border-accent/30 shadow-sm group';
+      const ind = activeBtn.querySelector('.indicator');
+      if (ind) ind.classList.remove('hidden');
+    }
+
+    function handleRefresh(btn) {
+      const icon = document.getElementById('sync-icon');
+      icon.classList.add('animate-spin-click');
+      setTimeout(() => {
+        icon.classList.remove('animate-spin-click');
+      }, 600);
+    }
+
+    // Hero Switcher Interactivity
+    function selectHero(heroId) {
+      const pillKaiser = document.getElementById('pill-kaiser');
+      const pillAura = document.getElementById('pill-aura');
+
+      if (heroId === 'kaiser') {
+        pillKaiser.className = 'hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2 border border-accent/60 text-accent font-bold text-xs shadow-sm transition-all';
+        pillAura.className = 'hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2/40 border border-border text-muted hover:text-primary font-medium text-xs transition-all';
+      } else {
+        pillAura.className = 'hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2 border border-info/60 text-info font-bold text-xs shadow-sm transition-all';
+        pillKaiser.className = 'hero-pill flex items-center gap-2 px-3 py-1 rounded-lg bg-surface2/40 border border-border text-muted hover:text-primary font-medium text-xs transition-all';
+      }
+    }
+
+    // Gear Inspector Click Interactivity
+    const gearDb = {
+      'executioner': {
+        title: '+10 Executioner [2] (Two-Handed Sword)',
+        color: 'text-danger',
+        baseAtk: '250 (+70 Refine ATK)',
+        wepLv: '4',
+        reqLv: '70',
+        cards: [
+          '• <strong>Abysmal Knight Card</strong>: +25% Physical damage against Boss-type monsters.',
+          '• <strong>Abysmal Knight Card</strong>: +25% Physical damage against Boss-type monsters.'
+        ],
+        special: 'Ignores 100% of Demi-Human monster DEF. Adds small chance to cause Curse on target.',
+        dpId: '1168'
+      },
+      'sun_god': {
+        title: '+7 Helm of Sun God [1] (Headgear Upper)',
+        color: 'text-accent',
+        baseAtk: 'DEF 4 (+7 Refine DEF)',
+        wepLv: 'N/A',
+        reqLv: '70',
+        cards: [
+          '• <strong>Deviruchi Card</strong>: STR +1. Grants immunity to Blind status.'
+        ],
+        special: 'STR +3, INT +2. Radiates solar brilliance.',
+        dpId: '5023'
+      },
+      'legion_armor': {
+        title: '+8 Legion Plate Armor [1] (Armor)',
+        color: 'text-primary',
+        baseAtk: 'DEF 11 (+8 Refine DEF)',
+        wepLv: 'N/A',
+        reqLv: '40',
+        cards: [
+          '• <strong>Peco Peco Card</strong>: MaxHP +10%.'
+        ],
+        special: 'Heavy battle plate forged for frontline knights. Unbreakable armor.',
+        dpId: '2341'
+      },
+      'flame_lord': {
+        title: 'Ring of Flame Lord [0] (Accessory)',
+        color: 'text-accent',
+        baseAtk: 'ATK +15, STR +2, VIT +1',
+        wepLv: 'N/A',
+        reqLv: '85',
+        cards: ['• Unslotted Ancient Relic'],
+        special: 'Autocasts Fire Ball Lv 1, Bowling Bash Lv 5, Pressure Lv 2 when dealing physical attacks.',
+        dpId: '2724'
+      }
+    };
+
+    function inspectGear(key) {
+      const item = gearDb[key] || gearDb['executioner'];
+      const inspector = document.getElementById('gear-inspector');
+      inspector.innerHTML = `
+        <div class="flex items-center justify-between border-b border-border pb-2">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 ${item.color}"></i>
+            <h4 class="text-xs font-bold ${item.color}">${item.title}</h4>
+          </div>
+          <a href="https://www.divine-pride.net/database/item/${item.dpId}" target="_blank" class="text-[10px] font-semibold text-info hover:text-primary flex items-center gap-1 transition-colors">
+            <span>Divine Pride #${item.dpId}</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>
+        </div>
+        <div class="space-y-1.5 text-xs">
+          <div class="flex justify-between text-muted text-[11px] font-mono">
+            <span>Attributes: <strong class="text-primary">${item.baseAtk}</strong></span>
+            <span>Req Lv: <strong class="text-primary">${item.reqLv}</strong></span>
+          </div>
+          <div class="p-2 rounded bg-surface2/60 border border-border/60 space-y-1">
+            <div class="text-[10px] font-bold text-accent flex items-center gap-1">
+              <i data-lucide="award" class="w-3 h-3 text-accent"></i> Slotted Cards:
+            </div>
+            ${item.cards.map(c => `<div class="text-[11px] text-info">${c}</div>`).join('')}
+          </div>
+          <div class="text-[10px] text-muted">
+            <strong class="text-primary">Special:</strong> ${item.special}
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

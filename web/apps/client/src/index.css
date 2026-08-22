@@ -2,77 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-background text-primary font-sans antialiased;
+  }
+}
+
 @layer components {
-  /* Classic Ragnarok Window Frame */
-  .ro-window {
-    @apply bg-[#1e2736] border-2 border-ro-borderLight rounded-md shadow-roWindow overflow-hidden relative;
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.3) 100%);
+  /* Bento Grid Card */
+  .bento-card {
+    @apply bg-surface border border-border rounded-xl p-6 transition-all duration-200;
   }
+  .bento-card:hover {
+    @apply border-surface2 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4)];
+  }
+  
+  /* RO Icons with pixelated rendering */
+  .ro-icon {
+    @apply w-6 h-6 object-contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+  }
+  
+  .ro-mob {
+    @apply object-contain;
+    image-rendering: pixelated;
+  }
+}
 
-  /* RO Window Title Bar */
-  .ro-titlebar {
-    @apply bg-gradient-to-r from-ro-titlebar to-ro-titlebarDark px-3 py-2 flex items-center justify-between border-b-2 border-ro-borderDark select-none shadow-roOutset;
-  }
-
-  /* Inset Panel (classic RO sunken container) */
-  .ro-inset {
-    @apply bg-ro-cardDark border border-ro-borderMedium rounded shadow-roInset;
-  }
-
-  .ro-parchment-inset {
-    @apply bg-ro-parchment text-slate-900 border border-ro-parchmentDark rounded shadow-roInset relative z-0;
-    background-image: 
-      radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-      radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
-    background-size: 8px 8px;
-    background-position: 0 0, 4px 4px;
-  }
-
-  /* RO Retro Button */
-  .ro-button {
-    @apply bg-gradient-to-b from-ro-titlebar to-ro-titlebarDark hover:from-[#58759b] hover:to-[#384f6a] active:from-[#253547] active:to-[#3e536c] active:translate-y-[1px] active:shadow-none text-white font-medium text-xs px-3 py-1.5 rounded border border-ro-borderLight shadow-roButton transition-all select-none;
-  }
-
-  .ro-button-gold {
-    @apply bg-gradient-to-b from-ro-gold to-ro-goldDark hover:from-ro-goldHover hover:to-ro-gold active:from-[#946709] active:to-ro-goldDark active:translate-y-[1px] active:shadow-none text-slate-950 font-bold text-xs px-3 py-1.5 rounded border border-[#ffe194] shadow-roButton transition-all select-none;
-  }
-
-  /* Equipment Paperdoll Slot */
-  .ro-paperdoll-slot {
-    @apply w-12 h-12 bg-ro-bg border-2 border-ro-borderMedium hover:border-ro-gold rounded-md flex flex-col items-center justify-center relative cursor-pointer shadow-roDeepInset transition-colors;
-  }
-
-  /* HP Bar */
-  .ro-bar-hp {
-    @apply bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-400 h-full rounded-sm;
-  }
-
-  /* SP Bar */
-  .ro-bar-sp {
-    @apply bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 h-full rounded-sm;
-  }
-
-  /* EXP Bar */
-  .ro-bar-exp {
-    @apply bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-300 h-full rounded-sm;
-  }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #121824;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #364960;
-  border-radius: 4px;
+  @apply bg-surface2 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b6382;
+  @apply bg-muted;
 }
+
+/* Mobile Safe Areas and Scroll Utilities */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

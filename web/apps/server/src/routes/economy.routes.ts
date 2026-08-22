@@ -12,7 +12,21 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
   )
   .get("/quotes", async () => {
     const quotes = await EconomyService.getMarketQuotes();
-    return { success: true, quotes };
+    let marketMood = 0;
+    let marketDrift = 0;
+    const { query } = require("../db/pool");
+    try {
+      const metaRows = await query("SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')");
+      for (const row of (metaRows as { mkey: string; mval: number }[])) {
+        if (row.mkey === "MarketMood") marketMood = Number(row.mval);
+        if (row.mkey === "MarketDrift") marketDrift = Number(row.mval);
+      }
+    } catch {}
+    const activeEvents = await EconomyService.getActiveEvents();
+    const history = await EconomyService.getEventHistory(1);
+    const latestEvent = history.length > 0 ? history[0] : null;
+
+    return { success: true, quotes, marketMood, marketDrift, activeEvents, latestEvent };
   })
   .get("/events", async ({ query }) => {
     const limit = query && query.limit ? Number(query.limit) : 20;
@@ -22,6 +36,10 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
   .get("/events/active", async () => {
     const activeEvents = await EconomyService.getActiveEvents();
     return { success: true, activeEvents };
+  })
+  .get("/bounties", async () => {
+    const bounties = await EconomyService.getDailyBounties();
+    return { success: true, bounties };
   })
   .get("/net-worth", async ({ headers, jwt, set }) => {
     const authHeader = headers["authorization"];

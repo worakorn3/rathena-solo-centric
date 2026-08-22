@@ -71,36 +71,37 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="ro-window w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
+      <div className="bento-card w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
         {/* Title Bar */}
-        <div className="ro-titlebar">
+        <div className="bg-surface2 border-b border-border px-3.5 py-2.5 sm:p-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Search size={14} className="text-sky-300" />
-            <span className="font-cinzel font-bold text-xs tracking-wider text-slate-100 uppercase">
+            <Search size={16} className="text-info" />
+            <span className="font-bold text-xs sm:text-sm text-primary uppercase tracking-wide truncate">
               Public Character Armory & Hall of Fame
             </span>
           </div>
           <button
             onClick={onClose}
-            className="w-5 h-5 rounded bg-[#2a3c50] hover:bg-red-900 text-slate-300 flex items-center justify-center border border-ro-borderLight/30 text-xs"
+            className="text-muted hover:text-primary transition-colors p-2 min-w-[40px] min-h-[40px] flex items-center justify-center"
+            title="Close"
           >
-            <X size={12} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="p-4 space-y-4 bg-[#1a2332]/95 overflow-y-auto flex-1 flex flex-col">
+        <div className="p-3 sm:p-5 space-y-3 sm:space-y-4 bg-surface overflow-y-auto flex-1 flex flex-col">
           {inspectChar ? (
             /* Character Inspect Detail View */
-            <div className="space-y-3">
+            <div className="space-y-4">
               <button
                 onClick={() => setInspectChar(null)}
-                className="ro-button flex items-center gap-1 text-xs py-1 px-3 mb-2"
+                className="flex items-center gap-2 text-sm font-medium text-muted hover:text-primary transition-colors mb-2"
               >
                 ← Back to Search / Rankings
               </button>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StatusWindow char={inspectChar} />
                 <Paperdoll paperdoll={inspectChar.paperdoll} />
               </div>
@@ -110,21 +111,21 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
             <>
               <div className="relative">
                 <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                  size={18}
                 />
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search player or character name..."
-                  className="w-full bg-[#121824] border-2 border-[#364960] focus:border-ro-gold rounded px-3 py-2 pl-9 text-xs text-slate-100 placeholder:text-slate-500 outline-none shadow-roInset font-mono"
+                  className="w-full bg-background border border-border focus:border-accent rounded-lg px-4 py-3 pl-10 text-sm text-primary placeholder:text-muted outline-none transition-colors"
                   autoFocus
                 />
                 {query && (
                   <button
                     onClick={() => setQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
                   >
                     Clear
                   </button>
@@ -132,52 +133,52 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
               </div>
 
               {/* Display Results or Top Rankings */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="text-[11px] font-mono uppercase text-slate-400 mb-2 font-semibold">
+              <div className="flex-1 overflow-y-auto space-y-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-muted">
                   {query.trim()
                     ? `Search Results (${results.length})`
                     : `👑 Server Top Rankings (Hall of Fame)`}
                 </div>
 
                 {loading ? (
-                  <div className="p-8 text-center text-xs text-slate-400 font-mono animate-pulse">
+                  <div className="py-12 text-center text-sm text-muted animate-pulse">
                     Querying replica database...
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(query.trim() ? results : rankings).map((char, index) => (
                       <div
                         key={char.charId}
                         onClick={() => handleSelectChar(char.charId)}
-                        className="ro-inset p-3 flex items-center justify-between cursor-pointer hover:border-ro-gold hover:bg-[#233144] transition-all"
+                        className="bg-surface2 border border-border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:border-accent hover:bg-surface2/80 transition-all group"
                       >
-                        <div className="flex items-center space-x-2.5">
-                          <div className="w-8 h-8 rounded bg-[#101722] border border-ro-borderLight/40 flex items-center justify-center font-bold text-xs text-ro-gold">
-                            {!query.trim() ? `#${index + 1}` : <User size={14} />}
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center font-bold text-sm text-accent group-hover:scale-110 transition-transform">
+                            {!query.trim() ? `#${index + 1}` : <User size={16} />}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                            <div className="font-bold text-primary flex items-center gap-2">
                               <span>{char.name}</span>
                               {char.online && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span className="w-2 h-2 rounded-full bg-success" title="Online" />
                               )}
                             </div>
-                            <div className="text-[10px] text-ro-gold font-medium">
+                            <div className="text-xs text-accent font-medium">
                               {char.className}
                             </div>
                           </div>
                         </div>
 
-                        <div className="text-right flex items-center gap-2">
+                        <div className="text-right flex items-center gap-3">
                           <div className="font-mono">
-                            <div className="text-xs font-bold text-slate-200">
+                            <div className="text-sm font-bold text-primary">
                               Lv. {char.baseLevel}/{char.jobLevel}
                             </div>
-                            <div className="text-[10px] text-amber-300">
+                            <div className="text-xs text-muted">
                               {formatZeny(char.zeny)} Z
                             </div>
                           </div>
-                          <ChevronRight size={14} className="text-slate-500" />
+                          <ChevronRight size={16} className="text-muted group-hover:text-primary transition-colors" />
                         </div>
                       </div>
                     ))}

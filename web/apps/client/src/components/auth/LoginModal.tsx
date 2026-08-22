@@ -33,82 +33,83 @@ export const LoginModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="ro-window w-full max-w-sm shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm">
+      <div className="bento-card w-full max-w-sm p-0 overflow-hidden shadow-2xl">
         {/* Title Bar */}
-        <div className="ro-titlebar">
+        <div className="bg-surface2 border-b border-border px-3.5 py-2.5 sm:p-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <User size={14} className="text-ro-gold" />
-            <span className="font-cinzel font-bold text-xs tracking-wider text-slate-100 uppercase">
+            <User size={16} className="text-accent" />
+            <span className="font-bold text-xs sm:text-sm text-primary uppercase tracking-wide">
               Player Account Login
             </span>
           </div>
           <button
             onClick={closeLoginModal}
-            className="w-5 h-5 rounded bg-[#2a3c50] hover:bg-red-900 text-slate-300 flex items-center justify-center border border-ro-borderLight/30 text-xs"
+            className="text-muted hover:text-primary transition-colors p-2 min-w-[40px] min-h-[40px] flex items-center justify-center"
+            title="Close"
           >
-            <X size={12} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-3.5 bg-[#1a2332]/95">
-          <div className="text-[11px] text-slate-300">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 bg-surface">
+          <div className="text-xs sm:text-sm text-muted">
             Log in with your rAthena credentials to access your private Net Worth, Investment Bank, and Character data.
           </div>
 
           {error && (
-            <div className="p-2.5 rounded bg-red-950/80 border border-red-500/50 flex items-center space-x-2 text-xs text-red-200">
-              <AlertCircle size={14} className="text-red-400 shrink-0" />
+            <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 flex items-center space-x-2 text-xs sm:text-sm text-danger">
+              <AlertCircle size={16} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[11px] text-slate-400 font-mono font-medium">Username</label>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted font-medium uppercase tracking-wider">Username</label>
             <div className="relative">
-              <User className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
               <input
                 type="text"
                 value={userid}
                 onChange={(e) => setUserid(e.target.value)}
                 placeholder="Account User ID"
-                className="w-full bg-[#121824] border border-[#364960] focus:border-ro-gold rounded px-3 py-1.5 pl-8 text-xs text-slate-100 placeholder:text-slate-500 outline-none shadow-roInset font-mono"
+                className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2.5 pl-10 text-sm text-primary placeholder:text-muted outline-none transition-colors min-h-[42px]"
                 required
                 autoFocus
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] text-slate-400 font-mono font-medium">Password</label>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted font-medium uppercase tracking-wider">Password</label>
             <div className="relative">
-              <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
               <input
                 type="password"
                 value={user_pass}
                 onChange={(e) => setUserPass(e.target.value)}
                 placeholder="Account Password"
-                className="w-full bg-[#121824] border border-[#364960] focus:border-ro-gold rounded px-3 py-1.5 pl-8 text-xs text-slate-100 placeholder:text-slate-500 outline-none shadow-roInset font-mono"
+                className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2.5 pl-10 text-sm text-primary placeholder:text-muted outline-none transition-colors min-h-[42px]"
                 required
               />
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end space-x-2">
+          <div className="pt-3 sm:pt-4 flex justify-end space-x-3">
             <button
               type="button"
               onClick={closeLoginModal}
-              className="ro-button py-1 px-3"
+              className="px-4 py-2 text-sm font-medium text-muted hover:text-primary transition-colors min-h-[42px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`ro-button-gold py-1 px-4 ${loading ? "opacity-60" : ""}`}
+              className={`bg-primary hover:bg-primary/90 text-background font-bold text-sm py-2 px-6 rounded-md transition-colors min-h-[42px] ${loading ? "opacity-60" : ""}`}
             >
-              {loading ? "Authenticating..." : "Login"}
+              {loading ? "Authenticating..." : "Log In"}
             </button>
           </div>
         </form>

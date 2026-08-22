@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Option A: Header-Integrated Segmented Tabs (Polished UX)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            ro: {
+              str: '#f87171',
+              agi: '#fbbf24',
+              vit: '#4ade80',
+              int: '#60a5fa',
+              dex: '#c084fc',
+              luk: '#fb923c'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+      box-shadow: 0 4px 20px -2px rgba(0,0,0,0.4);
+    }
+    @keyframes spin-once {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-click {
+      animation: spin-once 0.6s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased h-screen max-h-screen overflow-hidden flex flex-col select-none">
+
+  <!-- ==================== UNIFIED TOP HEADER ==================== -->
+  <header class="bg-surface border-b border-border px-5 h-[52px] shrink-0 flex items-center justify-between z-20">
+    
+    <!-- Left: Brand -->
+    <div class="flex items-center space-x-3 shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-surface2 border border-border flex items-center justify-center">
+        <i data-lucide="shield" class="w-4 h-4 text-accent"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-sm text-primary uppercase tracking-wide">
+            Photonic <span class="text-accent">Singularity</span>
+          </span>
+          <span class="bg-success/10 border border-success/20 text-success text-[9px] px-1.5 py-0.2 rounded font-mono font-bold">
+            SOLO RO
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: HEADER-INTEGRATED TABS (Segmented Pill Switcher) -->
+    <nav class="flex items-center bg-background/80 border border-border p-1 rounded-lg">
+      <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all bg-surface2 text-accent shadow-sm">
+        <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+        <span>Financial HQ</span>
+      </button>
+      <button onclick="switchTab('character')" id="tab-character" class="tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
+        <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+        <span>Character</span>
+      </button>
+      <button onclick="switchTab('progression')" id="tab-progression" class="tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
+        <i data-lucide="skull" class="w-3.5 h-3.5"></i>
+        <span>Hunt Tracker</span>
+      </button>
+      <button onclick="switchTab('bounties')" id="tab-bounties" class="tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
+        <i data-lucide="target" class="w-3.5 h-3.5"></i>
+        <span>Bounties</span>
+      </button>
+    </nav>
+
+    <!-- Right: Global Net Worth Ticker + Actions (Refresh, Armory, User) -->
+    <div class="flex items-center space-x-2.5 shrink-0">
+      
+      <!-- Persistent Net Worth Badge (Sole Global Anchor) -->
+      <div class="flex items-center space-x-2 bg-surface2 border border-border px-3 py-1 rounded-md text-xs">
+        <i data-lucide="coins" class="w-3.5 h-3.5 text-accent"></i>
+        <span class="text-[10px] text-muted font-bold uppercase">Net Worth:</span>
+        <span class="font-mono font-bold text-accent">14,850,200 Z</span>
+      </div>
+
+      <!-- REFRESH BUTTON (With live click animation & status feedback) -->
+      <button onclick="handleRefresh(this)" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface2/60 hover:bg-surface2 text-muted hover:text-primary border border-border transition-all text-xs font-medium" title="Refresh MariaDB Data">
+        <i data-lucide="refresh-cw" id="sync-icon" class="w-3.5 h-3.5 text-accent"></i>
+        <span id="sync-label" class="hidden sm:inline text-[11px]">Sync</span>
+      </button>
+
+      <!-- Armory Search -->
+      <button class="flex items-center gap-1 text-xs text-muted hover:text-primary px-2.5 py-1 rounded bg-surface2/60 hover:bg-surface2 border border-border transition-colors">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-info"></i>
+        <span class="hidden sm:inline text-[11px]">Armory</span>
+      </button>
+
+      <!-- User Profile -->
+      <div class="flex items-center space-x-2 bg-surface2 border border-border px-2.5 py-1 rounded text-xs">
+        <i data-lucide="user" class="w-3 h-3 text-accent"></i>
+        <span class="font-semibold text-primary">Kaiser</span>
+        <span class="text-[10px] text-muted font-mono">#2000001</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 100% UNBROKEN VIEWPORT STAGE ==================== -->
+  <main class="flex-1 min-h-0 overflow-hidden p-4 relative flex flex-col">
+
+    <!-- ==================== TAB 1: FINANCIAL HQ ==================== -->
+    <!-- (NO DUPLICATE NET WORTH BANNER: Clean Asset Allocation Breakdown + 3 Equal Bento Cards) -->
+    <div id="view-finance" class="tab-view flex-1 min-h-0 flex flex-col gap-3">
+      
+      <!-- Asset Composition Summary Bar (Shows distribution %, not repeating the total number) -->
+      <div class="bento-card p-3 shrink-0 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-accent"></span>
+            <div>
+              <div class="text-[10px] text-muted font-semibold uppercase">Liquid Inventory</div>
+              <div class="font-mono text-xs font-bold text-primary">2,450,000 Z <span class="text-muted text-[10px]">(16.5%)</span></div>
+            </div>
+          </div>
+
+          <div class="border-l border-border pl-6 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-info"></span>
+            <div>
+              <div class="text-[10px] text-muted font-semibold uppercase">Investment Bank</div>
+              <div class="font-mono text-xs font-bold text-primary">10,000,000 Z <span class="text-muted text-[10px]">(67.3%)</span></div>
+            </div>
+          </div>
+
+          <div class="border-l border-border pl-6 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-success"></span>
+            <div>
+              <div class="text-[10px] text-muted font-semibold uppercase">Stock Holdings</div>
+              <div class="font-mono text-xs font-bold text-success">2,400,200 Z <span class="text-muted text-[10px]">(16.2%)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Visual Allocation Track -->
+        <div class="w-64 flex flex-col gap-1">
+          <div class="flex justify-between text-[9px] text-muted font-mono">
+            <span>Asset Allocation</span>
+            <span class="text-success font-bold">+0.5% Yield</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden flex bg-surface2">
+            <div class="bg-accent h-full w-[16.5%]" title="Liquid (16.5%)"></div>
+            <div class="bg-info h-full w-[67.3%]" title="Bank (67.3%)"></div>
+            <div class="bg-success h-full w-[16.2%]" title="Stocks (16.2%)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Main Interactive Cards (Bank, Portfolio, Live Market Quotes) -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+        
+        <!-- Bank Deposit Panel -->
+        <div class="bento-card col-span-4 p-4 flex flex-col min-h-0">
+          <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3 shrink-0">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+              <i data-lucide="landmark" class="w-4 h-4 text-accent"></i> Investment Bank
+            </h3>
+            <span class="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20">+0.5% Daily</span>
+          </div>
+          <div class="space-y-3 flex-1 overflow-y-auto pr-1">
+            <div class="p-3 rounded-lg bg-surface2/40 border border-border">
+              <div class="text-[10px] text-muted font-semibold uppercase">Principal Balance</div>
+              <div class="text-xl font-bold font-mono text-primary mt-1">10,000,000 Z</div>
+              <div class="text-[11px] text-muted mt-1">Accruing interest automatically every 24 hours.</div>
+            </div>
+            <div class="p-3 rounded-lg bg-surface2/20 border border-border">
+              <div class="text-[10px] text-muted font-semibold uppercase">Next Dividend Payout</div>
+              <div class="text-sm font-bold font-mono text-accent mt-0.5">+50,000 Z</div>
+              <div class="text-[10px] text-muted mt-0.5">Est. time remaining: 06h 12m</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Portfolio Panel -->
+        <div class="bento-card col-span-4 p-4 flex flex-col min-h-0">
+          <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3 shrink-0">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+              <i data-lucide="briefcase" class="w-4 h-4 text-info"></i> Active Portfolio
+            </h3>
+            <span class="text-[10px] font-mono text-muted">3 Stocks Owned</span>
+          </div>
+          <div class="space-y-2 flex-1 overflow-y-auto pr-1">
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex justify-between items-center">
+              <div>
+                <div class="text-xs font-bold text-primary">KAFRA (Kafra Corp)</div>
+                <div class="text-[10px] text-muted font-mono">1,000 shares @ 1,250 Z</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-bold font-mono text-success">+8.2%</div>
+                <div class="text-[10px] text-muted font-mono">1,352,000 Z</div>
+              </div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-surface2/30 border border-border flex justify-between items-center">
+              <div>
+                <div class="text-xs font-bold text-primary">RZEL (Rekenber Corp)</div>
+                <div class="text-[10px] text-muted font-mono">500 shares @ 2,100 Z</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-bold font-mono text-success">+3.5%</div>
+                <div class="text-[10px] text-muted font-mono">1,086,750 Z</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Midgard Stock Quotes Panel -->
+        <div class="bento-card col-span-4 p-4 flex flex-col min-h-0">
+          <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3 shrink-0">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-accent"></i> Midgard Stock Quotes
+            </h3>
+            <span class="text-[10px] text-success font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> Bullish (+1.4%)
+            </span>
+          </div>
+          <div class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
+            <div class="p-2 rounded bg-surface2/20 border border-border/50 flex justify-between items-center text-xs">
+              <span class="font-bold text-primary">KAFRA</span>
+              <span class="font-mono text-muted">1,352 Z</span>
+              <span class="font-mono font-bold text-success">+2.4%</span>
+            </div>
+            <div class="p-2 rounded bg-surface2/20 border border-border/50 flex justify-between items-center text-xs">
+              <span class="font-bold text-primary">RZEL</span>
+              <span class="font-mono text-muted">2,173 Z</span>
+              <span class="font-mono font-bold text-success">+1.1%</span>
+            </div>
+            <div class="p-2 rounded bg-surface2/20 border border-border/50 flex justify-between items-center text-xs">
+              <span class="font-bold text-primary">COAL</span>
+              <span class="font-mono text-muted">840 Z</span>
+              <span class="font-mono font-bold text-danger">-0.8%</span>
+            </div>
+            <div class="p-2 rounded bg-surface2/20 border border-border/50 flex justify-between items-center text-xs">
+              <span class="font-bold text-primary">ORICH</span>
+              <span class="font-mono text-muted">4,520 Z</span>
+              <span class="font-mono font-bold text-success">+5.3%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: CHARACTER & GEAR ==================== -->
+    <div id="view-character" class="tab-view hidden flex-1 min-h-0 grid grid-cols-12 gap-3">
+      
+      <!-- Col 1: Roster List (3 cols) -->
+      <div class="bento-card col-span-3 p-4 flex flex-col min-h-0">
+        <div class="border-b border-border pb-2 mb-3 shrink-0 flex justify-between items-center">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-muted">Character Roster</h3>
+          <span class="text-[10px] text-accent font-bold">2 Slots</span>
+        </div>
+        <div class="space-y-2 flex-1 overflow-y-auto pr-1">
+          <div class="p-3 rounded-lg bg-surface2 border border-accent/40 cursor-pointer">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-sm text-primary">Kaiser</span>
+              <span class="text-[10px] font-bold text-accent">Lv 99/50</span>
+            </div>
+            <div class="text-xs text-muted mt-0.5">Lord Knight • Offline</div>
+          </div>
+          <div class="p-3 rounded-lg bg-surface2/40 border border-border/60 cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-sm text-primary">Aura</span>
+              <span class="text-[10px] font-bold text-info">Lv 85/42</span>
+            </div>
+            <div class="text-xs text-muted mt-0.5">High Priest • Offline</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2: Stats & Offline Expedition (4 cols) -->
+      <div class="bento-card col-span-4 p-4 flex flex-col min-h-0">
+        <div class="flex items-center justify-between border-b border-border pb-2 mb-3 shrink-0">
+          <div>
+            <h2 class="text-lg font-bold text-primary">Kaiser</h2>
+            <div class="text-xs text-muted">Lord Knight • Level 99 • Job 50</div>
+          </div>
+          <span class="text-xs font-bold text-muted flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-muted"></span> Offline
+          </span>
+        </div>
+
+        <div class="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
+          <!-- HP / SP -->
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-xs font-bold mb-0.5">
+                <span class="text-success text-[11px]">HP</span>
+                <span class="font-mono text-[11px]">18,450 / 18,450</span>
+              </div>
+              <div class="w-full bg-surface2 rounded-full h-1.5">
+                <div class="bg-success h-1.5 rounded-full w-full"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-bold mb-0.5">
+                <span class="text-info text-[11px]">SP</span>
+                <span class="font-mono text-[11px]">890 / 890</span>
+              </div>
+              <div class="w-full bg-surface2 rounded-full h-1.5">
+                <div class="bg-info h-1.5 rounded-full w-full"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-str block">STR</span>
+              <span class="font-mono font-bold text-primary">99+15</span>
+            </div>
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-agi block">AGI</span>
+              <span class="font-mono font-bold text-primary">70+8</span>
+            </div>
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-vit block">VIT</span>
+              <span class="font-mono font-bold text-primary">85+10</span>
+            </div>
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-int block">INT</span>
+              <span class="font-mono font-bold text-primary">20+2</span>
+            </div>
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-dex block">DEX</span>
+              <span class="font-mono font-bold text-primary">50+9</span>
+            </div>
+            <div class="p-1.5 rounded bg-surface2/30 border border-border">
+              <span class="text-[10px] font-bold text-ro-luk block">LUK</span>
+              <span class="font-mono font-bold text-primary">1+3</span>
+            </div>
+          </div>
+
+          <!-- Offline Expedition Widget -->
+          <div class="p-3 rounded-lg bg-surface2/30 border border-border space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-primary flex items-center gap-1">
+                <i data-lucide="compass" class="w-3.5 h-3.5 text-accent"></i> Offline Expedition
+              </span>
+              <span class="text-[10px] text-accent font-bold">04h 12m (Cap 12h)</span>
+            </div>
+            <div class="w-full bg-surface2 rounded-full h-1">
+              <div class="bg-accent h-1 rounded-full w-[35%]"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-center pt-1">
+              <div class="p-1 bg-surface2/40 rounded">
+                <div class="text-[9px] text-muted uppercase">Base EXP</div>
+                <div class="font-mono text-xs font-bold text-primary">+252k</div>
+              </div>
+              <div class="p-1 bg-surface2/40 rounded">
+                <div class="text-[9px] text-muted uppercase">Job EXP</div>
+                <div class="font-mono text-xs font-bold text-primary">+126k</div>
+              </div>
+              <div class="p-1 bg-surface2/40 rounded">
+                <div class="text-[9px] text-muted uppercase">Zeny</div>
+                <div class="font-mono text-xs font-bold text-accent">+50.4k</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 3: 8-Slot Paperdoll (5 cols) -->
+      <div class="bento-card col-span-5 p-4 flex flex-col min-h-0">
+        <div class="border-b border-border pb-2 mb-2 shrink-0 flex justify-between items-center">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-muted">Equipment Paperdoll</h3>
+          <span class="text-[10px] text-muted">Click gear to inspect</span>
+        </div>
+        <div class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-muted">TOP</div>
+            <div>
+              <div class="text-xs font-bold text-primary">+7 Helm of Sun God [1]</div>
+              <div class="text-[10px] text-info">Card: Deviruchi Card</div>
+            </div>
+          </div>
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-muted">ARM</div>
+            <div>
+              <div class="text-xs font-bold text-primary">+8 Legion Plate Armor [1]</div>
+              <div class="text-[10px] text-info">Card: Peco Peco Card</div>
+            </div>
+          </div>
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-danger">WEP</div>
+            <div>
+              <div class="text-xs font-bold text-danger">+10 Executioner [2]</div>
+              <div class="text-[10px] text-info">Card: 2x Abysmal Knight Card</div>
+            </div>
+          </div>
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-muted">GAR</div>
+            <div>
+              <div class="text-xs font-bold text-primary">+7 Pauldron [1]</div>
+              <div class="text-[10px] text-info">Card: Raydric Card</div>
+            </div>
+          </div>
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-muted">BOOT</div>
+            <div>
+              <div class="text-xs font-bold text-primary">+7 Greaves [1]</div>
+              <div class="text-[10px] text-info">Card: Matyr Card</div>
+            </div>
+          </div>
+          <div class="p-2 rounded bg-surface2/30 border border-border flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-background border border-border flex items-center justify-center text-[10px] font-bold text-muted">ACC</div>
+            <div>
+              <div class="text-xs font-bold text-primary">Ring of Flame Lord [0]</div>
+              <div class="text-[10px] text-muted">Unslotted</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: HUNT TRACKER ==================== -->
+    <div id="view-progression" class="tab-view hidden flex-1 min-h-0 grid grid-cols-12 gap-3">
+      <!-- Lifetime Stats Sidebar (4 cols) -->
+      <div class="bento-card col-span-4 p-4 flex flex-col justify-between">
+        <div class="space-y-3">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+            <i data-lucide="skull" class="w-4 h-4 text-danger"></i> Lifetime Hunt Records
+          </h3>
+          <div class="p-3 rounded-lg bg-surface2/30 border border-border text-center">
+            <div class="text-[10px] font-bold text-muted uppercase">Total Defeated</div>
+            <div class="text-2xl font-black text-primary">24,510</div>
+          </div>
+          <div class="p-3 rounded-lg bg-surface2/30 border border-border text-center">
+            <div class="text-[10px] font-bold text-muted uppercase text-accent">MvP Bosses</div>
+            <div class="text-2xl font-black text-accent">38</div>
+          </div>
+          <div class="p-3 rounded-lg bg-surface2/30 border border-border text-center">
+            <div class="text-[10px] font-bold text-muted uppercase text-info">Mini-Bosses</div>
+            <div class="text-2xl font-black text-info">142</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-muted text-center border-t border-border pt-3">
+          Solo persistence logs saved in MariaDB replica (:3307).
+        </div>
+      </div>
+
+      <!-- Hunted List (8 cols) -->
+      <div class="bento-card col-span-8 p-4 flex flex-col min-h-0">
+        <div class="flex justify-between items-center border-b border-border pb-2 mb-3 shrink-0">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-primary">Top Defeated Monsters</h3>
+          <span class="text-xs text-muted">Sorted by kill count</span>
+        </div>
+        <div class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5">
+          <div class="p-3 rounded-lg bg-surface2/20 border border-border flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                <i data-lucide="crown" class="w-3.5 h-3.5 text-accent"></i> Baphomet (Lv. 81)
+              </div>
+              <div class="w-48 bg-surface2 rounded-full h-1.5 mt-1.5">
+                <div class="bg-accent h-1.5 rounded-full w-[80%]"></div>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-sm text-accent">14 kills</span>
+          </div>
+
+          <div class="p-3 rounded-lg bg-surface2/20 border border-border flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                <i data-lucide="swords" class="w-3.5 h-3.5 text-info"></i> Ghostring (Lv. 60)
+              </div>
+              <div class="w-48 bg-surface2 rounded-full h-1.5 mt-1.5">
+                <div class="bg-info h-1.5 rounded-full w-[55%]"></div>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-sm text-info">28 kills</span>
+          </div>
+
+          <div class="p-3 rounded-lg bg-surface2/20 border border-border flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-primary">Anubis (Lv. 75)</div>
+              <div class="w-48 bg-surface2 rounded-full h-1.5 mt-1.5">
+                <div class="bg-danger/80 h-1.5 rounded-full w-[95%]"></div>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-sm text-primary">3,420 kills</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: BOUNTIES ==================== -->
+    <div id="view-bounties" class="tab-view hidden flex-1 min-h-0 flex flex-col">
+      <div class="flex justify-between items-center border-b border-border pb-2 mb-3 shrink-0">
+        <div>
+          <h2 class="text-sm font-bold text-primary flex items-center gap-2">
+            <i data-lucide="target" class="w-4 h-4 text-accent"></i> Daily Junk Trader Bounties
+          </h2>
+          <div class="text-[11px] text-muted">Resets at 00:00 server time. Max 100 items per day.</div>
+        </div>
+        <span class="text-xs font-mono text-accent bg-accent/10 border border-accent/20 px-2.5 py-1 rounded">
+          Daily Turn-ins: 35 / 100
+        </span>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto grid grid-cols-3 gap-3 pr-1">
+        <div class="bento-card p-4 flex flex-col justify-between border-accent/20 bg-accent/5">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 1</span>
+              <h4 class="font-bold text-sm text-primary mt-2">Sticky Mucus</h4>
+              <div class="text-xs text-muted">Target: Poring (Lv. 1)</div>
+            </div>
+            <div class="w-10 h-10 rounded bg-surface border border-border flex items-center justify-center text-lg">💧</div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-border flex justify-between items-center">
+            <span class="text-xs text-muted">Payout:</span>
+            <span class="text-sm font-mono font-bold text-accent">1,500 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-4 flex flex-col justify-between border-accent/20 bg-accent/5">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 3</span>
+              <h4 class="font-bold text-sm text-primary mt-2">Immortal Heart</h4>
+              <div class="text-xs text-muted">Target: Verit (Lv. 38)</div>
+            </div>
+            <div class="w-10 h-10 rounded bg-surface border border-border flex items-center justify-center text-lg">❤️</div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-border flex justify-between items-center">
+            <span class="text-xs text-muted">Payout:</span>
+            <span class="text-sm font-mono font-bold text-accent">12,000 Z</span>
+          </div>
+        </div>
+
+        <div class="bento-card p-4 flex flex-col justify-between border-accent/20 bg-accent/5">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[9px] font-bold uppercase bg-accent/20 text-accent px-1.5 py-0.5 rounded">Tier 5</span>
+              <h4 class="font-bold text-sm text-primary mt-2">Fabric</h4>
+              <div class="text-xs text-muted">Target: Wraith (Lv. 62)</div>
+            </div>
+            <div class="w-10 h-10 rounded bg-surface border border-border flex items-center justify-center text-lg">🧣</div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-border flex justify-between items-center">
+            <span class="text-xs text-muted">Payout:</span>
+            <span class="text-sm font-mono font-bold text-accent">45,000 Z</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM FOOTER (Compact 26px Strip) -->
+  <footer class="h-6 bg-surface border-t border-border px-4 shrink-0 flex items-center justify-between text-[10px] text-muted">
+    <div>Option A: Header-Integrated Segmented Tabs (100% full width stage, 0 duplicated metrics)</div>
+    <div class="font-mono text-accent">MariaDB Replica :3307</div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = 'tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+      });
+
+      const activeBtn = document.getElementById('tab-' + tabId);
+      activeBtn.className = 'tab-btn flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all bg-surface2 text-accent shadow-sm';
+    }
+
+    function handleRefresh(btn) {
+      const icon = document.getElementById('sync-icon');
+      const label = document.getElementById('sync-label');
+      icon.classList.add('animate-spin-click');
+      label.innerText = 'Syncing...';
+      setTimeout(() => {
+        icon.classList.remove('animate-spin-click');
+        label.innerText = 'Synced!';
+        setTimeout(() => { label.innerText = 'Sync'; }, 1500);
+      }, 600);
+    }
+  </script>
+</body>
+</html>

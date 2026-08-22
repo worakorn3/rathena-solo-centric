@@ -8,7 +8,7 @@ OnUse:
 	mes "[System Tablet]";
 	mes "Welcome to the central system.";
 	mes "Please select an app to launch:";
-	switch(select("Progression Guide:Monster Intel App:Market Pulse App:Cancel")) {
+	switch(select("Progression Guide:Monster Intel App:Market Pulse App:Dispatch Operations App:Cancel")) {
 		case 1:
 			mes "[System Tablet]";
 			mes "Solo-Centric Global Enhancements:";
@@ -151,18 +151,64 @@ OnUse:
 			}
 			
 			mes "---------------------------";
-			setarray .@c$[0],"PRT","GEF","MOR","PAY","ALB";
-			for (set .@i, 0; .@i < 5; set .@i, .@i + 1) {
-				set .@cn$, .@c$[.@i];
-				query_sql "SELECT price, price_old FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p, .@po;
-				set .@diff, .@p - .@po;
-				if (.@diff > 0) { set .@clr$, "^00FF00"; set .@d$, "(+"+.@diff+"z)"; }
-				else if (.@diff < 0) { set .@clr$, "^FF0000"; set .@d$, "("+.@diff+"z)"; }
-				else { set .@clr$, "^000000"; set .@d$, "(0z)"; }
-				mes "- " + .@cn$ + ": " + .@clr$ + .@p + "z^000000 " + .@d$;
+			deletearray .@tab_tickers$[0], getarraysize(.@tab_tickers$);
+			deletearray .@tab_prices[0], getarraysize(.@tab_prices);
+			deletearray .@tab_price_olds[0], getarraysize(.@tab_price_olds);
+			.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
+			for (.@i = 0; .@i < .@tab_stock_cnt; .@i++) {
+				.@p = .@tab_prices[.@i];
+				.@po = .@tab_price_olds[.@i];
+				.@diff = .@p - .@po;
+				if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+"+.@diff+"z)"; }
+				else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "("+.@diff+"z)"; }
+				else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
+				mes "- " + .@tab_tickers$[.@i] + ": " + .@clr$ + .@p + "z^000000 " + .@d$;
 			}
 			close;
 		case 4:
+			mes "[Solo Expedition Logistics]";
+			query_sql "SELECT `value` FROM `solo_server_config` WHERE `key` = 'expedition_cap_hours' LIMIT 1", .@cap_hours;
+			if (.@cap_hours <= 0) {
+				query_sql "SELECT `mval` FROM `solo_stock_meta` WHERE `mkey` = 'expedition_cap_hours' LIMIT 1", .@cap_hours;
+			}
+			if (.@cap_hours <= 0) .@cap_hours = 48;
+			.@cap_min = .@cap_hours * 60;
+			
+			.@available_min = UnclaimedRestMin;
+			if (LastLogoutTime > 0) {
+				.@available_min += (gettimetick(2) - LastLogoutTime) / 60;
+			}
+			if (.@available_min > .@cap_min) .@available_min = .@cap_min;
+			
+			mes "Offline Rest & Expedition time accrues automatically whenever you are logged off.";
+			mes "Accumulated Time: ^0000FF" + (.@available_min / 60) + "h " + (.@available_min % 60) + "m^000000 (" + .@cap_hours + "h Cap)";
+			
+			if (.@available_min < 1) {
+				mes " ";
+				mes "^FF8800Notice: Minimum 1 minute required to claim rewards.^000000";
+				close;
+			}
+			
+			// Calculate estimated rewards (Base EXP and Job EXP only)
+			.@est_base = BaseLevel * 10 * .@available_min;
+			.@est_job = BaseLevel * 5 * .@available_min;
+			
+			mes " ";
+			mes "Accumulated Vault Yield:";
+			mes "- Base EXP: +" + .@est_base;
+			mes "- Job EXP: +" + .@est_job;
+			next;
+			
+			if (select("Claim Accumulated Yield:Cancel") == 1) {
+				mes "[Solo Expedition Logistics]";
+				mes "Expedition rewards claimed successfully!";
+				getexp .@est_base, .@est_job;
+				UnclaimedRestMin = 0;
+				LastLogoutTime = gettimetick(2);
+				close;
+			}
+			close;
+		case 5:
 			close;
 	}
 }

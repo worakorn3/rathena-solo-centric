@@ -73,6 +73,21 @@
 | **Web Admin Panel** | ⏳ [PENDING] | Economic & Player data dashboard (React/Node) |
 | **Encyclopedia NPC** | ⏳ [PENDING] | Central info guide for all custom systems |
 
+### Phase 6: Service Extraction (Decoupling)
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Market Simulation Extraction** | ✅ [DONE] | Moved `OnClock` hourly/midnight stock market logic from game server to Elysia web backend cron. |
+| **Atomic Web Transactions** | ✅ [DONE] | Built `/api/market/buy` & `sell` routes using `online=0` atomic SQL to prevent Zeny desync. |
+
+### Phase 7: Phased Municipal Stock Market Expansion (Regional Rollout)
+| Feature | Status | Details |
+|---------|--------|---------|
+| **Phase 7.1: Schwarzwald Tech & Industrial Expansion** | ⏳ [PENDING] | `LHZ` (Pure Growth Biotech), `EIN` (Industrial CapEx), `YUN` (Deep-Tech Venture), `HUG` (Leisure Micro-Cap) |
+| **Phase 7.2: Rune-Midgarts Domestic Expansion** | ⏳ [PENDING] | `ADB` (Kafra Blue-Chip Utility), `CMD` (High-Beta Casino), `IZL` (Transport/Defense), `LUT` (Toy Factory) |
+| **Phase 7.3: Theocratic Sovereign & Commodities** | ⏳ [PENDING] | `RAC` (Freya Sovereign Gold Trust), `VEI` (Volcanic Energy), `JAW` (Luxury Monopoly), `UMB` (Raw Ecotourism) |
+| **Phase 7.4: Global Cultural & Agrarian Markets** | ⏳ [PENDING] | `LOU` (Herbal Healthcare), `MOS` (Forestry Value), `AMA`, `AYO`, `GON`, `BRA`, `DEW`, `MAL` |
+| **Phase 7.5: Outliers & Interdimensional Markets** | ⏳ [PENDING] | `NIF` (Distressed Junk Bond), `DIC`/`SPL`/`MAN` (Ash Vacuum Frontier) |
+
 ---
 
 ## Core Philosophy (Revised)
@@ -3290,3 +3305,98 @@ Future Roadmap:
 │   └── docker-compose.yml
 └── Priority: After Phase 1 is stable
 ```
+
+## 📈 Investment Engine Extraction (Phase 6) - 👱‍♀️ Ponytail Edition
+
+### The Problem
+Currently, `stock_exchange.txt` contains complex market simulation logic (Hourly Drift, Midnight DRIP) running via `OnClock`. This causes game server lag and stops the simulation when the server is down. We also want players to trade on the Web Portal.
+
+### The Over-Engineered Way (Rejected)
+*Building a new standalone Python/Go container, creating an internal REST API gateway across Docker networks, maintaining strict DB air-gaps, and writing RPC relays.* (YAGNI).
+
+### The Minimum That Works (Ponytail Solution)
+We already have an external web server (Elysia.js/Bun) running 24/7. Use it.
+
+#### 1. Move the Simulation to the Web Backend (Elysia.js)
+- **Action**: Delete all `OnClock` scripts in rAthena.
+- **Replacement**: Add a simple `cron` scheduler in the existing Elysia backend to run the hourly shifts and midnight DRIP SQL queries. 
+- **Zero Boilerplate**: No new containers, no new languages.
+
+#### 2. Handle the "Air Gap" by Relaxing It
+- **Action**: The strict "Replica Only" rule for the web backend is counter-productive if we want web transactions.
+- **Replacement**: Grant the Elysia backend a secondary write connection to the **Primary DB**, restricted exclusively to the `solo_stock_*` tables and the Zeny column.
+
+#### 3. Bulletproof Web Transactions in 1 Line of SQL
+- **Action**: Allowing web trades without game state desync.
+- **Replacement**: Instead of building a complex offline-checking service, we rely on a single atomic SQL constraint:
+  ```sql
+  -- Ponytail: If affected_rows == 0, return "Error: Must be offline or insufficient Zeny"
+  UPDATE `char` SET zeny = zeny - ? WHERE account_id = ? AND online = 0 AND zeny >= ?;
+  ```
+
+#### 4. The Game Server's New Role
+- **Action**: The rAthena game server becomes a pure UI terminal.
+- **Replacement**: The `stock_exchange.txt` NPC just reads the latest prices from the DB and handles in-game trades natively.
+
+This cuts out an entire microservice, removes the need for internal RPCs, and achieves the exact same result with maximum simplicity.
+
+---
+
+## 🏙️ Phase 7: Phased Municipal Stock Market Expansion (Regional City Rollout)
+
+> [!NOTE]  
+> Instead of dumping all remaining Ragnarok Online cities into the Midgard Stock Exchange (MSE) simultaneously, cities are onboarded in distinct thematic phases. This ensures clear economic balancing, archetype diversity (growth vs dividend), and phased testing of simulation mechanics.
+
+### Phase 7.1: Schwarzwald Republic & Frontier High-Tech (Growth & CapEx)
+*Focus: Pure Growth, Heavy CapEx, Deep-Tech Venture & Volatility.*
+
+| Ticker | City / Organization | Archetype | Dividend Yield | Volatility | Growth Drivers / Event Hooks |
+|:---|:---|:---|:---|:---|:---|
+| **`LHZ`** | **Lighthalzen** (*Rekenber Biotech & Frontier Robotics*) | Pure Growth Tech Monopoly | **0.0% – 0.5%** | **High (Beta 1.8)** | R&D reinvestment, Somatology Bio-Labs breakthroughs vs. containment breaches. |
+| **`EIN`** | **Einbroch** (*Einbroch Heavy Industries & Steamworks*) | Industrial CapEx / Infrastructure | **0.5% – 1.5%** | **Medium-High (Beta 1.4)** | Blast furnaces, railway network expansion, heavy factory equipment. |
+| **`YUN`** | **Yuno** (*Yuno Arcane Institute & Juperos Deep-Tech*) | Speculative Deep-Tech / Venture | **0.0%** | **Medium-High (Beta 1.5)** | Juperos ruins archaeology, ancient Heart of Ymir energy tech. |
+| **`HUG`** | **Hugel** (*Hugel Coastal Leisure & Airship Route*) | Regional Leisure & Gaming Micro-Cap | **2.5% – 3.5%** | **Moderate (Beta 0.9)** | Monster race betting turnover, airship passenger traffic. |
+
+### Phase 7.2: Rune-Midgarts Domestic Expansion (Utilities & Leisure)
+*Focus: Blue-Chip Defensive Utilities, High-Beta Consumer Discretionary & Specialized Satellites.*
+
+| Ticker | City / Organization | Archetype | Dividend Yield | Volatility | Growth Drivers / Event Hooks |
+|:---|:---|:---|:---|:---|:---|
+| **`ADB`** | **Aldebaran** (*Kafra Global HQ & Clockwork*) | Defensive Blue-Chip Dividend Aristocrat | **5.0% – 6.5%** | **Low (Beta 0.5)** | Inelastic continent-wide Kafra teleport/storage service fees. |
+| **`CMD`** | **Comodo** (*Comodo Casino & Entertainment Syndicate*) | High-Beta Consumer Discretionary & Gaming | **4.0% – 8.0% (Variable)** | **High (Beta 1.9)** | Casino table turnover, tourism cycles, bull/bear market mood swings. |
+| **`IZL`** | **Izlude** (*Izlude Maritime Transport & Warrior Academy*) | Regional Transport & Defense | **3.0% – 4.0%** | **Low-Medium (Beta 0.7)** | Ferry traffic to Byalan Island, arena gate admissions. |
+| **`LUT`** | **Lutie** (*Toy Factory Automated Assembly*) | Seasonal Consumer Goods & Robotics | **1.5% – 2.5%** | **Moderate (Beta 1.1)** | Holiday seasonal demand surges, assembly line robotics. |
+
+### Phase 7.3: Theocratic Sovereign & Frontier Commodities (Arunafeltz & Beyond)
+*Focus: Safe-Haven Sovereign Funds, Heavy Energy/Commodities & Luxury Hospitality.*
+
+| Ticker | City / Organization | Archetype | Dividend Yield | Volatility | Growth Drivers / Event Hooks |
+|:---|:---|:---|:---|:---|:---|
+| **`RAC`** | **Rachel** (*Cheshrumnir Sacred Trust & Sovereign Tithes*) | Sovereign Theocratic Fund / Gold Trust | **3.5% – 4.5%** | **Very Low (Beta 0.3)** | Mandatory religious tithes, temple gold reserves, flight-to-safety during crashes. |
+| **`VEI`** | **Veins** (*Veins Geothermal Mining & Thor Energy*) | Energy Commodities & Volcanic Minerals | **3.0% – 5.0%** | **High (Beta 1.6)** | Geothermal energy tap, Thor Volcano mineral extractions. |
+| **`JAW`** | **Jawaii** (*Jawaii Luxury Honeymoon & Hospitality*) | Ultra-Luxury Hospitality Monopoly | **5.5% – 7.0%** | **Low (Beta 0.4)** | Luxury weddings, private resort bar tabs, high-net-worth tourism. |
+| **`UMB`** | **Umbala** (*Utan Bungee & Raw Jungle Commodities*) | Ecotourism & Primitive Commodity Venture | **0.0% – 1.0%** | **High (Beta 1.5)** | Exotic wood/flesh barter arbitrage, shamanic relic discoveries. |
+
+### Phase 7.4: Global Cultural & Agrarian Markets (Global Project Cities)
+*Focus: Defensive Healthcare, Natural Resource Value & Emerging Market Ports.*
+
+| Ticker | City / Organization | Archetype | Dividend Yield | Volatility | Growth Drivers / Event Hooks |
+|:---|:---|:---|:---|:---|:---|
+| **`LOU`** | **Louyang** (*Herbal Biotech & Traditional Medicine*) | Defensive Healthcare & Pharmaceuticals | **3.5% – 4.5%** | **Low (Beta 0.6)** | Inelastic demand for herbal remedies, medicine exports. |
+| **`MOS`** | **Moscovia** (*Prime Timber, Furs & Mineral Trust*) | Natural Resources & Forestry Value | **4.5% – 5.5%** | **Medium (Beta 0.8)** | Rare lumber logging, sable pelts, precious gemstone mines. |
+| **`AMA`** | **Amatsu** (*Artisanal Crafts & Heritage Tourism*) | Boutique Luxury & Cultural Heritage | **3.0% – 4.0%** | **Low-Medium (Beta 0.7)** | Forged blades, silk kimono exports, castle tourism. |
+| **`AYO`** | **Ayothaya** (*River Trading & Agrarian Value*) | Agricultural Commodities & River Logistics | **4.0% – 5.0%** | **Low (Beta 0.6)** | Floating market grain trade, sacred shrine crafts. |
+| **`GON`** | **Gonryun** (*Kunlun Floating Real Estate & Elixirs*) | Mystical Consumables & Air-Rights Luxury | **2.0% – 3.0%** | **Medium (Beta 1.0)** | Cultivation peaches, Taoist relics, floating estate leasing. |
+| **`BRA`** | **Brasilis** (*Rainforest Bio-Prospecting & Festival Corp*) | Eco-Energy & Event Entertainment | **2.5% – 4.0%** | **Medium-High (Beta 1.2)** | Annual carnival tourism spikes, rare rainforest flora research. |
+| **`DEW`** | **Dewata** (*Karakatau Gold & Spices*) | Precious Metals & Exotic Spices Mining | **3.5% – 5.0%** | **High (Beta 1.4)** | Tribal gold mining, volcanic spice crops. |
+| **`MAL`** | **Port Malaya** (*Maritime Port & Infrastructure*) | Emerging Market Port Logistics | **3.0% – 4.5%** | **Medium (Beta 1.0)** | Port cargo fees, regional agriculture, hospital supply chains. |
+
+### Phase 7.5: Outliers & Interdimensional Markets (Dark Horizons / Ash Vacuum)
+*Focus: Distressed Debt, High-Risk Asymmetric Bets & Otherworldly Frontiers.*
+
+| Ticker | City / Organization | Archetype | Dividend Yield | Volatility | Growth Drivers / Event Hooks |
+|:---|:---|:---|:---|:---|:---|
+| **`NIF`** | **Nifflheim** (*Underworld Relics & Distressed Assets*) | Distressed Debt / High-Risk "Junk Bond" | **0.0%** | **Extreme (Beta 2.5)** | Occult rifts, zero regulatory protection, asymmetric boom/bust. |
+| **`DIC` / `SPL` / `MAN`** | **Ash Vacuum Frontier** (*Sapha & Laphine Resource Alliance*) | Extraplanar Mining & Seed Venture | **0.0% – 1.0%** | **Extreme (Beta 2.2)** | Refined Bradium / Manuk ore yields, Yggdrasil seed harvesting. |
+
+

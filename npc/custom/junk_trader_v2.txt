@@ -57,60 +57,29 @@ OnInit:
 OnClock0000:
 OnRotateDaily:
 	$JunkRosterDay = gettime(DT_DAYOFYEAR);
-
-	// Dynamically query 3 random items per tier from MySQL table `custom_junk_pool`
-	// Tier 1: Novice & 1st Class (Lv 1 - 50)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 1 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT1_1 = .@ids[0]; $JunkPriceT1_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT1_2 = .@ids[1]; $JunkPriceT1_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT1_3 = .@ids[2]; $JunkPriceT1_3 = rand(.@mins[2], .@maxs[2]);
+	// Dynamically configure how many items per tier from DB (default to 5)
+	$JunkRosterSize = 5;
+	query_sql("SELECT `value` FROM `solo_server_config` WHERE `key` = 'junk_roster_size'", .@tmp_size);
+	if (.@tmp_size > 0) {
+		$JunkRosterSize = .@tmp_size;
+	} else {
+		// Insert default if missing
+		query_sql "INSERT IGNORE INTO `solo_server_config` (`key`, `value`) VALUES ('junk_roster_size', 5)";
 	}
 
-	// Tier 2: 2nd Class & Trans (Lv 51 - 99)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 2 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT2_1 = .@ids[0]; $JunkPriceT2_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT2_2 = .@ids[1]; $JunkPriceT2_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT2_3 = .@ids[2]; $JunkPriceT2_3 = rand(.@mins[2], .@maxs[2]);
-	}
-
-	// Tier 3: 3rd Class Early (Lv 100 - 140)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 3 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT3_1 = .@ids[0]; $JunkPriceT3_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT3_2 = .@ids[1]; $JunkPriceT3_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT3_3 = .@ids[2]; $JunkPriceT3_3 = rand(.@mins[2], .@maxs[2]);
-	}
-
-	// Tier 4: 3rd Class Mid/High (Lv 141 - 175)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 4 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT4_1 = .@ids[0]; $JunkPriceT4_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT4_2 = .@ids[1]; $JunkPriceT4_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT4_3 = .@ids[2]; $JunkPriceT4_3 = rand(.@mins[2], .@maxs[2]);
-	}
-
-	// Tier 5: 3rd Class End & Illusion (Lv 176 - 200)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 5 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT5_1 = .@ids[0]; $JunkPriceT5_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT5_2 = .@ids[1]; $JunkPriceT5_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT5_3 = .@ids[2]; $JunkPriceT5_3 = rand(.@mins[2], .@maxs[2]);
-	}
-
-	// Tier 6: 4th Class Range (Lv 201 - 250)
-	deletearray .@ids; deletearray .@mins; deletearray .@maxs;
-	query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = 6 ORDER BY RAND() LIMIT 3", .@ids, .@mins, .@maxs);
-	if (getarraysize(.@ids) >= 3) {
-		$JunkT6_1 = .@ids[0]; $JunkPriceT6_1 = rand(.@mins[0], .@maxs[0]);
-		$JunkT6_2 = .@ids[1]; $JunkPriceT6_2 = rand(.@mins[1], .@maxs[1]);
-		$JunkT6_3 = .@ids[2]; $JunkPriceT6_3 = rand(.@mins[2], .@maxs[2]);
+	for (.@tier = 1; .@tier <= 6; .@tier++) {
+		deletearray .@ids; deletearray .@mins; deletearray .@maxs;
+		query_sql("SELECT `item_id`, `min_price`, `max_price` FROM `custom_junk_pool` WHERE `tier` = " + .@tier + " ORDER BY RAND() LIMIT " + $JunkRosterSize, .@ids, .@mins, .@maxs);
+		
+		for (.@i = 0; .@i < $JunkRosterSize; .@i++) {
+			if (.@i < getarraysize(.@ids)) {
+				setd "$JunkT" + .@tier + "_" + (.@i + 1), .@ids[.@i];
+				setd "$JunkPriceT" + .@tier + "_" + (.@i + 1), rand(.@mins[.@i], .@maxs[.@i]);
+			} else {
+				setd "$JunkT" + .@tier + "_" + (.@i + 1), 0;
+				setd "$JunkPriceT" + .@tier + "_" + (.@i + 1), 0;
+			}
+		}
 	}
 
 	announce "MARKET NEWS: Daily Junk Merchants have updated their 6-Tier bounty roster!", bc_all;
@@ -134,20 +103,20 @@ function	script	F_JunkTraderV2Main	{
 
 	// Calculate player's level tier
 	.@rec_tier = 1;
-	if (BaseLevel >= 201)      .@rec_tier = 6;
-	else if (BaseLevel >= 176) .@rec_tier = 5;
-	else if (BaseLevel >= 141) .@rec_tier = 4;
-	else if (BaseLevel >= 100) .@rec_tier = 3;
-	else if (BaseLevel >= 51)  .@rec_tier = 2;
+	if (BaseLevel >= 191)      .@rec_tier = 6;
+	else if (BaseLevel >= 151) .@rec_tier = 5;
+	else if (BaseLevel >= 111) .@rec_tier = 4;
+	else if (BaseLevel >= 71)  .@rec_tier = 3;
+	else if (BaseLevel >= 31)  .@rec_tier = 2;
 
 	.@tier_name$ = "Tier " + .@rec_tier;
 	switch (.@rec_tier) {
-		case 1: .@tier_name$ = "Novice / 1st Class (Lv 1-50)"; break;
-		case 2: .@tier_name$ = "2nd Class & Trans (Lv 51-99)"; break;
-		case 3: .@tier_name$ = "3rd Class Early (Lv 100-140)"; break;
-		case 4: .@tier_name$ = "3rd Class Mid/High (Lv 141-175)"; break;
-		case 5: .@tier_name$ = "3rd Class End & Illusion (Lv 176-200)"; break;
-		case 6: .@tier_name$ = "4th Class Master (Lv 201-250)"; break;
+		case 1: .@tier_name$ = "Novice (Lv 1-30)"; break;
+		case 2: .@tier_name$ = "1st Class (Lv 31-70)"; break;
+		case 3: .@tier_name$ = "2nd Class (Lv 71-110)"; break;
+		case 4: .@tier_name$ = "Trans/3rd Early (Lv 111-150)"; break;
+		case 5: .@tier_name$ = "3rd Class Mid (Lv 151-190)"; break;
+		case 6: .@tier_name$ = "4th Class (Lv 191-250)"; break;
 	}
 
 	mes "[Daily Junk Merchant]";
@@ -172,7 +141,8 @@ function	script	F_JunkTraderV2Main	{
 			mes "[Daily Junk Merchant]";
 			mes "Which level bracket roster would you like to inspect?";
 			next;
-			.@selected_tier = select("Tier 1: Novice (Lv 1-50):Tier 2: 2nd Class (Lv 51-99):Tier 3: 3rd Class Early (Lv 100-140):Tier 4: 3rd Class High (Lv 141-175):Tier 5: Illusion (Lv 176-200):Tier 6: 4th Class (Lv 201-250):Cancel");
+			// ponytail: fixed menu colons to avoid splitting tiers into multiple choices
+			.@selected_tier = select("Tier 1 (Lv 1-30):Tier 2 (Lv 31-70):Tier 3 (Lv 71-110):Tier 4 (Lv 111-150):Tier 5 (Lv 151-190):Tier 6 (Lv 191-250):Cancel");
 			if (.@selected_tier >= 1 && .@selected_tier <= 6) {
 				callsub S_TradeTier, .@selected_tier, .@daily_limit;
 			}
@@ -221,43 +191,9 @@ S_TradeTier:
 	.@t = getarg(0);
 	.@limit = getarg(1);
 
-	// Load the 3 active items and prices for this tier
-	switch (.@t) {
-		case 1:
-			.@i1 = $JunkT1_1; .@p1 = $JunkPriceT1_1;
-			.@i2 = $JunkT1_2; .@p2 = $JunkPriceT1_2;
-			.@i3 = $JunkT1_3; .@p3 = $JunkPriceT1_3;
-			break;
-		case 2:
-			.@i1 = $JunkT2_1; .@p1 = $JunkPriceT2_1;
-			.@i2 = $JunkT2_2; .@p2 = $JunkPriceT2_2;
-			.@i3 = $JunkT2_3; .@p3 = $JunkPriceT2_3;
-			break;
-		case 3:
-			.@i1 = $JunkT3_1; .@p1 = $JunkPriceT3_1;
-			.@i2 = $JunkT3_2; .@p2 = $JunkPriceT3_2;
-			.@i3 = $JunkT3_3; .@p3 = $JunkPriceT3_3;
-			break;
-		case 4:
-			.@i1 = $JunkT4_1; .@p1 = $JunkPriceT4_1;
-			.@i2 = $JunkT4_2; .@p2 = $JunkPriceT4_2;
-			.@i3 = $JunkT4_3; .@p3 = $JunkPriceT4_3;
-			break;
-		case 5:
-			.@i1 = $JunkT5_1; .@p1 = $JunkPriceT5_1;
-			.@i2 = $JunkT5_2; .@p2 = $JunkPriceT5_2;
-			.@i3 = $JunkT5_3; .@p3 = $JunkPriceT5_3;
-			break;
-		case 6:
-			.@i1 = $JunkT6_1; .@p1 = $JunkPriceT6_1;
-			.@i2 = $JunkT6_2; .@p2 = $JunkPriceT6_2;
-			.@i3 = $JunkT6_3; .@p3 = $JunkPriceT6_3;
-			break;
-		default:
-			return;
-	}
-
-	if (.@i1 == 0) {
+	// Load the first item to verify roster isn't empty
+	.@first_item = getd("$JunkT" + .@t + "_1");
+	if (.@first_item == 0) {
 		mes "[Daily Junk Merchant]";
 		mes "The bounty board is currently empty. Please wait for the daily rotation!";
 		close;
@@ -265,9 +201,16 @@ S_TradeTier:
 
 	mes "[Daily Junk Merchant]";
 	mes "Today's Active Bounties for Tier " + .@t + ":";
-	mes "1. ^0000FF" + getitemname(.@i1) + "^000000: ^00FF00" + .@p1 + "z^000000";
-	mes "2. ^0000FF" + getitemname(.@i2) + "^000000: ^00FF00" + .@p2 + "z^000000";
-	mes "3. ^0000FF" + getitemname(.@i3) + "^000000: ^00FF00" + .@p3 + "z^000000";
+	
+	.@sell_menu$ = "";
+	for (.@i = 1; .@i <= $JunkRosterSize; .@i++) {
+		.@id = getd("$JunkT" + .@t + "_" + .@i);
+		.@price = getd("$JunkPriceT" + .@t + "_" + .@i);
+		if (.@id > 0) {
+			mes .@i + ". ^0000FF" + getitemname(.@id) + "^000000: ^00FF00" + .@price + "z^000000";
+			.@sell_menu$ = .@sell_menu$ + "Sell " + getitemname(.@id) + " (" + countitem(.@id) + " in bag):";
+		}
+	}
 	next;
 
 	if (#DailyJunkSold >= .@limit) {
@@ -276,18 +219,15 @@ S_TradeTier:
 		close;
 	}
 
-	.@sell_menu$ = "Sell " + getitemname(.@i1) + " (" + countitem(.@i1) + " in bag):"
-	             + "Sell " + getitemname(.@i2) + " (" + countitem(.@i2) + " in bag):"
-	             + "Sell " + getitemname(.@i3) + " (" + countitem(.@i3) + " in bag):Cancel";
-
+	.@sell_menu$ = .@sell_menu$ + "Cancel";
 	.@sell_choice = select(.@sell_menu$);
-
-	switch (.@sell_choice) {
-		case 1: .@target_id = .@i1; .@target_price = .@p1; break;
-		case 2: .@target_id = .@i2; .@target_price = .@p2; break;
-		case 3: .@target_id = .@i3; .@target_price = .@p3; break;
-		default: return;
+	
+	if (.@sell_choice > $JunkRosterSize || getd("$JunkT" + .@t + "_" + .@sell_choice) == 0) {
+		return;
 	}
+
+	.@target_id = getd("$JunkT" + .@t + "_" + .@sell_choice);
+	.@target_price = getd("$JunkPriceT" + .@t + "_" + .@sell_choice);
 
 	.@in_bag = countitem(.@target_id);
 	if (.@in_bag <= 0) {

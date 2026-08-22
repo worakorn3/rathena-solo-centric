@@ -1,0 +1,10 @@
+{
+  "load-mistakes-into-context": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/load-mistakes.ps1"
+      }
+    ]
+  }
+}
