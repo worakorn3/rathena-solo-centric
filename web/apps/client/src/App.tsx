@@ -9,6 +9,7 @@ import { StatusWindow } from "./components/character/StatusWindow";
 import { Paperdoll } from "./components/character/Paperdoll";
 import { KillTracker } from "./components/tracking/KillTracker";
 import { PublicSearch } from "./components/armory/PublicSearch";
+import { BountyBoard } from "./components/economy/BountyBoard";
 import { LoginModal } from "./components/auth/LoginModal";
 import { useAuth } from "./context/AuthContext";
 import { api } from "./lib/api";
@@ -19,11 +20,11 @@ import {
   ProgressionSummary,
   StockMarketQuote,
 } from "@rathena/shared";
-import { Coins, Shield, Skull, Search, User, Sparkles } from "lucide-react";
+import { Coins, Shield, Skull, Search, User, Sparkles, Target } from "lucide-react";
 
 export const App: React.FC = () => {
   const { user, openLoginModal } = useAuth();
-  const [activeTab, setActiveTab] = useState<"FINANCE" | "CHARACTER" | "PROGRESSION" | "ARMORY">("FINANCE");
+  const [activeTab, setActiveTab] = useState<"FINANCE" | "CHARACTER" | "PROGRESSION" | "ARMORY" | "BOUNTIES">("FINANCE");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -36,16 +37,24 @@ export const App: React.FC = () => {
 
   // Public Market Data
   const [quotes, setQuotes] = useState<StockMarketQuote[]>([]);
+  const [marketMood, setMarketMood] = useState(0);
+  const [marketDrift, setMarketDrift] = useState(0);
+  const [latestEvent, setLatestEvent] = useState<any>(null);
   const [rankings, setRankings] = useState<CharacterSummary[]>([]);
 
   // Load Public Data
   const loadPublicData = useCallback(async () => {
     try {
       const [qRes, rRes] = await Promise.all([
-        api.get<{ success: boolean; quotes: StockMarketQuote[] }>("/api/economy/quotes"),
+        api.get<{ success: boolean; quotes: StockMarketQuote[]; marketMood?: number; marketDrift?: number; latestEvent?: any }>("/api/economy/quotes"),
         api.get<{ success: boolean; rankings: CharacterSummary[] }>("/api/character/rankings"),
       ]);
-      if (qRes.success) setQuotes(qRes.quotes);
+      if (qRes.success) {
+        setQuotes(qRes.quotes);
+        if (qRes.marketMood !== undefined) setMarketMood(qRes.marketMood);
+        if (qRes.marketDrift !== undefined) setMarketDrift(qRes.marketDrift);
+        if (qRes.latestEvent !== undefined) setLatestEvent(qRes.latestEvent);
+      }
       if (rRes.success) setRankings(rRes.rankings);
     } catch {
       // Ignore
@@ -122,45 +131,59 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-5 flex-1 flex flex-col">
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ro-borderLight/30 pb-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ro-borderDark pb-3 relative">
+          {/* Faux 3D ledge for tabs */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ro-borderLight/20 shadow-[0_1px_0_rgba(255,255,255,0.05)]"></div>
+          <div className="flex flex-wrap items-center gap-2 relative z-10">
             <button
               onClick={() => setActiveTab("FINANCE")}
-              className={`ro-button flex items-center space-x-1.5 py-1.5 px-3 ${
+              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
                 activeTab === "FINANCE"
-                  ? "bg-gradient-to-b from-[#e5a824] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194]"
-                  : ""
+                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
+                  : "opacity-80 hover:opacity-100"
               }`}
             >
-              <Coins size={14} className={activeTab === "FINANCE" ? "text-slate-950" : "text-amber-400"} />
-              <span>💰 Financial HQ</span>
-              <span className="bg-amber-900/40 text-[9px] font-mono px-1 rounded uppercase font-bold text-amber-200">
-                Top Priority
+              <Coins size={15} className={activeTab === "FINANCE" ? "text-slate-950" : "text-amber-400"} />
+              <span className="font-cinzel tracking-wide text-sm">Financial HQ</span>
+              <span className="bg-amber-900/60 text-[9px] font-mono px-1.5 py-0.5 rounded border border-amber-500/30 uppercase font-bold text-amber-200 ml-1 shadow-inner">
+                Priority
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab("CHARACTER")}
-              className={`ro-button flex items-center space-x-1.5 py-1.5 px-3 ${
+              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
                 activeTab === "CHARACTER"
-                  ? "bg-gradient-to-b from-[#e5a824] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194]"
-                  : ""
+                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
+                  : "opacity-80 hover:opacity-100"
               }`}
             >
-              <Shield size={14} className={activeTab === "CHARACTER" ? "text-slate-950" : "text-sky-400"} />
-              <span>⚔️ Character & Gear</span>
+              <Shield size={15} className={activeTab === "CHARACTER" ? "text-slate-950" : "text-sky-400"} />
+              <span className="font-cinzel tracking-wide text-sm">Character</span>
             </button>
 
             <button
               onClick={() => setActiveTab("PROGRESSION")}
-              className={`ro-button flex items-center space-x-1.5 py-1.5 px-3 ${
+              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
                 activeTab === "PROGRESSION"
-                  ? "bg-gradient-to-b from-[#e5a824] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194]"
-                  : ""
+                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
+                  : "opacity-80 hover:opacity-100"
               }`}
             >
-              <Skull size={14} className={activeTab === "PROGRESSION" ? "text-slate-950" : "text-red-400"} />
-              <span>📜 Solo Progression</span>
+              <Skull size={15} className={activeTab === "PROGRESSION" ? "text-slate-950" : "text-red-400"} />
+              <span className="font-cinzel tracking-wide text-sm">Progression</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("BOUNTIES")}
+              className={`ro-button flex items-center space-x-1.5 py-2 px-4 transition-all duration-200 ${
+                activeTab === "BOUNTIES"
+                  ? "bg-gradient-to-b from-[#f3ba3b] to-[#b37e0e] text-slate-950 font-bold border-[#ffe194] shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_2px_5px_rgba(0,0,0,0.5)] translate-y-[1px]"
+                  : "opacity-80 hover:opacity-100"
+              }`}
+            >
+              <Target size={15} className={activeTab === "BOUNTIES" ? "text-slate-950" : "text-emerald-400"} />
+              <span className="font-cinzel tracking-wide text-sm">Bounties</span>
             </button>
           </div>
 
@@ -190,7 +213,12 @@ export const App: React.FC = () => {
                   <BankWidget bank={netWorth.bank} />
                   <StockPortfolio holdings={netWorth.holdings} />
                 </div>
-                <MarketWatch quotes={netWorth.quotes} />
+                <MarketWatch 
+                  quotes={netWorth.quotes} 
+                  marketMood={netWorth.marketMood} 
+                  marketDrift={netWorth.marketDrift} 
+                  latestEvent={netWorth.latestEvent} 
+                />
               </>
             ) : (
               /* Public / Logged Out Finance Preview */
@@ -214,7 +242,12 @@ export const App: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <MarketWatch quotes={quotes} />
+                  <MarketWatch 
+                    quotes={quotes} 
+                    marketMood={marketMood} 
+                    marketDrift={marketDrift} 
+                    latestEvent={latestEvent} 
+                  />
                   <div className="ro-window p-4 space-y-3">
                     <div className="ro-titlebar -mx-4 -mt-4 mb-3">
                       <span className="font-cinzel font-bold text-xs uppercase text-slate-100">
@@ -320,6 +353,13 @@ export const App: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 4: 🎯 DAILY BOUNTIES */}
+        {activeTab === "BOUNTIES" && (
+          <div className="h-[calc(100vh-200px)]">
+            <BountyBoard />
           </div>
         )}
       </main>

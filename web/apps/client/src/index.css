@@ -5,36 +5,41 @@
 @layer components {
   /* Classic Ragnarok Window Frame */
   .ro-window {
-    @apply bg-[#212c3d] border-2 border-ro-borderLight rounded shadow-roWindow overflow-hidden;
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
+    @apply bg-[#1e2736] border-2 border-ro-borderLight rounded-md shadow-roWindow overflow-hidden relative;
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.3) 100%);
   }
 
   /* RO Window Title Bar */
   .ro-titlebar {
-    @apply bg-gradient-to-r from-ro-titlebar to-ro-titlebarDark px-3 py-1.5 flex items-center justify-between border-b border-ro-borderDark select-none;
+    @apply bg-gradient-to-r from-ro-titlebar to-ro-titlebarDark px-3 py-2 flex items-center justify-between border-b-2 border-ro-borderDark select-none shadow-roOutset;
   }
 
   /* Inset Panel (classic RO sunken container) */
   .ro-inset {
-    @apply bg-[#151c27] border border-[#2d3b4e] rounded shadow-roInset;
+    @apply bg-ro-cardDark border border-ro-borderMedium rounded shadow-roInset;
   }
 
   .ro-parchment-inset {
-    @apply bg-[#f4ece0] text-slate-800 border border-[#b8a994] rounded shadow-roInset;
+    @apply bg-ro-parchment text-slate-900 border border-ro-parchmentDark rounded shadow-roInset relative z-0;
+    background-image: 
+      radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 8px 8px;
+    background-position: 0 0, 4px 4px;
   }
 
   /* RO Retro Button */
   .ro-button {
-    @apply bg-gradient-to-b from-[#4b6382] to-[#2f4258] hover:from-[#58759b] hover:to-[#384f6a] active:from-[#253547] active:to-[#3e536c] text-white font-medium text-xs px-3 py-1 rounded border border-ro-borderLight shadow-roButton transition-all select-none;
+    @apply bg-gradient-to-b from-ro-titlebar to-ro-titlebarDark hover:from-[#58759b] hover:to-[#384f6a] active:from-[#253547] active:to-[#3e536c] active:translate-y-[1px] active:shadow-none text-white font-medium text-xs px-3 py-1.5 rounded border border-ro-borderLight shadow-roButton transition-all select-none;
   }
 
   .ro-button-gold {
-    @apply bg-gradient-to-b from-[#e5a824] to-[#b37e0e] hover:from-[#f3ba3b] hover:to-[#c88d10] active:from-[#946709] active:to-[#b37e0e] text-slate-950 font-semibold text-xs px-3 py-1 rounded border border-[#ffe194] shadow-roButton transition-all select-none;
+    @apply bg-gradient-to-b from-ro-gold to-ro-goldDark hover:from-ro-goldHover hover:to-ro-gold active:from-[#946709] active:to-ro-goldDark active:translate-y-[1px] active:shadow-none text-slate-950 font-bold text-xs px-3 py-1.5 rounded border border-[#ffe194] shadow-roButton transition-all select-none;
   }
 
   /* Equipment Paperdoll Slot */
   .ro-paperdoll-slot {
-    @apply w-12 h-12 bg-[#121924] border-2 border-[#364960] hover:border-ro-gold rounded flex flex-col items-center justify-center relative cursor-pointer shadow-roInset transition-colors;
+    @apply w-12 h-12 bg-ro-bg border-2 border-ro-borderMedium hover:border-ro-gold rounded-md flex flex-col items-center justify-center relative cursor-pointer shadow-roDeepInset transition-colors;
   }
 
   /* HP Bar */

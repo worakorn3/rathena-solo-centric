@@ -69,44 +69,47 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({ holdings }) => {
             </p>
           </div>
         ) : (
-          <div className="space-y-2 overflow-y-auto max-h-[300px] pr-1">
+          <div className="space-y-2.5 overflow-y-auto max-h-[300px] pr-1">
             {holdings.map((h) => {
               const pos = h.unrealizedPnL >= 0;
               return (
                 <div
                   key={h.ticker}
-                  className="ro-inset p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 hover:border-ro-gold/40 transition-colors"
+                  className="ro-inset relative overflow-hidden group p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-ro-borderMedium hover:border-ro-gold/60 transition-all shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]"
                 >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-8 h-8 rounded bg-[#101722] border border-ro-gold/40 flex items-center justify-center font-cinzel font-black text-xs text-ro-gold">
+                  {/* Subtle Profit/Loss Background Glow */}
+                  <div className={`absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity ${pos ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                  
+                  <div className="flex items-center space-x-3 relative z-10">
+                    <div className="w-10 h-10 rounded shadow-roDeepInset bg-ro-bg border-2 border-ro-borderMedium group-hover:border-ro-gold/80 flex items-center justify-center font-cinzel font-black text-sm text-ro-gold transition-colors">
                       {h.ticker}
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <div className="text-sm font-bold text-slate-100 flex items-center gap-2">
                         {h.name}
-                        <span className="text-[10px] text-slate-400 font-mono font-normal">
-                          ({h.shares.toLocaleString()} shares)
+                        <span className="bg-slate-800/80 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-mono font-bold shadow-inner">
+                          {h.shares.toLocaleString()} SHRS
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        Avg: {formatZeny(h.avgBuyPrice)} Z | Current: {formatZeny(h.currentPrice)} Z
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        Avg: <span className="text-slate-300">{formatZeny(h.avgBuyPrice)} Z</span> | Current: <span className="text-slate-300">{formatZeny(h.currentPrice)} Z</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-1 border-t sm:border-t-0 pt-1 sm:pt-0 border-ro-borderLight/10">
-                    <div className="text-xs font-bold font-mono text-slate-100">
-                      {formatZeny(h.marketValue)} <span className="text-[10px] text-slate-400 font-sans">Z</span>
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-ro-borderLight/20 relative z-10">
+                    <div className="text-sm font-black font-mono text-ro-zeny drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                      {formatZeny(h.marketValue)} <span className="text-[10px] text-amber-500 font-sans font-bold">Z</span>
                     </div>
                     <div
-                      className={`text-[10px] font-mono font-semibold flex items-center gap-0.5 ${
-                        pos ? "text-emerald-400" : "text-rose-400"
+                      className={`text-[11px] font-mono font-bold flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/40 ${
+                        pos ? "text-emerald-400 border border-emerald-900/50" : "text-rose-400 border border-rose-900/50"
                       }`}
                     >
-                      {pos ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                      {pos ? <ArrowUpRight size={11} strokeWidth={3} /> : <ArrowDownRight size={11} strokeWidth={3} />}
                       <span>
                         {pos ? "+" : ""}
-                        {formatZeny(h.unrealizedPnL)} Z ({pos ? "+" : ""}
+                        {formatZeny(h.unrealizedPnL)} ({pos ? "+" : ""}
                         {h.unrealizedPnLPercent.toFixed(1)}%)
                       </span>
                     </div>

@@ -84,72 +84,76 @@ export const NetWorthCard: React.FC<NetWorthCardProps> = ({ summary }) => {
       </div>
 
       {/* 3 Pillar Summary Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3">
         {/* Pillar 1: Liquid Zeny */}
-        <div className="ro-inset p-3 border-l-4 border-amber-400">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span className="flex items-center gap-1.5 font-medium text-slate-200">
-              <Wallet size={14} className="text-amber-400" />
+        <div className="ro-inset p-3.5 border-t-4 border-amber-400 relative overflow-hidden group hover:bg-[#1a2433] transition-colors">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 relative z-10">
+            <span className="flex items-center gap-1.5 font-bold font-sans text-slate-200">
+              <Wallet size={15} className="text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.8)]" />
               Liquid Cash (Chars)
             </span>
-            <span className="text-[10px] font-mono text-slate-500">
+            <span className="text-[10px] font-mono text-slate-500 bg-slate-900/60 px-1 rounded shadow-inner">
               {characterZenyBreakdown.length} Chars
             </span>
           </div>
-          <div className="text-lg font-bold font-mono text-amber-300">
-            {formatZeny(liquidZeny)} <span className="text-xs text-slate-400 font-sans">Z</span>
+          <div className="text-xl font-black font-mono text-amber-300 drop-shadow-[0_2px_1px_rgba(0,0,0,0.8)] relative z-10">
+            {formatZeny(liquidZeny)} <span className="text-xs text-slate-400 font-sans font-bold">Z</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-1">
+          <div className="text-[10px] text-slate-400 mt-1.5 relative z-10">
             Available on hand across your characters
           </div>
         </div>
 
         {/* Pillar 2: Investment Bank */}
-        <div className="ro-inset p-3 border-l-4 border-sky-400">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span className="flex items-center gap-1.5 font-medium text-slate-200">
-              <Landmark size={14} className="text-sky-400" />
+        <div className="ro-inset p-3.5 border-t-4 border-sky-400 relative overflow-hidden group hover:bg-[#1a2433] transition-colors">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 relative z-10">
+            <span className="flex items-center gap-1.5 font-bold font-sans text-slate-200">
+              <Landmark size={15} className="text-sky-400 drop-shadow-[0_0_2px_rgba(56,189,248,0.8)]" />
               Investment Banker
             </span>
-            <span className="text-[10px] font-mono text-sky-400/90 font-semibold">1% / Day</span>
+            <span className="text-[10px] font-mono text-sky-400 font-bold bg-sky-950/40 px-1 rounded border border-sky-500/20">
+              1% / Day
+            </span>
           </div>
-          <div className="text-lg font-bold font-mono text-sky-300">
-            {formatZeny(bankTotal)} <span className="text-xs text-slate-400 font-sans">Z</span>
+          <div className="text-xl font-black font-mono text-sky-300 drop-shadow-[0_2px_1px_rgba(0,0,0,0.8)] relative z-10">
+            {formatZeny(bankTotal)} <span className="text-xs text-slate-400 font-sans font-bold">Z</span>
           </div>
-          <div className="text-[10px] text-emerald-400 font-mono mt-1 flex items-center gap-1">
+          <div className="text-[10.5px] text-emerald-400 font-mono font-semibold mt-1.5 flex items-center gap-1 relative z-10">
             <span>+{formatZeny(bankPendingInterest)} Z interest</span>
-            <span className="text-slate-500">({formatZeny(bankPrincipal)} principal)</span>
+            <span className="text-slate-500 text-[9px]">({formatZeny(bankPrincipal)} principal)</span>
           </div>
         </div>
 
         {/* Pillar 3: Stock Exchange */}
-        <div className="ro-inset p-3 border-l-4 border-emerald-400">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span className="flex items-center gap-1.5 font-medium text-slate-200">
-              <TrendingUp size={14} className="text-emerald-400" />
+        <div className="ro-inset p-3.5 border-t-4 border-emerald-400 relative overflow-hidden group bg-gradient-to-br from-[#101925] to-[#0d131c] shadow-[inset_0_2px_15px_rgba(16,185,129,0.05)]">
+          {/* Subtle background glow based on performance */}
+          <div className={`absolute -right-10 -bottom-10 w-32 h-32 blur-3xl opacity-20 rounded-full ${isStockPositive ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 relative z-10">
+            <span className="flex items-center gap-1.5 font-bold font-sans text-slate-100">
+              <TrendingUp size={15} className="text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
               Stock Portfolio
             </span>
             <span
-              className={`text-[10px] font-mono font-bold px-1 py-0.2 rounded flex items-center ${
+              className={`text-[11px] font-mono font-black px-1.5 py-0.5 rounded flex items-center shadow-inner ${
                 isStockPositive
-                  ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
-                  : "bg-rose-950/80 text-rose-300 border border-rose-500/30"
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                  : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
               }`}
             >
-              {isStockPositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+              {isStockPositive ? <ArrowUpRight size={12} strokeWidth={3} /> : <ArrowDownRight size={12} strokeWidth={3} />}
               {isStockPositive ? "+" : ""}
               {stockUnrealizedPnLPercent.toFixed(1)}%
             </span>
           </div>
-          <div className="text-lg font-bold font-mono text-emerald-300">
-            {formatZeny(stockMarketValue)} <span className="text-xs text-slate-400 font-sans">Z</span>
+          <div className="text-xl font-black font-mono text-emerald-400 drop-shadow-[0_2px_1px_rgba(0,0,0,1)] relative z-10">
+            {formatZeny(stockMarketValue)} <span className="text-xs text-emerald-600/70 font-sans font-bold">Z</span>
           </div>
           <div
-            className={`text-[10px] font-mono mt-1 ${
+            className={`text-[11px] font-mono font-bold mt-1.5 relative z-10 ${
               isStockPositive ? "text-emerald-400" : "text-rose-400"
             }`}
           >
-            P&L: {isStockPositive ? "+" : ""}
+            Unrealized P&L: {isStockPositive ? "+" : ""}
             {formatZeny(stockUnrealizedPnL)} Z
           </div>
         </div>

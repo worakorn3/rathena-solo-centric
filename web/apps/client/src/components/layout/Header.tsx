@@ -19,27 +19,30 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, openLoginModal, logout } = useAuth();
 
   return (
-    <header className="bg-gradient-to-r from-[#17202e] via-[#1e2a3c] to-[#17202e] border-b-2 border-ro-borderLight/40 px-4 py-2.5 shadow-md">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <header className="bg-[#151c27] border-b-2 border-ro-borderMedium px-4 py-2.5 shadow-roWindow relative z-20">
+      {/* Subtle top glare */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/10"></div>
+      
+      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 relative z-10">
         {/* Logo & Title */}
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded bg-[#2b3a50] border border-ro-gold flex items-center justify-center shadow-roWindow">
+          <div className="w-10 h-10 rounded shadow-roDeepInset bg-[#1a2332] border border-ro-gold flex items-center justify-center">
             <Shield className="text-ro-gold" size={20} />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-cinzel font-black text-sm sm:text-base tracking-wider text-slate-100 uppercase">
+              <span className="font-cinzel font-black text-sm sm:text-base tracking-widest text-slate-100 uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                 Photonic <span className="text-ro-gold">Singularity</span>
               </span>
-              <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1 shadow-inner">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_5px_#34d399]" />
                 SOLO RO
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-400">
-              <span>Player Portal</span>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-sky-300/80">
+              <span className="font-sans tracking-wide text-slate-300">Player Portal</span>
+              <span className="text-ro-borderMedium">•</span>
+              <span className="flex items-center gap-1 text-sky-300/80 font-mono">
                 <Database size={11} />
                 Replica :3307 (RO)
               </span>
@@ -49,11 +52,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center: Net Worth Ticker (if logged in) */}
         {user && netWorth !== undefined && (
-          <div className="hidden md:flex items-center space-x-2 ro-inset px-3 py-1.5 border border-ro-gold/30">
+          <div className="hidden md:flex items-center space-x-2.5 bg-ro-bg border-2 border-ro-borderMedium shadow-roInset px-4 py-1.5 rounded-md">
             <Coins className="text-ro-zeny" size={16} />
-            <span className="text-xs text-slate-300 font-medium">Net Worth:</span>
-            <span className="text-sm font-bold font-mono text-ro-zeny">
-              {formatZeny(netWorth)} <span className="text-[10px] text-amber-200/80">Z</span>
+            <span className="text-[11px] text-slate-300 font-bold uppercase tracking-wider">Net Worth:</span>
+            <span className="text-sm font-black font-mono text-ro-zeny drop-shadow-[0_1px_1px_rgba(0,0,0,1)]">
+              {formatZeny(netWorth)} <span className="text-[10px] text-amber-200/80 font-sans">Z</span>
             </span>
           </div>
         )}
