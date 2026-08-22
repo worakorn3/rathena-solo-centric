@@ -3424,6 +3424,48 @@ This cuts out an entire microservice, removes the need for internal RPCs, and ac
 3. **City Brokers Placement:** Place physical broker NPCs in Aldebaran, Comodo, Izlude, and Lutie.
 4. **CI & Integration Validation:** Update `npc/test/stock_exchange_ci_test.txt` and verify live web API responses.
 
+---
+
+## 🌐 Phase 10: Complete Municipal Black Swan Seeding & Rolling Unlock Event Engine
+
+> [!NOTE]
+> Seed lore-accurate market events (Booms, Crises, Trade Wars) for all 27 cities across Phases 0–5 in `solo_stock_events.sql`. Implement active-ticker event gating in `marketSimulation.service.ts` to ensure events only target currently unlocked cities (`enabled = 1`), calibrate dividend yield calculation to prevent 0z decay, and synchronize `economy.service.ts` with direct player dividend tracking.
+
+### Objectives
+1. **Complete 27-City Event Catalog:** Seed Boom, Crisis, and Trade War events across all phases in `solo_stock_events.sql`.
+2. **Rolling Unlock Event Gating:** Ensure `processBlackSwan()` only triggers events where `ticker_target` and `ticker_secondary` are enabled in `solo_stock_market`.
+3. **Dividend Yield Math Calibration:** Fix integer truncation in `processMidnightDrip()` so dividend targets scale appropriately without decaying to 0z.
+4. **Economy Service Sync:** Update `economy.service.ts` to query `pending_div`, `drip_enabled`, and `drip_carryover` directly from `solo_stock_player`.
+5. **Unit Test Suite:** Expand `marketSimulation.test.ts` to validate active-ticker event filtering and calibrated dividend calculations.
+
+---
+
+## 💎 Phase 11: Stock Market Hardening, Arithmetic Protection & High-Capacity Dividend Payouts (17-Carat Diamond Store of Value)
+
+> [!IMPORTANT]
+> Harden the stock exchange against 32-bit integer overflows and math regressions, fix macro `'ALL'` active event propagation and reverse splits in the background engine, and establish high-denomination store-of-value payouts (17-Carat Diamonds @ 500M Zeny) for late-game dividend windfalls exceeding standard RO wallet caps.
+
+### Objectives
+1. **Arithmetic Bounds & Overflow Protection:**
+   - Enforce upper bound on share purchases (`.@qty <= 1,000,000` and `if (.@qty > 2000000000 / .@p)`) in `npc/custom/stock_exchange.txt` to eliminate the negative-zeny multiplication overflow exploit.
+   - Refactor partial sell cost-basis reduction (`total_cost`) directly into MySQL or calculate with division-first arithmetic to prevent intermediate 32-bit int multiplication wrap-around.
+   - Implement `MAX_ZENY` (2,147,483,647) clamping on dividend collections and share liquidations to prevent wallet wrap-around.
+   - Pro-rate or isolate accrued dividends during partial sales so selling 1 share does not wipe 100% of pending dividends.
+   - Remove dead code `F_MoodNameStr` from `npc/custom/stock_exchange.txt`.
+2. **Simulation Engine Hardening:**
+   - Support `ticker = 'ALL'` in `MarketSimulationService.processHourlyShift()` so macro events (e.g. `MACRO_GOLDEN_JUBILEE`, `MACRO_VALHALLA_BLESSING`) correctly broadcast their mood overrides to all active municipal stocks.
+   - Implement `reverse_split_ratio` processing in `MarketSimulationService.processBlackSwan()` for structural consolidation events (e.g. `FIN_REVERSE_SPLIT`).
+   - Prioritize candidate events matching enabled tickers in `processBlackSwan()` to prevent sampling starvation from disabled future phases.
+   - Harmonize `ticker_target` and `ticker_secondary` column lengths to `VARCHAR(64)` across migrations.
+3. **High-Capacity Dividend Store of Value (Roadmap Item):**
+   - **Context:** In Ragnarok Online, characters are hard-capped at 2,147,483,647 Zeny (`MAX_ZENY`). End-game solo tycoons accumulating large stock positions can accrue dividends exceeding this wallet cap in a single harvest.
+   - **Mechanism:** Add an optional/automatic high-denomination dividend distribution tier:
+     - For large dividend collections (e.g., \(\ge 500,000,000\text{z}\)), allow payout in **17-Carat Diamonds** (`item_id: 6024`, non-droppable store of value convertible via `RareDiamondMerchant` at 500M Zeny each) + remaining Zeny change.
+     - Protect every diamond grant with `checkweight(6024, .@diamond_count)` to guarantee zero asset loss on full inventory.
+     - Introduce a toggle or threshold in the Broker NPC / System Tablet settings for automatic diamond denomination on dividend claim.
+
+
+
 
 
 

@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { jwt } from "@elysiajs/jwt";
 import { EconomyService } from "../services/economy.service";
+import { query } from "../db/pool";
 import { config } from "../config";
 
 export const economyRoutes = new Elysia({ prefix: "/api/economy" })
@@ -14,10 +15,11 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     const quotes = await EconomyService.getMarketQuotes();
     let marketMood = 0;
     let marketDrift = 0;
-    const { query } = require("../db/pool");
     try {
-      const metaRows = await query("SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')");
-      for (const row of (metaRows as { mkey: string; mval: number }[])) {
+      const metaRows = await query<{ mkey: string; mval: number }>(
+        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')"
+      );
+      for (const row of metaRows) {
         if (row.mkey === "MarketMood") marketMood = Number(row.mval);
         if (row.mkey === "MarketDrift") marketDrift = Number(row.mval);
       }

@@ -82,10 +82,29 @@ L_ClaimDiv:
 	}
 
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
-	query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
 	
 	.@tax_amt = (.@total * .@tax_rate) / 100;
 	.@net = .@total - .@tax_amt;
+
+	// MAX_ZENY overflow protection (MAX_ZENY = 2,147,483,647)
+	.@zeny_space = 2147483647 - Zeny;
+	if (.@zeny_space <= 0) {
+		mes "[Midgard Stock Exchange]";
+		mes "^FF0000Your wallet is full! You cannot hold any more Zeny.^000000";
+		mes "Please deposit or spend your Zeny before claiming dividends.";
+		next; goto L_MenuMain;
+	}
+
+	if (.@net > .@zeny_space) {
+		.@payout = .@zeny_space;
+		.@gross_reduced = (.@total * .@payout) / .@net;
+		query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div - " + .@gross_reduced + " WHERE account_id = " + .@account_id;
+		.@net = .@payout;
+		mes "[Midgard Stock Exchange]";
+		mes "^FF0000Warning: Partial collection due to wallet limit. Remainder stays in your dividend balance.^000000";
+	} else {
+		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
+	}
 	
 	mes "[Dividend Distribution]";
 	mes "Gross Dividends: ^00FF00" + .@total + "z^000000";
@@ -142,15 +161,35 @@ L_MenuBuy:
 	
 	.@p = 0;
 	query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p;
+	if (.@p <= 0) {
+		mes "Error: Stock price unavailable.";
+		next; goto L_MenuMain;
+	}
 	
 	mes "Selected: ^0000FF" + .@cn$ + " (" + .@names$[.@sel_idx] + ")^000000";
 	mes "Price: " + .@p + "z";
 	mes "A 1.0% brokerage transaction fee will be added to the purchase.";
+	mes "Enter quantity to buy (Max 1,000,000):";
 	input .@qty;
-	if (.@qty <= 0) goto L_MenuMain;
+	if (.@qty <= 0 || .@qty > 1000000) {
+		mes "Invalid quantity. Must be between 1 and 1,000,000.";
+		next; goto L_MenuMain;
+	}
+
+	// Guard against 32-bit integer overflow
+	if (.@qty > (2000000000 / .@p)) {
+		mes "Order value exceeds single transaction limit.";
+		next; goto L_MenuMain;
+	}
+
 	.@subtotal = .@p * .@qty;
 	.@fee = .@subtotal / 100;
 	.@total = .@subtotal + .@fee;
+	if (.@total <= 0) {
+		mes "Arithmetic calculation error.";
+		next; goto L_MenuMain;
+	}
+
 	mes "Subtotal: " + .@subtotal + "z";
 	mes "Broker Fee (1%): " + .@fee + "z";
 	mes "Total Cost: " + .@total + "z";
@@ -197,36 +236,59 @@ L_MenuSell:
 	query_sql "SELECT price FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@p;
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@tax_rate;
 	
-	if (.@s <= 0) { mes "No shares."; next; goto L_MenuMain; }
+	if (.@s <= 0 || .@p <= 0) { mes "No valid shares."; next; goto L_MenuMain; }
 	
-	.@payout_gross = .@pending;
-	.@payout_tax = (.@payout_gross * .@tax_rate) / 100;
-	.@payout_net = .@payout_gross - .@payout_tax;
-	
-	mes "Accrued Dividends (Net): ^00FF00+" + .@payout_net + "z^000000";
-	if (.@payout_gross > 0) mes "  ^777777(Gross: " + .@payout_gross + "z | Tax " + .@tax_rate + "%: -" + .@payout_tax + "z)^000000";
-	next;
 	switch(select("Amount:Liquidate All:Back")) {
-		case 1: mes "Amount?"; input .@qty; break;
+		case 1: mes "Amount to sell (Max " + .@s + "):"; input .@qty; break;
 		case 2: .@qty = .@s; break;
 		default: goto L_MenuMain;
 	}
 	if (.@qty <= 0 || .@qty > .@s) goto L_MenuMain;
+
+	// Guard against 32-bit overflow
+	if (.@qty > (2000000000 / .@p)) {
+		mes "Order exceeds transaction limit. Please sell in smaller batches.";
+		next; goto L_MenuMain;
+	}
 	
 	.@subtotal = .@p * .@qty;
 	.@fee = .@subtotal / 100;
 	.@net = .@subtotal - .@fee;
+
+	// Pro-rate pending dividends on sale
+	.@payout_gross = (.@pending * .@qty) / .@s;
+	.@payout_tax = (.@payout_gross * .@tax_rate) / 100;
+	.@payout_net = .@payout_gross - .@payout_tax;
 	
-	mes "Subtotal: " + .@subtotal + "z";
-	mes "Broker Fee (1%): " + .@fee + "z";
-	mes "Net Received: " + .@net + "z";
+	mes "Subtotal (" + .@qty + " shares @ " + .@p + "z): " + .@subtotal + "z";
+	mes "Broker Fee (1%): -" + .@fee + "z";
+	mes "Net Stock Proceeds: ^00FF00" + .@net + "z^000000";
+	if (.@payout_gross > 0) {
+		mes "Pro-rated Dividends (Net): ^0000FF+" + .@payout_net + "z^000000 (Gross " + .@payout_gross + "z | Tax -" + .@payout_tax + "z)";
+	}
+	mes "---------------------------";
+	.@total_payout = .@net + .@payout_net;
+	mes "Total Received: ^00FF00" + .@total_payout + "z^000000";
 	next;
 	if (select("Confirm:Cancel") == 2) goto L_MenuMain;
+
+	// Check MAX_ZENY wallet capacity
+	.@zeny_space = 2147483647 - Zeny;
+	if (.@total_payout > .@zeny_space) {
+		mes "[Midgard Stock Exchange]";
+		mes "^FF0000Warning: Your wallet cannot hold the full payout.^000000";
+		mes "Available space: " + .@zeny_space + "z.";
+		mes "Please deposit or spend some Zeny before selling this quantity.";
+		next; goto L_MenuMain;
+	}
 	
-	.@redCost = (.@tc * .@qty) / .@s;
-	query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - " + .@redCost + ", pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
-	Zeny = Zeny + .@net + .@payout_net;
-	callfunc "F_RecordEconomy", 2, .@net + .@payout_net; // 2: Total Zeny Earned
+	if (.@qty == .@s) {
+		query_sql "UPDATE `solo_stock_player` SET shares = 0, total_cost = 0, pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+	} else {
+		query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / shares), pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+	}
+	Zeny = Zeny + .@total_payout;
+	callfunc "F_RecordEconomy", 2, .@total_payout; // 2: Total Zeny Earned
 	goto L_MenuMain;
 
 L_MenuPort:
@@ -317,10 +379,6 @@ L_MenuDrip:
 	query_sql "UPDATE `solo_stock_player` SET drip_enabled = " + .@new_de + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	mes "DRIP for " + .@cn$ + " is now " + (.@new_de ? "^00FF00ON^000000" : "^FF0000OFF^000000") + ".";
 	next; goto L_MenuDrip;
-}
-
-function	script	F_MoodNameStr	{
-	if ($MarketMood == 1) return "Bullish"; if ($MarketMood == 2) return "Bearish"; if ($MarketMood == 3) return "Chaos"; return "Neutral";
 }
 
 

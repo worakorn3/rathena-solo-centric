@@ -41,24 +41,28 @@
 
     <!-- Toggle Buttons -->
     <div class="flex items-center bg-background border border-border p-1 rounded-lg">
-      <button onclick="setLayout('a')" id="btn-layout-a" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md">
+      <button onclick="setLayout('a')" id="btn-layout-a" class="flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
         <i data-lucide="layout-panel-top" class="w-3.5 h-3.5"></i>
-        <span>Option A: Header-Integrated Tabs</span>
+        <span>Option A</span>
       </button>
-      <button onclick="setLayout('b')" id="btn-layout-b" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
+      <button onclick="setLayout('b')" id="btn-layout-b" class="flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all">
         <i data-lucide="layout-panel-left" class="w-3.5 h-3.5"></i>
-        <span>Option B: Left Icon Rail</span>
+        <span>Option B</span>
+      </button>
+      <button onclick="setLayout('bounties')" id="btn-layout-bounties" class="flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md">
+        <i data-lucide="target" class="w-3.5 h-3.5"></i>
+        <span>Bounties Redesign</span>
       </button>
     </div>
 
     <!-- Live Direct Links -->
     <div class="flex items-center gap-3 text-xs">
-      <a href="demo-option-a.html" target="_blank" class="text-muted hover:text-accent flex items-center gap-1 transition-colors">
-        <span>Open A in Tab</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+      <a href="demo-bounties-redesign.html" target="_blank" class="text-accent hover:underline flex items-center gap-1 font-bold transition-colors">
+        <span>Open Bounties</span> <i data-lucide="external-link" class="w-3 h-3"></i>
       </a>
       <span class="text-border">•</span>
       <a href="demo-option-b.html" target="_blank" class="text-muted hover:text-accent flex items-center gap-1 transition-colors">
-        <span>Open B in Tab</span> <i data-lucide="external-link" class="w-3 h-3"></i>
+        <span>Option B</span> <i data-lucide="external-link" class="w-3 h-3"></i>
       </a>
     </div>
   </header>
@@ -75,15 +79,21 @@
       const frame = document.getElementById('demo-frame');
       const btnA = document.getElementById('btn-layout-a');
       const btnB = document.getElementById('btn-layout-b');
+      const btnBounties = document.getElementById('btn-layout-bounties');
+
+      btnA.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+      btnB.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+      btnBounties.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
 
       if (mode === 'a') {
         frame.src = 'demo-option-a.html';
-        btnA.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
-        btnB.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
-      } else {
+        btnA.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
+      } else if (mode === 'b') {
         frame.src = 'demo-option-b.html';
-        btnB.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
-        btnA.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium text-muted hover:text-primary transition-all';
+        btnB.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
+      } else {
+        frame.src = 'demo-bounties-redesign.html';
+        btnBounties.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all bg-accent text-background shadow-md';
       }
     }
   </script>

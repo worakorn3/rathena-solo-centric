@@ -34,8 +34,8 @@ export class MarketSimulationService {
       const price = Number(stock.price) || 0;
       const beta = Number(stock.beta) || 1.0;
 
-      // Ponytail: Use specific ticker mood if lore event active, otherwise global marketMood
-      let localMood = tickerMoods.get(city) || marketMood;
+      // Ponytail: Use specific ticker mood if lore event active, otherwise global 'ALL' override or marketMood
+      let localMood = tickerMoods.get(city) || tickerMoods.get("ALL") || marketMood;
 
       let f = marketDrift + (Math.floor(Math.random() * 13) - 6); // rand(-6, 6)
       if (localMood === 1) f += 2;
@@ -112,8 +112,7 @@ export class MarketSimulationService {
       let dividend = Number(stock.dividend) || 0;
       const targetBps = Number(stock.target_yield_bps) ?? 50;
 
-      let target = Math.floor((price * targetBps) / 10000);
-      if (target < 0) target = 0;
+      let target = targetBps === 0 ? 0 : Math.max(1, Math.round((price * targetBps) / 1000));
 
       if (Math.floor(Math.random() * 100) + 1 <= 30) {
         if (dividend < target && marketMood !== 2) dividend += 1;
@@ -156,7 +155,136 @@ export class MarketSimulationService {
   }
 
   static async processBlackSwan() {
-    console.log("[MarketSimulation] Triggering Black Swan...");
-    // Minimal ponytail implementation
+    console.log("[MarketSimulation] Checking and triggering Black Swan event...");
+
+    // 1. Query active enabled tickers (rolling unlock safety)
+    const enabledRows = await primaryQuery("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1");
+    if (enabledRows.length === 0) return;
+    const enabledTickers = enabledRows.map((r: any) => r.ticker);
+    const enabledSet = new Set(enabledTickers);
+
+    // 2. Fetch all enabled candidate events and filter for active cities
+    const candidateEvents = await primaryQuery(
+      "SELECT * FROM `solo_stock_events_def` WHERE enabled = 1"
+    );
+
+    const validEvents = candidateEvents.filter((e: any) => {
+      const primaryList = (e.ticker_target || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+      const isPrimaryValid = primaryList.every((t: string) => t === "ALL" || t === "LOWEST" || enabledSet.has(t));
+      if (!isPrimaryValid) return false;
+
+      const secondaryList = (e.ticker_secondary || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+      return secondaryList.every((t: string) => t === "ALL" || enabledSet.has(t));
+    });
+
+    if (validEvents.length === 0) return;
+
+    // Weighted random selection
+    const totalWeight = validEvents.reduce((sum: number, ev: any) => sum + (Number(ev.weight) || 10), 0);
+    let randomWeight = Math.floor(Math.random() * totalWeight);
+    let ev = validEvents[0];
+    for (const candidate of validEvents) {
+      const w = Number(candidate.weight) || 10;
+      if (randomWeight < w) {
+        ev = candidate;
+        break;
+      }
+      randomWeight -= w;
+    }
+
+    console.log(`[MarketSimulation] Black Swan Event: [${ev.event_id}] ${ev.event_name}`);
+
+    // 3. Resolve primary target tickers
+    let targetTickers: string[] = [];
+    if (ev.ticker_target === "ALL") {
+      targetTickers = enabledTickers;
+    } else if (ev.ticker_target === "LOWEST") {
+      const sorted = [...enabledRows].sort((a: any, b: any) => Number(a.price) - Number(b.price));
+      targetTickers = sorted.length > 0 ? [sorted[0].ticker] : [];
+    } else {
+      targetTickers = ev.ticker_target.split(",").map((s: string) => s.trim()).filter((t: string) => enabledSet.has(t));
+    }
+
+    // 4. Apply primary price, dividend, and direct windfall shifts
+    for (const t of targetTickers) {
+      const pricePct = Number(ev.price_pct_change) || 0;
+      const divChange = Number(ev.dividend_change) || 0;
+      const directPayout = Number(ev.direct_payout_per_share) || 0;
+      const revSplit = Number(ev.reverse_split_ratio) || 0;
+
+      if (pricePct !== 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+          [pricePct, t]
+        );
+      }
+      if (divChange !== 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET dividend = GREATEST(0, dividend + ?) WHERE ticker = ?",
+          [divChange, t]
+        );
+      }
+      if (directPayout > 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * ?) WHERE ticker = ? AND shares > 0",
+          [directPayout, t]
+        );
+      }
+      if (revSplit > 1) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = price * ?, dividend = dividend * ? WHERE ticker = ?",
+          [revSplit, revSplit, t]
+        );
+        await primaryExecute(
+          "UPDATE `solo_stock_player` SET shares = FLOOR(shares / ?) WHERE ticker = ?",
+          [revSplit, t]
+        );
+      }
+    }
+
+    // 5. Apply secondary ticker shift
+    if (ev.ticker_secondary) {
+      const secPricePct = Number(ev.price_secondary_pct_change) || 0;
+      if (secPricePct !== 0) {
+        let secondaryTickers: string[] = [];
+        if (ev.ticker_secondary === "ALL") {
+          secondaryTickers = enabledTickers.filter(t => !targetTickers.includes(t));
+        } else {
+          secondaryTickers = ev.ticker_secondary.split(",").map((s: string) => s.trim()).filter((t: string) => enabledSet.has(t));
+        }
+
+        for (const secTicker of secondaryTickers) {
+          await primaryExecute(
+            "UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+            [secPricePct, secTicker]
+          );
+        }
+      }
+    }
+
+    // 6. Tax Rate & Mood Overrides
+    if (Number(ev.tax_rate_override) >= 0) {
+      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'DivTaxRate'", [ev.tax_rate_override]);
+    }
+    if (Number(ev.mood_override) > 0 && Number(ev.duration_shifts) <= 0) {
+      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [ev.mood_override]);
+    }
+
+    // 7. Active Event & Audit Log
+    const duration = Number(ev.duration_shifts) || 0;
+    const now = Math.floor(Date.now() / 1000);
+    if (duration > 0) {
+      const targetDisplay = targetTickers.length === 1 ? targetTickers[0] : (ev.ticker_target || "ALL");
+      await primaryExecute(
+        "INSERT INTO `solo_stock_events_active` (event_id, ticker, start_time, end_time, remaining_shifts, tax_rate_override, mood_override, headline) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [ev.event_id, targetDisplay, now, now + duration * 3600, duration, ev.tax_rate_override ?? -1, ev.mood_override ?? 0, ev.headline]
+      );
+    }
+
+    await primaryExecute(
+      "INSERT INTO `solo_stock_events_log` (event_id, event_name, category, ticker_target, headline, details, triggered_by) VALUES (?, ?, ?, ?, ?, ?, 'MIDNIGHT_CRON')",
+      [ev.event_id, ev.event_name, ev.category, ev.ticker_target, ev.headline, ev.description || ""]
+    );
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LatestEventTime'", [now]);
   }
 }

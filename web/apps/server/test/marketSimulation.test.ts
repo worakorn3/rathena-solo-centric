@@ -93,5 +93,174 @@ describe("MarketSimulationService", () => {
         Math.random = originalRandom;
       }
     });
+
+    it("should apply macro 'ALL' mood override to all municipal tickers", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 2 }]; // baseline Bearish
+        if (query.includes("solo_stock_events_active") && query.includes("remaining_shifts > 0") && !query.includes("tax_rate_override")) {
+          return [{ ticker: "ALL", mood_override: 1 }]; // Macro Bullish override
+        }
+        if (query.includes("solo_stock_market")) {
+          return [
+            { ticker: "PRT", price: 100, dividend: 5, split_count: 0, beta: 1.0 },
+            { ticker: "GEF", price: 100, dividend: 5, split_count: 0, beta: 1.0 },
+          ];
+        }
+        if (query.includes("tax_rate_override")) return [{ tax_rate_override: 10 }];
+        return [];
+      });
+
+      const originalRandom = Math.random;
+      Math.random = () => 0.5; // f = 0, +2 for mood 1
+
+      try {
+        await MarketSimulationService.processHourlyShift();
+        const updates = primaryExecuteMock.mock.calls.filter(call => 
+          (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?")
+        );
+        expect(updates.length).toBe(2);
+        for (const update of updates) {
+          expect(update[1][0]).toBe(102); // Bullish boost applied to all
+        }
+      } finally {
+        Math.random = originalRandom;
+      }
+    });
+  });
+
+  describe("processMidnightDrip", () => {
+    it("should calculate non-zero dividend targets for active dividend-paying stocks around 100z", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'BlackSwanChance'")) return [{ mval: 0 }]; // disable black swan for this test
+        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 0 }];
+        if (query.includes("solo_stock_market")) {
+          return [
+            { ticker: "PRT", price: 100, dividend: 3, div_acc: 10, target_yield_bps: 50 },
+            { ticker: "LHZ", price: 100, dividend: 0, div_acc: 0, target_yield_bps: 0 },
+          ];
+        }
+        if (query.includes("solo_stock_player")) return [];
+        return [];
+      });
+
+      const originalRandom = Math.random;
+      // Force random check (<= 30) to pass: 0.1 -> floor(0.1*100)+1 = 11 <= 30
+      Math.random = () => 0.1;
+
+      try {
+        await MarketSimulationService.processMidnightDrip();
+        const divUpdates = primaryExecuteMock.mock.calls.filter(call =>
+          (call[0] as string).includes("UPDATE `solo_stock_market` SET dividend = ?, div_acc = div_acc + ? WHERE ticker = ?")
+        );
+        expect(divUpdates.length).toBe(2);
+
+        // PRT target is Math.round(100 * 50 / 1000) = 5. Since dividend is 3 < 5, it should increment to 4.
+        const prtUpdate = divUpdates.find(u => u[1][2] === "PRT");
+        expect(prtUpdate).toBeDefined();
+        expect(prtUpdate![1][0]).toBe(4);
+
+        // LHZ target is 0. Dividend is 0 == target, stays 0.
+        const lhzUpdate = divUpdates.find(u => u[1][2] === "LHZ");
+        expect(lhzUpdate).toBeDefined();
+        expect(lhzUpdate![1][0]).toBe(0);
+      } finally {
+        Math.random = originalRandom;
+      }
+    });
+  });
+
+  describe("processBlackSwan", () => {
+    it("should query only enabled tickers and ignore disabled tickers", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [
+            { ticker: "PRT", price: 100 },
+            { ticker: "GEF", price: 100 },
+            { ticker: "LHZ", price: 120 },
+          ];
+        }
+        if (query.includes("solo_stock_events_def")) {
+          return [
+            {
+              event_id: "LHZ_BOOM_HOMUNCULUS_PATENT",
+              category: "MUNICIPAL_BOOM",
+              event_name: "Homunculus Biotech Patent",
+              ticker_target: "LHZ",
+              price_pct_change: 80,
+              dividend_change: 0,
+              direct_payout_per_share: 0,
+              duration_shifts: 0,
+              tax_rate_override: -1,
+              mood_override: 0,
+              headline: "Rekenber Homunculus Breakthrough",
+              description: "Bio-patents surge",
+            },
+          ];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.processBlackSwan();
+
+      const priceUpdates = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?")
+      );
+      expect(priceUpdates.length).toBe(1);
+      expect(priceUpdates[0][1][0]).toBe(80);
+      expect(priceUpdates[0][1][1]).toBe("LHZ");
+
+      const logInserts = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("INSERT INTO `solo_stock_events_log`")
+      );
+      expect(logInserts.length).toBe(1);
+      expect(logInserts[0][1][0]).toBe("LHZ_BOOM_HOMUNCULUS_PATENT");
+    });
+
+    it("should process reverse stock split ratio and consolidate shares and prices", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [
+            { ticker: "PRT", price: 100 },
+            { ticker: "HUG", price: 50 },
+          ];
+        }
+        if (query.includes("solo_stock_events_def")) {
+          return [
+            {
+              event_id: "FIN_REVERSE_SPLIT",
+              category: "STRUCTURAL",
+              event_name: "Distressed Equity Capital Restructuring",
+              ticker_target: "LOWEST",
+              price_pct_change: 0,
+              dividend_change: 0,
+              direct_payout_per_share: 0,
+              reverse_split_ratio: 5,
+              duration_shifts: 0,
+              tax_rate_override: -1,
+              mood_override: 0,
+              headline: "Municipal regulators approve 1:5 reverse stock split",
+              description: "Consolidate 1:5",
+            },
+          ];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.processBlackSwan();
+
+      const revSplitUpdates = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("UPDATE `solo_stock_market` SET price = price * ?, dividend = dividend * ? WHERE ticker = ?")
+      );
+      expect(revSplitUpdates.length).toBe(1);
+      expect(revSplitUpdates[0][1][0]).toBe(5);
+      expect(revSplitUpdates[0][1][2]).toBe("HUG"); // Lowest priced stock
+
+      const playerShareConsolidations = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("UPDATE `solo_stock_player` SET shares = FLOOR(shares / ?) WHERE ticker = ?")
+      );
+      expect(playerShareConsolidations.length).toBe(1);
+      expect(playerShareConsolidations[0][1][0]).toBe(5);
+      expect(playerShareConsolidations[0][1][1]).toBe("HUG");
+    });
   });
 });

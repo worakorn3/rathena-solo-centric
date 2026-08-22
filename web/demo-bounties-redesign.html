@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Junk Trader Bounties - Tactical Cockpit Redesign</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            purple: '#c084fc',
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              950: '#022c22'
+            },
+            sky: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              950: '#082f49'
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              950: '#451a03'
+            },
+            rose: {
+              400: '#fb7185',
+              500: '#f43f5e',
+              950: '#4c0519'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+      box-shadow: 0 4px 20px -2px rgba(0,0,0,0.4);
+    }
+
+    /* Tier Card Specific Glowing Borders */
+    .tier-card-1 {
+      border-color: rgba(16, 185, 129, 0.25);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, rgba(24, 24, 27, 1) 100%);
+    }
+    .tier-card-1:hover {
+      border-color: rgba(16, 185, 129, 0.6);
+      box-shadow: 0 4px 24px -2px rgba(16, 185, 129, 0.15);
+    }
+
+    .tier-card-2 {
+      border-color: rgba(14, 165, 233, 0.25);
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.04) 0%, rgba(24, 24, 27, 1) 100%);
+    }
+    .tier-card-2:hover {
+      border-color: rgba(14, 165, 233, 0.6);
+      box-shadow: 0 4px 24px -2px rgba(14, 165, 233, 0.15);
+    }
+
+    .tier-card-3 {
+      border-color: rgba(245, 158, 11, 0.25);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.05) 0%, rgba(24, 24, 27, 1) 100%);
+    }
+    .tier-card-3:hover {
+      border-color: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 4px 24px -2px rgba(245, 158, 11, 0.15);
+    }
+
+    .tier-card-4 {
+      border-color: rgba(244, 63, 94, 0.25);
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.05) 0%, rgba(24, 24, 27, 1) 100%);
+    }
+    .tier-card-4:hover {
+      border-color: rgba(244, 63, 94, 0.6);
+      box-shadow: 0 4px 24px -2px rgba(244, 63, 94, 0.15);
+    }
+
+    .ro-icon-frame {
+      image-rendering: pixelated;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+
+    @keyframes spin-once {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-click {
+      animation: spin-once 0.6s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased h-screen max-h-screen overflow-hidden flex select-none">
+
+  <!-- ==================== LEFT VERTICAL COCKPIT RAIL (Option B / Demo 2 Architecture) ==================== -->
+  <aside class="w-16 bg-surface border-r border-border flex flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-full">
+    
+    <!-- Top Section: Brand & Nav Tabs -->
+    <div class="flex flex-col items-center gap-4 w-full">
+      <!-- Brand Logo -->
+      <div class="w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors" title="Photonic Singularity Solo RO">
+        <i data-lucide="shield" class="w-5 h-5 text-accent"></i>
+      </div>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-col items-center gap-2.5 w-full">
+        <!-- Tab 1: Finance -->
+        <button class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Financial HQ">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Finance</span>
+        </button>
+
+        <!-- Tab 2: Character -->
+        <button class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Hero & Equipment">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hero</span>
+        </button>
+
+        <!-- Tab 3: Progression -->
+        <button class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all text-muted hover:text-primary hover:bg-surface2 group" title="Hunt Tracker">
+          <i data-lucide="skull" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hunt</span>
+        </button>
+
+        <!-- Tab 4: Bounties (ACTIVE) -->
+        <button class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all bg-accent/15 text-accent border border-accent/30 shadow-sm group" title="Daily Bounties">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span class="text-[8px] font-bold mt-0.5 tracking-tight">Bounty</span>
+          <span class="indicator absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+      </nav>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- Action Group -->
+      <div class="flex flex-col items-center gap-2">
+        <button onclick="handleRefresh(this)" class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-muted hover:text-primary transition-all group" title="Sync MariaDB Data (:3307)">
+          <i data-lucide="refresh-cw" id="sync-icon" class="w-4 h-4 text-accent transition-transform"></i>
+        </button>
+        <button class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-muted hover:text-primary transition-all" title="Armory Search">
+          <i data-lucide="search" class="w-4 h-4 text-info"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Section: Status & User Profile -->
+    <div class="flex flex-col items-center gap-3 w-full">
+      <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface2 border border-border" title="MariaDB Replica :3307 Connected">
+        <span class="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_#4ade80]"></span>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-surface2 border border-accent/30 flex items-center justify-center text-accent font-bold text-xs shadow-inner cursor-pointer" title="Logged in as Kaiser (#2000001)">
+        K
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== 100% UNBROKEN FULL-HEIGHT MAIN STAGE ==================== -->
+  <main class="flex-1 min-w-0 h-screen overflow-hidden p-3.5 sm:p-4 relative flex flex-col gap-3">
+    
+    <!-- ==================== TOP COMMAND HERO BAR ==================== -->
+    <div class="bento-card p-3.5 shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 relative overflow-hidden">
+      <!-- Background Ambient Glow -->
+      <div class="absolute -right-10 -top-10 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Left: Title, Description & Location Badge -->
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div class="w-11 h-11 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center shrink-0 shadow-inner">
+          <i data-lucide="target" class="w-5 h-5 text-accent"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-sm sm:text-base font-bold text-primary tracking-tight flex items-center gap-1.5">
+              <span>Daily Junk Trader Bounties</span>
+            </h1>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface2 border border-border text-muted flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3 h-3 text-accent"></i> Prontera (152, 187)
+            </span>
+          </div>
+          <div class="text-[11px] text-muted mt-0.5 truncate sm:text-clip">
+            Hunt target monsters and sell their spoils to the Junk Trader for boosted zeny payouts.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Live Reset Countdown & 3 Quick Metrics -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-border/60 pt-2.5 md:pt-0">
+        <!-- Live Countdown Timer -->
+        <div class="bg-surface2/60 border border-border px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-accent animate-pulse"></i>
+          <div>
+            <div class="text-[8px] uppercase font-bold text-muted tracking-wider">Reset Countdown</div>
+            <div id="resetTimerDisplay" class="font-mono text-xs font-bold text-primary">14h 22m 18s</div>
+          </div>
+        </div>
+
+        <!-- Quota Progress Metric -->
+        <div class="bg-surface2/60 border border-border px-3 py-1.5 rounded-lg flex items-center gap-2.5">
+          <div>
+            <div class="text-[8px] uppercase font-bold text-muted tracking-wider flex justify-between">
+              <span>Daily Quota</span>
+              <span class="text-accent font-bold font-mono ml-2">Max 100/day</span>
+            </div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <div class="w-16 bg-surface rounded-full h-1.5 overflow-hidden border border-border/50">
+                <div id="quotaBar" class="bg-accent h-full w-[35%]"></div>
+              </div>
+              <span id="quotaText" class="font-mono text-xs font-bold text-accent">35/100</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Max Potential Profit Metric -->
+        <div class="hidden xl:flex bg-surface2/60 border border-border px-3 py-1.5 rounded-lg items-center gap-2">
+          <div>
+            <div class="text-[8px] uppercase font-bold text-muted tracking-wider">Peak Daily Potential</div>
+            <div class="font-mono text-xs font-bold text-success">+772,000 Z / day</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FILTER & CONTROL STRIP ==================== -->
+    <div class="bento-card p-2.5 shrink-0 flex flex-wrap items-center justify-between gap-2.5">
+      
+      <!-- Left: Tier Filter Tabs -->
+      <div class="flex items-center gap-1.5 flex-wrap" id="tierTabs">
+        <button onclick="setTierFilter('all')" id="tab-all" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-background transition-all shadow-sm flex items-center gap-1.5">
+          <span>All Bounties</span>
+          <span class="text-[10px] font-mono bg-background/20 px-1 rounded">18</span>
+        </button>
+
+        <button onclick="setTierFilter(1)" id="tab-1" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border transition-all flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Tier 1 · Novice</span>
+          <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-1 rounded border border-emerald-500/20">Lv 1-50</span>
+        </button>
+
+        <button onclick="setTierFilter(2)" id="tab-2" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border transition-all flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+          <span>Tier 2 · Adept</span>
+          <span class="text-[10px] font-mono text-sky-400 bg-sky-950/40 px-1 rounded border border-sky-500/20">Lv 51-99</span>
+        </button>
+
+        <button onclick="setTierFilter(3)" id="tab-3" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border transition-all flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span>Tier 3 · Master</span>
+          <span class="text-[10px] font-mono text-amber-400 bg-amber-950/40 px-1 rounded border border-amber-500/20">Lv 100+</span>
+        </button>
+      </div>
+
+      <!-- Right: Search Input & Sort Dropdown -->
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <!-- Search Input -->
+        <div class="relative flex-1 sm:w-56">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+          <input 
+            type="text" 
+            id="bountySearch" 
+            oninput="handleSearch()"
+            placeholder="Search item or monster..." 
+            class="w-full bg-surface2 border border-border rounded-lg pl-8 pr-7 py-1.5 text-xs text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent/60 transition-colors"
+          />
+          <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div class="relative">
+          <select 
+            id="sortSelector" 
+            onchange="handleSort()"
+            class="bg-surface2 border border-border rounded-lg px-2.5 py-1.5 text-xs text-primary font-medium focus:outline-none focus:border-accent/60 cursor-pointer appearance-none pr-7"
+          >
+            <option value="tier_asc">Sort: Tier & Index</option>
+            <option value="price_desc">Sort: Payout (High → Low)</option>
+            <option value="price_asc">Sort: Payout (Low → High)</option>
+            <option value="level_asc">Sort: Mob Level (Low → High)</option>
+            <option value="level_desc">Sort: Mob Level (High → Low)</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== RESPONSIVE BOUNTY BOARD (Scrollable Grid) ==================== -->
+    <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+      <div id="bountyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Dynamically rendered cards via JavaScript -->
+      </div>
+
+      <!-- Empty Search / Filter State -->
+      <div id="emptyState" class="hidden bento-card text-center py-16 space-y-3">
+        <div class="w-12 h-12 rounded-full bg-surface2 border border-border mx-auto flex items-center justify-center">
+          <i data-lucide="help-circle" class="w-6 h-6 text-muted"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm text-primary">No Matching Bounties Found</h3>
+          <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+            No active daily junk items match your search filter. Try clearing your query or checking other tiers.
+          </p>
+        </div>
+        <button onclick="resetFilters()" class="bg-surface2 hover:bg-surface2/80 text-primary border border-border font-bold py-1.5 px-4 rounded-lg text-xs transition-colors">
+          Reset All Filters
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==================== MODAL / INSPECTOR POPUP ==================== -->
+  <div id="bountyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150" onclick="closeBountyModal()">
+    <div class="bento-card w-full max-w-md p-0 overflow-hidden shadow-2xl border border-border" onclick="event.stopPropagation()">
+      <!-- Modal Title Bar -->
+      <div id="modalHeader" class="px-4 py-3 border-b border-border flex items-center justify-between bg-surface2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="modalTierIcon" class="w-7 h-7 rounded-lg bg-surface flex items-center justify-center text-sm shrink-0 border border-border">
+            🎯
+          </div>
+          <div class="min-w-0">
+            <div id="modalItemTitle" class="font-bold text-sm text-primary truncate">Item Title</div>
+            <div id="modalTierBadge" class="text-[10px] font-mono text-muted">Tier 1 · Novice Bounty</div>
+          </div>
+        </div>
+        <button onclick="closeBountyModal()" class="text-muted hover:text-primary transition-colors p-1.5 rounded-md hover:bg-surface shrink-0">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-5 space-y-4 bg-surface text-xs">
+        <!-- Monster Target Intelligence Card -->
+        <div class="p-3 rounded-lg bg-surface2/50 border border-border space-y-2">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i data-lucide="skull" class="w-3.5 h-3.5 text-danger"></i> Target Monster Intel</span>
+            <span id="modalMobLevel" class="font-mono text-accent font-bold">Lv. 15</span>
+          </div>
+          
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div id="modalMobName" class="font-bold text-sm text-primary">Elusive Rocker</div>
+              <div id="modalMobMap" class="text-[11px] text-muted font-mono mt-0.5">Location: prt_fild08</div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button id="modalCopyMapBtn" onclick="copyModalMap()" class="px-2.5 py-1.5 rounded-lg bg-surface2 hover:bg-surface border border-border font-bold text-[10px] font-mono text-primary transition-colors flex items-center gap-1" title="Copy map name">
+                <i data-lucide="copy" class="w-3 h-3 text-muted"></i>
+                <span>Map Code</span>
+              </button>
+              <a id="modalMobDbLink" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-info/10 hover:bg-info/20 text-info border border-info/30 font-bold text-[10px] transition-colors flex items-center gap-1">
+                <span>Mob DB</span>
+                <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Turn-in Calculator -->
+        <div class="p-3 rounded-lg bg-surface2/30 border border-border space-y-2.5">
+          <div class="flex justify-between items-center text-[10px] font-bold text-muted uppercase">
+            <span>Turn-in Yield Calculator</span>
+            <span id="calcItemCountText" class="font-mono text-accent font-bold">100 items</span>
+          </div>
+
+          <input 
+            type="range" 
+            id="calcSlider" 
+            min="1" 
+            max="100" 
+            value="100" 
+            oninput="updateCalculator()"
+            class="w-full accent-amber-400 cursor-pointer h-1.5 bg-surface2 rounded-lg"
+          />
+
+          <div class="grid grid-cols-2 gap-2 text-center font-mono pt-1">
+            <div class="p-2 rounded bg-surface border border-border">
+              <div class="text-[9px] text-muted uppercase">Single Rate</div>
+              <div id="calcSingleRate" class="font-bold text-primary text-xs mt-0.5">704 Z</div>
+            </div>
+            <div class="p-2 rounded bg-surface border border-border">
+              <div class="text-[9px] text-muted uppercase">Batch Payout</div>
+              <div id="calcTotalYield" class="font-bold text-success text-xs sm:text-sm mt-0.5">70,400 Z</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- External Database Links -->
+        <div class="flex items-center justify-between pt-1 border-t border-border/60">
+          <a id="modalDpLink" href="#" target="_blank" rel="noopener noreferrer" class="text-[11px] text-info hover:text-primary flex items-center gap-1 font-semibold transition-colors">
+            <span>View on Divine Pride DB</span>
+            <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>
+          <button onclick="simulateTurnIn()" class="px-3 py-1 rounded bg-accent hover:bg-accent/90 text-background font-bold text-xs transition-colors">
+            Simulate Sell
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Feedback Notification -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-200 bg-surface border border-accent/40 text-primary px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-mono">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-accent shrink-0"></i>
+    <span id="toastMessage">Copied map code!</span>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC & BOUNTY DATABASE ==================== -->
+  <script>
+    // Ragnarok Item Icon URL Helper
+    const getItemIconUrl = (itemId) => `https://static.divine-pride.net/images/items/item/${itemId}.png`;
+
+    // Authentic Bounty Data from User's Current Session
+    const BOUNTY_DATA = [
+      // Tier 1 (Novice Lv. 1-50) - Emerald Theme
+      { tier: 1, index: 1, itemId: 940, itemName: "Grasshopper's Leg", price: 704, mobName: "Elusive Rocker", mobLevel: 15, map: "prt_fild08", mobId: 1063 },
+      { tier: 1, index: 2, itemId: 962, itemName: "Tentacle", price: 677, mobName: "Hydra", mobLevel: 34, map: "pay_fild04", mobId: 1068 },
+      { tier: 1, index: 3, itemId: 1017, itemName: "Mole Whiskers", price: 869, mobName: "Solid Martin", mobLevel: 39, map: "mjo_dun02", mobId: 1146 },
+      { tier: 1, index: 4, itemId: 7850, itemName: "Wooden Block", price: 744, mobName: "Christmas Goblin", mobLevel: 25, map: "xmas_fild01", mobId: 1238 },
+      { tier: 1, index: 5, itemId: 916, itemName: "Feather of Birds", price: 687, mobName: "Elusive Raggler", mobLevel: 48, map: "cmd_fild04", mobId: 1162 },
+      { tier: 1, index: 6, itemId: 928, itemName: "Insect Feeler", price: 570, mobName: "Thief Bug Male", mobLevel: 30, map: "prt_sewb2", mobId: 1051 },
+
+      // Tier 2 (Adept Lv. 51-99) - Sky/Cyan Theme
+      { tier: 2, index: 1, itemId: 928, itemName: "Insect Feeler", price: 1031, mobName: "Furious Dustiness", mobLevel: 62, map: "mjolnir_03", mobId: 1113 },
+      { tier: 2, index: 2, itemId: 7197, itemName: "Tough Vines", price: 4424, mobName: "Swift Dryad", mobLevel: 86, map: "um_fild01", mobId: 1494 },
+      { tier: 2, index: 3, itemId: 7321, itemName: "Crystal Fragment", price: 5363, mobName: "Solid Mineral", mobLevel: 96, map: "ein_dun02", mobId: 1618 },
+      { tier: 2, index: 4, itemId: 985, itemName: "Elunium", price: 7671, mobName: "Solid Banaspaty", mobLevel: 85, map: "bra_dun02", mobId: 2056 },
+      { tier: 2, index: 5, itemId: 6405, itemName: "Cendrawasih Feather", price: 1030, mobName: "Cendrawasih", mobLevel: 84, map: "bra_fild01", mobId: 2057 },
+      { tier: 2, index: 6, itemId: 7054, itemName: "Brigan", price: 4476, mobName: "Furious Stalactic Golem", mobLevel: 68, map: "beach_dun2", mobId: 1278 },
+
+      // Tier 3 (Master Lv. 100-140) - Amber/Gold Theme
+      { tier: 3, index: 1, itemId: 25129, itemName: "Unstable Energy Particle", price: 2629, mobName: "Eremes Guile", mobLevel: 140, map: "lhz_dun03", mobId: 1635 },
+      { tier: 3, index: 2, itemId: 25298, itemName: "Spirit Jewel", price: 2908, mobName: "Angry Ice Titan", mobLevel: 133, map: "ice_dun03", mobId: 2445 },
+      { tier: 3, index: 3, itemId: 1067, itemName: "Solid Trunk", price: 2515, mobName: "Willow", mobLevel: 101, map: "prt_fild08", mobId: 1010 },
+      { tier: 3, index: 4, itemId: 7122, itemName: "Burning Hair", price: 7720, mobName: "Furious Explosion", mobLevel: 100, map: "mag_dun02", mobId: 1381 },
+      { tier: 3, index: 5, itemId: 7325, itemName: "Flexible Tube", price: 2116, mobName: "Heavy Metaling", mobLevel: 107, map: "ein_fild04", mobId: 1613 },
+      { tier: 3, index: 6, itemId: 7511, itemName: "Rune of Darkness", price: 17682, mobName: "Solid Skogul", mobLevel: 126, map: "ra_san05", mobId: 1752 }
+    ];
+
+    let currentTierFilter = 'all';
+    let searchQuery = '';
+    let currentSort = 'tier_asc';
+    let activeModalBounty = null;
+    let turnInQuota = 35;
+
+    // Format number with commas
+    function formatZeny(val) {
+      return Number(val).toLocaleString('en-US');
+    }
+
+    // Helper for Tier Theme Tokens
+    function getTierConfig(tier) {
+      if (tier === 1) {
+        return {
+          cardClass: 'tier-card-1',
+          badgeClass: 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30',
+          tierLabel: 'Tier 1 · Novice',
+          levelRange: 'Lv 1-50',
+          accentColor: 'text-emerald-400',
+          dotBg: 'bg-emerald-400'
+        };
+      } else if (tier === 2) {
+        return {
+          cardClass: 'tier-card-2',
+          badgeClass: 'bg-sky-950/40 text-sky-400 border border-sky-500/30',
+          tierLabel: 'Tier 2 · Adept',
+          levelRange: 'Lv 51-99',
+          accentColor: 'text-sky-400',
+          dotBg: 'bg-sky-400'
+        };
+      } else if (tier === 3) {
+        return {
+          cardClass: 'tier-card-3',
+          badgeClass: 'bg-amber-950/40 text-amber-400 border border-amber-500/30',
+          tierLabel: 'Tier 3 · Master',
+          levelRange: 'Lv 100+',
+          accentColor: 'text-amber-400',
+          dotBg: 'bg-amber-400'
+        };
+      } else {
+        return {
+          cardClass: 'tier-card-4',
+          badgeClass: 'bg-rose-950/40 text-rose-400 border border-rose-500/30',
+          tierLabel: `Tier ${tier} · Elite`,
+          levelRange: 'Lv 140+',
+          accentColor: 'text-rose-400',
+          dotBg: 'bg-rose-400'
+        };
+      }
+    }
+
+    // Difficulty Pill Helper
+    function getDifficultyBadge(mobLv) {
+      if (mobLv <= 40) return '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Easy</span>';
+      if (mobLv <= 80) return '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Moderate</span>';
+      if (mobLv <= 110) return '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Challenging</span>';
+      return '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">Deadly</span>';
+    }
+
+    // Render Bounty Cards
+    function renderBounties() {
+      const grid = document.getElementById('bountyGrid');
+      const emptyState = document.getElementById('emptyState');
+
+      let list = BOUNTY_DATA.filter(item => {
+        const matchesTier = currentTierFilter === 'all' || item.tier === Number(currentTierFilter);
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = !q || item.itemName.toLowerCase().includes(q) || item.mobName.toLowerCase().includes(q) || item.map.toLowerCase().includes(q);
+        return matchesTier && matchesSearch;
+      });
+
+      // Sorting
+      list.sort((a, b) => {
+        if (currentSort === 'price_desc') return b.price - a.price;
+        if (currentSort === 'price_asc') return a.price - b.price;
+        if (currentSort === 'level_asc') return a.mobLevel - b.mobLevel;
+        if (currentSort === 'level_desc') return b.mobLevel - a.mobLevel;
+        return a.tier === b.tier ? a.index - b.index : a.tier - b.tier;
+      });
+
+      if (list.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = list.map(item => {
+        const tierCfg = getTierConfig(item.tier);
+        const batch100 = item.price * 100;
+        const diffBadge = getDifficultyBadge(item.mobLevel);
+
+        return `
+          <div 
+            class="bento-card ${tierCfg.cardClass} p-3.5 flex flex-col justify-between cursor-pointer group transition-all"
+            onclick="openBountyModal(${item.tier}, ${item.index})"
+          >
+            <!-- Card Top: Header Tags & RO Item Icon -->
+            <div class="flex justify-between items-start gap-2">
+              <div class="space-y-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded ${tierCfg.badgeClass}">
+                    ${tierCfg.tierLabel}
+                  </span>
+                  ${diffBadge}
+                </div>
+
+                <h3 class="font-bold text-sm text-primary group-hover:text-accent transition-colors truncate mt-1">
+                  ${item.itemName}
+                </h3>
+
+                <div class="text-[11px] text-muted flex items-center gap-1 truncate">
+                  <i data-lucide="skull" class="w-3 h-3 text-danger shrink-0"></i>
+                  <span class="truncate">${item.mobName} <strong class="text-primary/80 font-mono">(Lv.${item.mobLevel})</strong></span>
+                </div>
+              </div>
+
+              <!-- RO Item Icon Box -->
+              <div class="w-11 h-11 rounded-lg bg-surface2/70 border border-border group-hover:border-border/80 flex items-center justify-center shrink-0 shadow-inner">
+                <img 
+                  src="${getItemIconUrl(item.itemId)}" 
+                  alt="${item.itemName}" 
+                  class="ro-icon-frame w-6 h-6 object-contain"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                />
+                <span class="text-lg hidden">📦</span>
+              </div>
+            </div>
+
+            <!-- Card Middle: Location & Direct Monster DB Link -->
+            <div class="my-2.5 px-2.5 py-1.5 rounded-md bg-surface2/40 border border-border/50 flex items-center justify-between text-[10px] font-mono">
+              <span class="text-muted flex items-center gap-1 truncate">
+                <i data-lucide="map-pin" class="w-3 h-3 text-accent shrink-0"></i>
+                <span class="truncate text-primary/80 font-bold">${item.map}</span>
+              </span>
+              <a 
+                href="https://www.divine-pride.net/database/monster/${item.mobId}" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onclick="event.stopPropagation()"
+                class="text-info hover:text-primary font-bold transition-colors flex items-center gap-1 hover:underline shrink-0"
+                title="View monster stats, spawn map & weaknesses on Divine Pride DB"
+              >
+                <span>Mob DB</span>
+                <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+              </a>
+            </div>
+
+            <!-- Card Bottom: Payout Matrix -->
+            <div class="pt-2.5 border-t border-border/70 flex justify-between items-end text-xs">
+              <div>
+                <div class="text-[9px] uppercase font-bold text-muted">Single / Batch (100x)</div>
+                <div class="font-mono text-[11px] text-muted">
+                  Max: <span class="font-bold text-success">${formatZeny(batch100)} Z</span>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <div class="font-mono font-bold text-sm ${tierCfg.accentColor}">
+                  ${formatZeny(item.price)} <span class="text-[10px] font-sans font-semibold">Z/ea</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Filter by Tier
+    function setTierFilter(tier) {
+      currentTierFilter = tier;
+      document.querySelectorAll('.tier-tab').forEach(btn => {
+        btn.className = 'tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border transition-all flex items-center gap-1.5';
+      });
+
+      const activeBtn = document.getElementById('tab-' + tier);
+      if (activeBtn) {
+        activeBtn.className = 'tier-tab px-3 py-1.5 rounded-lg text-xs font-bold bg-accent text-background transition-all shadow-sm flex items-center gap-1.5';
+      }
+      renderBounties();
+    }
+
+    // Search Handling
+    function handleSearch() {
+      const input = document.getElementById('bountySearch');
+      const clearBtn = document.getElementById('clearSearchBtn');
+      searchQuery = input.value.trim();
+      
+      if (searchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderBounties();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('bountySearch');
+      input.value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderBounties();
+    }
+
+    function resetFilters() {
+      clearSearch();
+      setTierFilter('all');
+    }
+
+    // Sorting Handling
+    function handleSort() {
+      currentSort = document.getElementById('sortSelector').value;
+      renderBounties();
+    }
+
+    // Copy Map Code to clipboard
+    function copyMapCode(mapName) {
+      navigator.clipboard.writeText(mapName).then(() => {
+        showToast(`Copied map code: "${mapName}"`);
+      }).catch(() => {
+        showToast(`Map: ${mapName}`);
+      });
+    }
+
+    function copyModalMap() {
+      if (activeModalBounty) {
+        copyMapCode(activeModalBounty.map);
+      }
+    }
+
+    // Toast Notification
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      toastMsg.innerText = msg;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Modal Handling
+    function openBountyModal(tier, index) {
+      const item = BOUNTY_DATA.find(b => b.tier === tier && b.index === index);
+      if (!item) return;
+
+      activeModalBounty = item;
+      const tierCfg = getTierConfig(item.tier);
+
+      document.getElementById('modalItemTitle').innerText = item.itemName;
+      document.getElementById('modalTierBadge').innerText = `${tierCfg.tierLabel} (${tierCfg.levelRange})`;
+      document.getElementById('modalMobName').innerText = item.mobName;
+      document.getElementById('modalMobLevel').innerText = `Lv. ${item.mobLevel}`;
+      document.getElementById('modalMobMap').innerText = `Primary Location: ${item.map}`;
+      document.getElementById('modalDpLink').href = `https://www.divine-pride.net/database/item/${item.itemId}`;
+      document.getElementById('modalMobDbLink').href = `https://www.divine-pride.net/database/monster/${item.mobId}`;
+      
+      const slider = document.getElementById('calcSlider');
+      slider.value = 100;
+      updateCalculator();
+
+      document.getElementById('bountyModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeBountyModal() {
+      document.getElementById('bountyModal').classList.add('hidden');
+      activeModalBounty = null;
+    }
+
+    function updateCalculator() {
+      if (!activeModalBounty) return;
+      const count = Number(document.getElementById('calcSlider').value);
+      document.getElementById('calcItemCountText').innerText = `${count} items`;
+      document.getElementById('calcSingleRate').innerText = `${formatZeny(activeModalBounty.price)} Z`;
+      document.getElementById('calcTotalYield').innerText = `${formatZeny(activeModalBounty.price * count)} Z`;
+    }
+
+    function simulateTurnIn() {
+      if (!activeModalBounty) return;
+      const count = Number(document.getElementById('calcSlider').value);
+      const earned = activeModalBounty.price * count;
+      turnInQuota = Math.min(100, turnInQuota + count);
+      
+      document.getElementById('quotaBar').style.width = `${turnInQuota}%`;
+      document.getElementById('quotaText').innerText = `${turnInQuota}/100`;
+
+      showToast(`Simulated Turn-in: +${formatZeny(earned)} Zeny received!`);
+      closeBountyModal();
+    }
+
+    // Live 24-hour Reset Countdown Timer
+    function startResetCountdown() {
+      function update() {
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setUTCHours(24, 0, 0, 0); // Resets at 00:00 UTC / Server time
+
+        const diff = tomorrow - now;
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        const pad = (n) => String(n).padStart(2, '0');
+        const text = `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+        
+        const el = document.getElementById('resetTimerDisplay');
+        if (el) el.innerText = text;
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    function handleRefresh(btn) {
+      const icon = document.getElementById('sync-icon');
+      icon.classList.add('animate-spin-click');
+      showToast('Syncing latest Junk Trader rates from MariaDB...');
+      setTimeout(() => {
+        icon.classList.remove('animate-spin-click');
+      }, 600);
+    }
+
+    // Close modal on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeBountyModal();
+    });
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderBounties();
+      startResetCountdown();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

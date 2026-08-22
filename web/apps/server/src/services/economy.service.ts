@@ -43,8 +43,9 @@ interface StockPlayerRow {
   ticker: string;
   shares: number;
   total_cost: number;
-  last_claim_acc: number;
-  split_processed: number;
+  pending_div: number;
+  drip_enabled: number;
+  drip_carryover: number;
 }
 
 interface StockActiveEventRow {
@@ -166,7 +167,7 @@ export class EconomyService {
     let playerStockRows: StockPlayerRow[] = [];
     try {
       playerStockRows = await query<StockPlayerRow>(
-        "SELECT ticker, shares, total_cost, last_claim_acc, split_processed FROM `solo_stock_player` WHERE account_id = ? AND shares > 0",
+        "SELECT ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover FROM `solo_stock_player` WHERE account_id = ? AND shares > 0",
         [accountId]
       );
     } catch {
@@ -179,7 +180,6 @@ export class EconomyService {
     const holdings: StockHolding[] = playerStockRows.map((p) => {
       const shares = Number(p.shares) || 0;
       const totalCost = Number(p.total_cost) || 0;
-      const lastClaimAcc = Number(p.last_claim_acc) || 0;
       const quote = quoteMap.get(p.ticker);
       const currentPrice = quote ? quote.price : 0;
       const priceOld = quote ? quote.priceOld : currentPrice;
@@ -192,8 +192,7 @@ export class EconomyService {
       const unrealizedPnLPercent =
         totalCost > 0 ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2)) : 0;
 
-      const divAcc = quote ? quote.divAcc : 0;
-      const pendingDividends = shares * Math.max(0, divAcc - lastClaimAcc);
+      const pendingDividends = Number(p.pending_div) || 0;
 
       stockMarketValue += marketValue;
       stockTotalCost += totalCost;

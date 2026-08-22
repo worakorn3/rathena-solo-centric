@@ -112,9 +112,9 @@ CREATE TABLE IF NOT EXISTS `solo_stock_events_def` (
   `event_id` VARCHAR(32) PRIMARY KEY,
   `category` VARCHAR(32) NOT NULL,
   `event_name` VARCHAR(64) NOT NULL,
-  `ticker_target` VARCHAR(10) DEFAULT '',
+  `ticker_target` VARCHAR(64) DEFAULT '',
   `price_pct_change` INT DEFAULT 0,
-  `ticker_secondary` VARCHAR(10) DEFAULT '',
+  `ticker_secondary` VARCHAR(64) DEFAULT '',
   `price_secondary_pct_change` INT DEFAULT 0,
   `dividend_change` INT DEFAULT 0,
   `direct_payout_per_share` INT DEFAULT 0,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS `solo_stock_events_def` (
 CREATE TABLE IF NOT EXISTS `solo_stock_events_active` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `event_id` VARCHAR(32) NOT NULL,
-  `ticker` VARCHAR(10) NOT NULL,
+  `ticker` VARCHAR(64) NOT NULL,
   `start_time` INT UNSIGNED NOT NULL,
   `end_time` INT UNSIGNED NOT NULL,
   `remaining_shifts` INT DEFAULT 0,
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `solo_stock_events_log` (
   `event_id` VARCHAR(32) NOT NULL,
   `event_name` VARCHAR(64) NOT NULL,
   `category` VARCHAR(32) NOT NULL,
-  `ticker_target` VARCHAR(10) NOT NULL,
+  `ticker_target` VARCHAR(64) NOT NULL,
   `headline` VARCHAR(255) NOT NULL,
   `details` TEXT,
   `triggered_by` VARCHAR(32) DEFAULT 'MIDNIGHT_CRON',
@@ -155,3 +155,15 @@ CREATE TABLE IF NOT EXISTS `solo_stock_events_log` (
   INDEX `idx_log_created` (`created_at`),
   INDEX `idx_log_ticker` (`ticker_target`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Idempotent column expansions for live databases
+ALTER TABLE `solo_stock_events_def`
+  MODIFY COLUMN `ticker_target` VARCHAR(64) DEFAULT '',
+  MODIFY COLUMN `ticker_secondary` VARCHAR(64) DEFAULT '';
+
+ALTER TABLE `solo_stock_events_active`
+  MODIFY COLUMN `ticker` VARCHAR(64) NOT NULL;
+
+ALTER TABLE `solo_stock_events_log`
+  MODIFY COLUMN `ticker_target` VARCHAR(64) NOT NULL;
+
