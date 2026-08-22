@@ -103,6 +103,13 @@ Inside event labels that are triggered asynchronously by the system (such as `On
 
 ---
 
+### C. Menu Option Delimiters
+* The `select()` function in rAthena uses a colon (`:`) to separate menu choices.
+* **Rule:** Never use a colon (`:`) inside the display text of a menu option, as it will be parsed as a delimiter and split your option into multiple unintended choices, breaking the index returned by `select()`.
+* Use hyphens (`-`) or spaces for internal formatting instead.
+
+---
+
 ## 5. Coding Style & Optimization Best Practices
 
 1. **Avoid Nested If-Else Chains:**
@@ -149,8 +156,13 @@ The map-server supports a `--run-once` flag that initializes the database, parse
    ./map-server --run-once
    ```
 3. If built in **Buildbot Mode** (compiled with `--enable-buildbot=yes`), any script syntax error, warning, or database loading error will set the `buildbotflag` and force the process to exit with status code `1` (`EXIT_FAILURE`), failing CI/CD or scripts.
+### B. Docker Dry-Run Validation on Host (Windows/PowerShell)
+If the live server is already running, testing will fail to bind the default port. Use this exact PowerShell command to create a temporary config that overrides the port, run the test on the host network (to reach the DB) without interrupting the live server, and clean up:
+```powershell
+Set-Content -Path "conf/map_test.conf" -Value "import: conf/map_athena.conf`nmap_port: 5122"; docker run --rm --network host -v "$($PWD.Path):/usr/src/app" -w /usr/src/app rathena:local ./map-server --run-once --map-config conf/map_test.conf; Remove-Item -Path "conf/map_test.conf"
+```
 
-### B. Logic Assertions via `OnInit` and `errormes`
+### C. Logic Assertions via `OnInit` and `errormes`
 For testing functional script logic (e.g., custom math libraries or player calculations) without entering the game, you can write self-testing NPCs:
 1. Wrap the test calculations inside an `OnInit:` event label, which triggers automatically when the map-server boots during `--run-once`.
 2. Use the `errormes "<message>";` command to throw an assertion failure. Since `errormes` prints a console error, it raises the buildbot flag, causing the test run to exit with failure.
