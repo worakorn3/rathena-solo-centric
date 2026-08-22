@@ -19,7 +19,7 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
     if (#INVEST_BALANCE > 0) {
         .@days = (gettimetick(2) - #INVEST_TIME) / 86400; // 86400 seconds = 1 day
         if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
-        .@interest = (#INVEST_BALANCE / 100) * .@days;
+        .@interest = ((#INVEST_BALANCE / 100) * .@days) + (((#INVEST_BALANCE % 100) * .@days) / 100);
     }
 
     mes "[Investment Bank]";
@@ -48,14 +48,20 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
                 close;
             }
 
+            .@fee = .@amount / 50;
+            .@net_deposit = .@amount - .@fee;
+
+            if (#INVEST_BALANCE + .@interest + .@net_deposit > 1900000000) {
+                mes "[Investment Bank]";
+                mes "We cannot accept this deposit. Your principal would exceed our 1,900,000,000 Zeny limit.";
+                close;
+            }
+
             // If adding to an existing balance, we must credit the accumulated interest first
             // to reset the timer, otherwise they lose their pending interest or exploit it.
             if (#INVEST_BALANCE > 0) {
                 #INVEST_BALANCE += .@interest;
             }
-
-            .@fee = (.@amount / 100) * 2;
-            .@net_deposit = .@amount - .@fee;
 
             Zeny -= .@amount;
             #INVEST_BALANCE += .@net_deposit;
@@ -78,7 +84,7 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
             .@total_payout = #INVEST_BALANCE + .@interest;
 
             // Prevent Zeny overflow (Max Zeny is 2,100,000,000 in standard RO)
-            if (Zeny + .@total_payout > 2100000000) {
+            if (2100000000 - Zeny < .@total_payout) {
                 mes "[Investment Bank]";
                 mes "You cannot hold that much Zeny in your inventory.";
                 mes "Please make room before withdrawing.";
