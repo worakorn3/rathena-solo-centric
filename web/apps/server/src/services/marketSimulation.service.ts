@@ -154,6 +154,33 @@ export class MarketSimulationService {
     console.log("[MarketSimulation] Midnight processing complete.");
   }
 
+  static async catchUpOfflineDividends(): Promise<number> {
+    const rows = await primaryQuery("SELECT mval FROM `solo_stock_meta` WHERE mkey = 'LastUpdate'");
+    if (rows.length === 0) return 0;
+    const lastUpdate = Number(rows[0].mval) || 0;
+    if (lastUpdate <= 0) return 0;
+
+    const now = Math.floor(Date.now() / 1000);
+    const elapsed = now - lastUpdate;
+    const CYCLE_SECONDS = 4 * 3600; // 4 hours = 14400s
+
+    if (elapsed < CYCLE_SECONDS) {
+      return 0;
+    }
+
+    const missedCycles = Math.min(Math.floor(elapsed / CYCLE_SECONDS), 42); // capped at 7 days (42 cycles)
+    console.log(
+      `[MarketSimulation] Server was offline for ${Math.floor(elapsed / 3600)}h. Catching up ${missedCycles} missed dividend cycle(s)...`
+    );
+
+    for (let i = 0; i < missedCycles; i++) {
+      await MarketSimulationService.processMidnightDrip();
+    }
+
+    console.log(`[MarketSimulation] Offline dividend catch-up complete.`);
+    return missedCycles;
+  }
+
   static async processBlackSwan() {
     console.log("[MarketSimulation] Checking and triggering Black Swan event...");
 

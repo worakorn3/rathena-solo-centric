@@ -1,8 +1,15 @@
 import { CronJob } from "cron"; // Using cron package since bun cron might not be natively imported depending on version
 import { MarketSimulationService } from "../services/marketSimulation.service";
 
-export function initMarketCron() {
+export async function initMarketCron() {
   console.log("[MarketCron] Initializing market cron jobs...");
+
+  // Catch up any missed dividend/DRIP cycles while server was offline
+  try {
+    await MarketSimulationService.catchUpOfflineDividends();
+  } catch (err) {
+    console.error("[MarketCron] Error catching up offline dividends:", err);
+  }
 
   // 10-Minute Price Shift: runs every 10 minutes (0, 10, 20, 30, 40, 50)
   const shiftJob = new CronJob("*/10 * * * *", async () => {

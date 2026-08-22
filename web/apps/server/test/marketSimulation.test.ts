@@ -263,4 +263,70 @@ describe("MarketSimulationService", () => {
       expect(playerShareConsolidations[0][1][1]).toBe("HUG");
     });
   });
+
+  describe("catchUpOfflineDividends", () => {
+    it("should do nothing if elapsed time is less than 4 hours", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'LastUpdate'")) {
+          return [{ mval: now - 3600 }]; // 1 hour ago
+        }
+        return [];
+      });
+
+      const cycles = await MarketSimulationService.catchUpOfflineDividends();
+      expect(cycles).toBe(0);
+      expect(primaryExecuteMock).not.toHaveBeenCalled();
+    });
+
+    it("should catch up 2 cycles when server was offline for 8 hours", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'LastUpdate'")) {
+          return [{ mval: now - 28800 }]; // 8 hours ago (2 cycles)
+        }
+        if (query.includes("mkey = 'MarketMood'")) {
+          return [{ mval: 1 }];
+        }
+        if (query.includes("solo_stock_market")) {
+          return [{ ticker: "PRT", price: 100, dividend: 5, target_yield_bps: 50 }];
+        }
+        if (query.includes("solo_stock_player")) {
+          return [];
+        }
+        return [];
+      });
+
+      const cycles = await MarketSimulationService.catchUpOfflineDividends();
+      expect(cycles).toBe(2);
+      // Verify processMidnightDrip ran twice
+      const lastUpdateExecutes = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LastUpdate'")
+      );
+      expect(lastUpdateExecutes.length).toBe(2);
+    });
+
+    it("should cap missed cycles at 42 (7 days max) when offline for 30 days", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'LastUpdate'")) {
+          return [{ mval: now - 30 * 86400 }]; // 30 days ago
+        }
+        if (query.includes("mkey = 'MarketMood'")) {
+          return [{ mval: 1 }];
+        }
+        if (query.includes("solo_stock_market")) {
+          return [{ ticker: "PRT", price: 100, dividend: 5, target_yield_bps: 50 }];
+        }
+        if (query.includes("solo_stock_player")) {
+          return [];
+        }
+        return [];
+      });
+
+      const cycles = await MarketSimulationService.catchUpOfflineDividends();
+      expect(cycles).toBe(42);
+    });
+  });
 });
+
