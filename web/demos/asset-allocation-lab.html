@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Allocation UI Alternatives - Ragnarok Solo Centric</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            surface3: '#3f3f46',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            purple: '#c084fc',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 max-w-6xl mx-auto space-y-8">
+
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="p-1.5 rounded-lg bg-accent/10 text-accent border border-accent/20">
+          <i data-lucide="pie-chart" class="w-5 h-5"></i>
+        </span>
+        <h1 class="text-xl font-bold tracking-tight">Asset Allocation UI Alternatives</h1>
+      </div>
+      <p class="text-xs text-muted mt-1">Comparing 4 ergonomic designs to solve number overflow in compact widget cards</p>
+    </div>
+
+    <!-- Live Test Controls -->
+    <div class="flex items-center gap-2 bg-surface p-2 rounded-lg border border-border">
+      <span class="text-xs text-muted font-mono font-medium">Test Value:</span>
+      <button onclick="setTestValues(17229615, 6381339, 135922520)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border transition">159.5M (Current)</button>
+      <button onclick="setTestValues(450000000, 120000000, 1577483647)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border transition">2.14B (Max Zeny)</button>
+      <button onclick="setTestValues(120000, 45000, 850000)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border transition">1.01M (Early Game)</button>
+    </div>
+  </header>
+
+  <!-- Grid of Alternatives -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- 0. CURRENT (THE PROBLEM) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-danger flex items-center gap-1.5">
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Current (Clipped / Overflow)
+        </span>
+        <span class="text-[10px] text-muted font-mono">Radial hole: 48px</span>
+      </div>
+
+      <div class="bento-card p-3 flex flex-col justify-between h-[160px] relative overflow-hidden ring-1 ring-danger/30">
+        <div class="w-full flex items-center justify-between border-b border-border pb-1.5 mb-1.5 shrink-0">
+          <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-accent"></i> Asset Allocation
+          </h3>
+          <span class="text-[9px] font-mono text-muted bg-surface2 px-1 py-0.5 rounded border border-border">Donut</span>
+        </div>
+
+        <div class="w-full flex items-center gap-2.5 my-auto">
+          <!-- Donut SVG -->
+          <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#27272a" stroke-width="14" />
+              <circle id="cur-stocks" cx="50" cy="50" r="38" fill="none" stroke="#4ade80" stroke-width="14" stroke-dasharray="203 238" stroke-dashoffset="0" />
+              <circle id="cur-cash" cx="50" cy="50" r="38" fill="none" stroke="#fbbf24" stroke-width="14" stroke-dasharray="25 238" stroke-dashoffset="-203" />
+              <circle id="cur-bank" cx="50" cy="50" r="38" fill="none" stroke="#60a5fa" stroke-width="14" stroke-dasharray="10 238" stroke-dashoffset="-228" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-0.5">
+              <span class="text-[8px] uppercase font-bold text-muted tracking-wider">Total</span>
+              <span id="cur-total-text" class="text-[10px] font-black font-mono text-primary leading-tight">159, 533, 474</span>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex-1 min-w-0 space-y-1 font-mono text-[10px]">
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/50">
+              <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-bold"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span> Cash</span>
+              <span id="cur-cash-val" class="font-bold text-primary truncate">17,229,615</span>
+            </div>
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/50">
+              <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-bold"><span class="w-1.5 h-1.5 rounded-full bg-info"></span> Bank</span>
+              <span id="cur-bank-val" class="font-bold text-primary truncate">6,381,339</span>
+            </div>
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/50">
+              <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-bold"><span class="w-1.5 h-1.5 rounded-full bg-success"></span> Stocks</span>
+              <span id="cur-stock-val" class="font-bold text-success truncate">135,922,520</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-danger/90">❌ Flaw: 11-char numbers collide with the circular boundary; font size has to be shrunk until illegible.</p>
+    </div>
+
+
+    <!-- 1. OPTION A: SEGMENTED BAR (RECOMMENDED) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-success flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Option A: Proportional Bar (Recommended)
+        </span>
+        <span class="text-[10px] text-accent font-mono">Ponytail + UX Pick</span>
+      </div>
+
+      <div class="bento-card p-3 flex flex-col justify-between h-[160px] ring-1 ring-success/30">
+        <!-- Header with Full Total Net Worth -->
+        <div class="w-full flex items-center justify-between border-b border-border pb-1.5">
+          <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-accent"></i> Asset Allocation
+          </h3>
+          <div class="text-right">
+            <span class="text-[9px] text-muted uppercase font-sans mr-1">Total:</span>
+            <span id="optA-total" class="text-[11px] font-mono font-bold text-primary">159,533,474 Z</span>
+          </div>
+        </div>
+
+        <!-- Segmented Proportion Bar -->
+        <div class="w-full my-1">
+          <div class="w-full h-2 rounded-full overflow-hidden flex bg-surface2 border border-border/40 gap-[1px]">
+            <div id="optA-bar-stocks" class="h-full bg-emerald-400 hover:brightness-110 transition-all duration-300" title="Stocks"></div>
+            <div id="optA-bar-cash" class="h-full bg-amber-400 hover:brightness-110 transition-all duration-300" title="Cash"></div>
+            <div id="optA-bar-bank" class="h-full bg-blue-400 hover:brightness-110 transition-all duration-300" title="Bank"></div>
+          </div>
+        </div>
+
+        <!-- 3-Way Breakdown List -->
+        <div class="space-y-1 font-mono text-[10px]">
+          <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition">
+            <span class="flex items-center gap-1.5 text-muted font-sans font-medium text-[9px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Stocks <span id="optA-pct-stocks" class="text-muted/60">(85%)</span>
+            </span>
+            <span id="optA-val-stocks" class="font-bold text-emerald-400">135,922,520 Z</span>
+          </div>
+          <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition">
+            <span class="flex items-center gap-1.5 text-muted font-sans font-medium text-[9px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Cash <span id="optA-pct-cash" class="text-muted/60">(11%)</span>
+            </span>
+            <span id="optA-val-cash" class="font-bold text-primary">17,229,615 Z</span>
+          </div>
+          <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition">
+            <span class="flex items-center gap-1.5 text-muted font-sans font-medium text-[9px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Bank <span id="optA-pct-bank" class="text-muted/60">(4%)</span>
+            </span>
+            <span id="optA-val-bank" class="font-bold text-primary">6,381,339 Z</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-muted">✅ Clean 1-line bar, 0 lines of SVG trigonometry, fits 12+ digit amounts effortlessly.</p>
+    </div>
+
+
+    <!-- 2. OPTION B: INLINE METERS (FINTECH STYLE) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-info flex items-center gap-1.5">
+          <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Option B: Row Meters (Fintech Style)
+        </span>
+        <span class="text-[10px] text-muted font-mono">High Density</span>
+      </div>
+
+      <div class="bento-card p-3 flex flex-col justify-between h-[160px]">
+        <div class="w-full flex items-center justify-between border-b border-border pb-1.5">
+          <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <i data-lucide="wallet" class="w-3.5 h-3.5 text-accent"></i> Portfolio Split
+          </h3>
+          <span id="optB-total" class="text-[11px] font-mono font-bold text-accent">159.5M Z</span>
+        </div>
+
+        <div class="space-y-1.5 my-auto">
+          <!-- Row 1 -->
+          <div class="space-y-0.5">
+            <div class="flex items-center justify-between text-[9px] font-mono">
+              <span class="flex items-center gap-1 text-muted"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Stocks</span>
+              <span id="optB-val-stocks" class="font-bold text-primary">135,922,520 Z</span>
+            </div>
+            <div class="w-full h-1.5 bg-surface2 rounded-full overflow-hidden">
+              <div id="optB-meter-stocks" class="h-full bg-emerald-400 rounded-full" style="width: 85%"></div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div class="space-y-0.5">
+            <div class="flex items-center justify-between text-[9px] font-mono">
+              <span class="flex items-center gap-1 text-muted"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Cash</span>
+              <span id="optB-val-cash" class="font-bold text-primary">17,229,615 Z</span>
+            </div>
+            <div class="w-full h-1.5 bg-surface2 rounded-full overflow-hidden">
+              <div id="optB-meter-cash" class="h-full bg-amber-400 rounded-full" style="width: 11%"></div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div class="space-y-0.5">
+            <div class="flex items-center justify-between text-[9px] font-mono">
+              <span class="flex items-center gap-1 text-muted"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Bank</span>
+              <span id="optB-val-bank" class="font-bold text-primary">6,381,339 Z</span>
+            </div>
+            <div class="w-full h-1.5 bg-surface2 rounded-full overflow-hidden">
+              <div id="optB-meter-bank" class="h-full bg-blue-400 rounded-full" style="width: 4%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-muted">✅ Each asset gets its own visual proportion bar alongside its precise number.</p>
+    </div>
+
+
+    <!-- 3. OPTION C: HALF GAUGE / RADIAL ARC -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-purple flex items-center gap-1.5">
+          <i data-lucide="gauge" class="w-3.5 h-3.5"></i> Option C: Semi-Circle Gauge
+        </span>
+        <span class="text-[10px] text-muted font-mono">Wide Baseline</span>
+      </div>
+
+      <div class="bento-card p-3 flex flex-col justify-between h-[160px]">
+        <div class="w-full flex items-center justify-between border-b border-border pb-1.5 shrink-0">
+          <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-accent"></i> Asset Allocation
+          </h3>
+          <span class="text-[9px] font-mono text-muted bg-surface2 px-1 py-0.5 rounded border border-border">Gauge</span>
+        </div>
+
+        <div class="w-full flex items-center gap-2 my-auto">
+          <!-- Semi-Circle Arc SVG -->
+          <div class="relative w-24 h-16 shrink-0 flex flex-col items-center justify-end">
+            <svg class="w-24 h-14" viewBox="0 0 100 55">
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#27272a" stroke-width="12" stroke-linecap="round" />
+              <path id="optC-arc" d="M 10 50 A 40 40 0 0 1 85 30" fill="none" stroke="#4ade80" stroke-width="12" stroke-linecap="round" />
+            </svg>
+            <div class="text-center mt-[-10px]">
+              <span class="text-[8px] uppercase font-bold text-muted block leading-none">Net Worth</span>
+              <span id="optC-total" class="text-[10px] font-black font-mono text-primary leading-tight">159.5M</span>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex-1 min-w-0 space-y-1 font-mono text-[9px]">
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/40">
+              <span class="flex items-center gap-1 text-muted font-sans"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Stocks</span>
+              <span id="optC-val-stocks" class="font-bold text-emerald-400 truncate">135.9M</span>
+            </div>
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/40">
+              <span class="flex items-center gap-1 text-muted font-sans"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Cash</span>
+              <span id="optC-val-cash" class="font-bold text-primary truncate">17.2M</span>
+            </div>
+            <div class="flex items-center justify-between p-1 rounded bg-surface2/30 border border-border/40">
+              <span class="flex items-center gap-1 text-muted font-sans"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Bank</span>
+              <span id="optC-val-bank" class="font-bold text-primary truncate">6.4M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-muted">✅ Flat bottom gives 2× horizontal width compared to a circular donut hole.</p>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function formatNumber(num) {
+      return num.toLocaleString('en-US');
+    }
+
+    function formatCompact(num) {
+      if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+      return num.toString();
+    }
+
+    function setTestValues(cash, bank, stocks) {
+      const total = cash + bank + stocks;
+      const cashPct = (cash / total) * 100;
+      const bankPct = (bank / total) * 100;
+      const stockPct = (stocks / total) * 100;
+
+      // Current Donut
+      document.getElementById('cur-total-text').textContent = formatNumber(total);
+      document.getElementById('cur-cash-val').textContent = formatNumber(cash);
+      document.getElementById('cur-bank-val').textContent = formatNumber(bank);
+      document.getElementById('cur-stock-val').textContent = formatNumber(stocks);
+
+      const circ = 238.761;
+      const stockStroke = (stockPct / 100) * circ;
+      const cashStroke = (cashPct / 100) * circ;
+      const bankStroke = (bankPct / 100) * circ;
+
+      const curStock = document.getElementById('cur-stocks');
+      curStock.setAttribute('stroke-dasharray', `${stockStroke} ${circ}`);
+      curStock.setAttribute('stroke-dashoffset', '0');
+
+      const curCash = document.getElementById('cur-cash');
+      curCash.setAttribute('stroke-dasharray', `${cashStroke} ${circ}`);
+      curCash.setAttribute('stroke-dashoffset', `${-stockStroke}`);
+
+      const curBank = document.getElementById('cur-bank');
+      curBank.setAttribute('stroke-dasharray', `${bankStroke} ${circ}`);
+      curBank.setAttribute('stroke-dashoffset', `${-(stockStroke + cashStroke)}`);
+
+      // Option A
+      document.getElementById('optA-total').textContent = formatNumber(total) + ' Z';
+      document.getElementById('optA-bar-stocks').style.width = stockPct + '%';
+      document.getElementById('optA-bar-cash').style.width = cashPct + '%';
+      document.getElementById('optA-bar-bank').style.width = bankPct + '%';
+      document.getElementById('optA-pct-stocks').textContent = `(${stockPct.toFixed(0)}%)`;
+      document.getElementById('optA-pct-cash').textContent = `(${cashPct.toFixed(0)}%)`;
+      document.getElementById('optA-pct-bank').textContent = `(${bankPct.toFixed(0)}%)`;
+      document.getElementById('optA-val-stocks').textContent = formatNumber(stocks) + ' Z';
+      document.getElementById('optA-val-cash').textContent = formatNumber(cash) + ' Z';
+      document.getElementById('optA-val-bank').textContent = formatNumber(bank) + ' Z';
+
+      // Option B
+      document.getElementById('optB-total').textContent = formatCompact(total) + ' Z';
+      document.getElementById('optB-meter-stocks').style.width = stockPct + '%';
+      document.getElementById('optB-meter-cash').style.width = cashPct + '%';
+      document.getElementById('optB-meter-bank').style.width = bankPct + '%';
+      document.getElementById('optB-val-stocks').textContent = formatNumber(stocks) + ' Z';
+      document.getElementById('optB-val-cash').textContent = formatNumber(cash) + ' Z';
+      document.getElementById('optB-val-bank').textContent = formatNumber(bank) + ' Z';
+
+      // Option C
+      document.getElementById('optC-total').textContent = formatCompact(total) + ' Z';
+      document.getElementById('optC-val-stocks').textContent = formatCompact(stocks) + ' Z';
+      document.getElementById('optC-val-cash').textContent = formatCompact(cash) + ' Z';
+      document.getElementById('optC-val-bank').textContent = formatCompact(bank) + ' Z';
+    }
+
+    // Init with default
+    setTestValues(17229615, 6381339, 135922520);
+  </script>
+</body>
+</html>

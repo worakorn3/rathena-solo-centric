@@ -142,7 +142,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
 
                 {loading ? (
                   <div className="py-12 text-center text-sm text-muted animate-pulse">
-                    Querying replica database...
+                    Searching Adventurer Archives...
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -7,17 +7,20 @@ import {
   Upload,
   UserPlus,
   Lock,
-  Unlock,
-  CheckCircle,
-  AlertTriangle,
   RefreshCw,
   Eye,
   EyeOff,
   Users,
   Coins,
   Server,
+  X,
+  ShieldCheck,
+  CheckCircle,
+  AlertTriangle,
+  FileArchive,
+  UserCheck,
+  Activity,
 } from "lucide-react";
-import { RoWindow } from "../layout/RoWindow";
 import { api } from "../../lib/api";
 import { formatZeny } from "../../lib/assets";
 
@@ -33,20 +36,18 @@ interface SystemStats {
 }
 
 export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) => {
-  // Master Admin Key State
+  // Master Admin Key State (defaults to default solo key if unset)
   const [adminKey, setAdminKey] = useState<string>(
     localStorage.getItem("rathena_admin_key") || "SoloCentricKey2026!"
   );
-  const [isKeyUnlocked, setIsKeyUnlocked] = useState<boolean>(
-    Boolean(localStorage.getItem("rathena_admin_key"))
-  );
-  const [activeTab, setActiveTab] = useState<"setup" | "vault" | "stats">("vault");
+  const [isKeyUnlocked, setIsKeyUnlocked] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"backup" | "accounts" | "overview">("backup");
 
   // System Stats
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
 
-  // Day 1 Account Setup Form
+  // Account Setup Form
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newSex, setNewSex] = useState<"M" | "F">("M");
@@ -56,7 +57,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
   // Backup & Restore State
   const [passphrase, setPassphrase] = useState<string>(
-    localStorage.getItem("rathena_backup_passphrase") || "SoloCentricKey2026!"
+    localStorage.getItem("rathena_backup_passphrase") || ""
   );
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -68,6 +69,15 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
   const [restoreConfirm, setRestoreConfirm] = useState(false);
   const [restoreFeedback, setRestoreFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Keyboard navigation (Escape key closes modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   // Fetch status & stats
   const fetchStatus = async () => {
     setIsLoadingStats(true);
@@ -77,19 +87,27 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
       setIsKeyUnlocked(true);
     } catch {
       setIsKeyUnlocked(false);
+      setStats(null);
     } finally {
       setIsLoadingStats(false);
     }
   };
 
   useEffect(() => {
+    // If not yet saved in localStorage, initialize default solo key
+    if (!localStorage.getItem("rathena_admin_key")) {
+      localStorage.setItem("rathena_admin_key", "SoloCentricKey2026!");
+    }
     fetchStatus();
   }, []);
 
-  // Save Admin Key
+  // Save / Clear Admin Key
   const handleSaveKey = () => {
+    if (!adminKey.trim()) {
+      handleClearKey();
+      return;
+    }
     localStorage.setItem("rathena_admin_key", adminKey);
-    setIsKeyUnlocked(true);
     fetchStatus();
   };
 
@@ -97,6 +115,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
     localStorage.removeItem("rathena_admin_key");
     setAdminKey("");
     setIsKeyUnlocked(false);
+    setStats(null);
   };
 
   // 1. Handle Account Creation
@@ -120,7 +139,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
       setAccountFeedback({
         type: "success",
-        text: `Account created successfully! ID: #${res.accountId} (${newGroupId === 99 ? "Admin/GM" : "Player"})`,
+        text: `Account created successfully! ID: #${res.accountId} (${newGroupId === 99 ? "Admin / GM" : "Player"})`,
       });
       setNewUsername("");
       setNewPassword("");
@@ -128,17 +147,17 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
     } catch (err: any) {
       setAccountFeedback({
         type: "error",
-        text: err.message || "Failed to create account",
+        text: err.message || "Failed to create account. Check your Master Key.",
       });
     } finally {
       setIsCreatingAccount(false);
     }
   };
 
-  // 2. Handle 1-Click Zero-Knowledge Backup Export
+  // 2. Handle Savegame Backup Export
   const handleExportBackup = async () => {
     if (!passphrase) {
-      setBackupFeedback({ type: "error", text: "Please enter a passphrase for encryption." });
+      setBackupFeedback({ type: "error", text: "Please set a backup password or passphrase first." });
       return;
     }
 
@@ -171,7 +190,6 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
         if (match && match[1]) filename = match[1];
       }
 
-      // Trigger standard browser download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -183,26 +201,26 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
       setBackupFeedback({
         type: "success",
-        text: `Encrypted backup downloaded: ${filename} (${(blob.size / 1024).toFixed(1)} KB)`,
+        text: `Savegame backup downloaded: ${filename} (${(blob.size / 1024).toFixed(1)} KB)`,
       });
     } catch (err: any) {
       setBackupFeedback({
         type: "error",
-        text: err.message || "Failed to export backup",
+        text: err.message || "Failed to export backup. Please verify your Master Key.",
       });
     } finally {
       setIsExporting(false);
     }
   };
 
-  // 3. Handle 1-Click Restore
+  // 3. Handle Backup Restore
   const handleRestoreBackup = async () => {
     if (!selectedFile) {
-      setRestoreFeedback({ type: "error", text: "Please select a .sql.gz.enc backup file." });
+      setRestoreFeedback({ type: "error", text: "Please select a backup file." });
       return;
     }
     if (!passphrase) {
-      setRestoreFeedback({ type: "error", text: "Please provide the decryption passphrase." });
+      setRestoreFeedback({ type: "error", text: "Please provide the decryption password." });
       return;
     }
 
@@ -229,7 +247,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
       setRestoreFeedback({
         type: "success",
-        text: `Restored successfully! Restored ${(res.restoredBytes / 1024).toFixed(1)} KB of database schema & data.`,
+        text: `Database restored successfully! Processed ${(res.restoredBytes / 1024).toFixed(1)} KB of game data.`,
       });
       setSelectedFile(null);
       setRestoreConfirm(false);
@@ -237,7 +255,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
     } catch (err: any) {
       setRestoreFeedback({
         type: "error",
-        text: err.message || "Restore failed. Incorrect passphrase or corrupt file.",
+        text: err.message || "Restore failed. Incorrect password or invalid file.",
       });
     } finally {
       setIsRestoring(false);
@@ -245,181 +263,246 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <RoWindow
-          title="SYSTEM & ZERO-KNOWLEDGE VAULT"
-          icon={<Shield size={16} />}
-          onClose={onClose}
-          className="shadow-2xl border border-ro-borderLight/60 rounded-lg overflow-hidden"
-        >
-          {/* Top Bar: Master Key & Tab Switcher */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-ro-borderLight/30 text-xs">
-            {/* Key Status */}
-            <div className="flex items-center space-x-2">
-              <Key size={14} className={isKeyUnlocked ? "text-emerald-400" : "text-amber-400"} />
-              <input
-                type="password"
-                value={adminKey}
-                onChange={(e) => setAdminKey(e.target.value)}
-                placeholder="Master Admin Key"
-                className="bg-[#121824] border border-ro-borderLight/40 rounded px-2 py-1 text-slate-200 text-xs w-36 focus:outline-none focus:border-ro-gold"
-              />
-              <button
-                onClick={handleSaveKey}
-                className="bg-[#2a3c50] hover:bg-[#3b5370] text-slate-200 px-2 py-1 rounded font-cinzel font-bold text-[11px] border border-ro-borderLight/40"
-              >
-                {isKeyUnlocked ? "Key Saved" : "Unlock"}
-              </button>
-              {isKeyUnlocked && (
-                <button
-                  onClick={handleClearKey}
-                  className="text-slate-400 hover:text-red-400 text-[10px] underline"
-                >
-                  Clear
-                </button>
-              )}
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bento-card w-full max-w-2xl max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 1. Modal Header & Title Bar */}
+        <div className="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4 text-accent" />
             </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex items-center space-x-1 bg-[#121824] p-0.5 rounded border border-ro-borderLight/30">
-              <button
-                onClick={() => setActiveTab("vault")}
-                className={`px-3 py-1 rounded text-xs font-cinzel font-bold transition-colors ${
-                  activeTab === "vault"
-                    ? "bg-ro-gold/20 text-ro-gold border border-ro-gold/40"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                Zero-Knowledge Vault
-              </button>
-              <button
-                onClick={() => setActiveTab("setup")}
-                className={`px-3 py-1 rounded text-xs font-cinzel font-bold transition-colors ${
-                  activeTab === "setup"
-                    ? "bg-ro-gold/20 text-ro-gold border border-ro-gold/40"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                Day 1 Setup
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("stats");
-                  fetchStatus();
-                }}
-                className={`px-3 py-1 rounded text-xs font-cinzel font-bold transition-colors ${
-                  activeTab === "stats"
-                    ? "bg-ro-gold/20 text-ro-gold border border-ro-gold/40"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                System Health
-              </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-primary tracking-wide">
+                  Server Management & Backups
+                </span>
+              </div>
+              <div className="text-[11px] text-muted flex items-center gap-1.5">
+                <span>Solo-Centric Admin Portal</span>
+                <span>•</span>
+                <span className="text-success flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  Game Server Online
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* TAB 1: ZERO-KNOWLEDGE VAULT */}
-          {activeTab === "vault" && (
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-primary transition-colors p-1.5 rounded-md hover:bg-surface shrink-0 cursor-pointer"
+            title="Close (Esc)"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* 2. Master Key Security Drawer */}
+        <div className="bg-surface border-b border-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 text-xs flex-1 min-w-[240px]">
+            <Key size={14} className={isKeyUnlocked ? "text-emerald-400 shrink-0" : "text-amber-400 shrink-0"} />
+            <span className="text-muted font-medium text-xs">Master Key:</span>
+            <input
+              type="password"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              placeholder="Admin Key (ADMIN_KEY in .env)..."
+              className="bg-background border border-border focus:border-accent rounded px-2.5 py-1 text-xs text-primary font-mono outline-none flex-1 max-w-xs transition-colors"
+            />
+            <button
+              onClick={handleSaveKey}
+              className="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+            >
+              {isKeyUnlocked ? "Saved" : "Unlock"}
+            </button>
+            {isKeyUnlocked && (
+              <button
+                onClick={handleClearKey}
+                className="text-muted hover:text-danger text-[11px] transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="text-[11px] text-muted flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${isKeyUnlocked ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <span className={isKeyUnlocked ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
+              {isKeyUnlocked ? "Admin Authenticated" : "Key Locked"}
+            </span>
+          </div>
+        </div>
+
+        {/* 3. Segmented Navigation Tabs */}
+        <div className="flex border-b border-border bg-surface px-4 pt-2 gap-2 shrink-0">
+          <button
+            onClick={() => setActiveTab("backup")}
+            className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 ${
+              activeTab === "backup"
+                ? "border-accent text-accent bg-surface2/40"
+                : "border-transparent text-muted hover:text-primary font-medium"
+            }`}
+          >
+            <Lock size={14} />
+            <span>Savegame Backup & Restore</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("accounts")}
+            className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 ${
+              activeTab === "accounts"
+                ? "border-accent text-accent bg-surface2/40"
+                : "border-transparent text-muted hover:text-primary font-medium"
+            }`}
+          >
+            <UserPlus size={14} />
+            <span>Account Manager</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("overview");
+              fetchStatus();
+            }}
+            className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 ${
+              activeTab === "overview"
+                ? "border-accent text-accent bg-surface2/40"
+                : "border-transparent text-muted hover:text-primary font-medium"
+            }`}
+          >
+            <Activity size={14} />
+            <span>Server Overview</span>
+          </button>
+        </div>
+
+        {/* 4. Tab Body Content */}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm">
+          {/* TAB 1: SAVEGAME BACKUP & RESTORE */}
+          {activeTab === "backup" && (
             <div className="space-y-4">
-              {/* Passphrase Input Section */}
-              <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-3 text-xs space-y-2">
+              {/* Passphrase Card */}
+              <div className="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-cinzel font-bold text-ro-gold flex items-center gap-1.5">
-                    <Lock size={13} />
-                    AES-256 Encryption Passphrase
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={16} className="text-accent" />
+                    <span className="font-bold text-xs text-primary">
+                      Backup Password / Passphrase
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted bg-surface px-2 py-0.5 rounded border border-border">
+                    Optional Encryption
                   </span>
-                  <span className="text-[10px] text-slate-400">PBKDF2 SHA-256 (100k iters)</span>
                 </div>
+
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
                       type={showPassphrase ? "text" : "password"}
                       value={passphrase}
                       onChange={(e) => setPassphrase(e.target.value)}
-                      placeholder="Enter secret passphrase to encrypt/decrypt..."
-                      className="w-full bg-[#0d121c] border border-ro-borderLight/50 rounded px-3 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-ro-gold pr-8"
+                      placeholder="Enter a password to protect your savegame file..."
+                      className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none pr-9 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassphrase(!showPassphrase)}
-                      className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-200"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors p-1"
                     >
-                      {showPassphrase ? <EyeOff size={13} /> : <Eye size={13} />}
+                      {showPassphrase ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
                   <button
                     type="button"
                     onClick={() => setPassphrase(`Ragnarok_${Math.random().toString(36).slice(2, 10)}!`)}
-                    className="bg-[#2a3c50] hover:bg-[#3b5370] text-slate-300 px-2.5 py-1.5 rounded font-cinzel text-[11px] border border-ro-borderLight/30 whitespace-nowrap"
+                    className="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5"
                   >
-                    Generate Key
+                    <RefreshCw size={12} className="text-accent" />
+                    <span>Generate</span>
                   </button>
                 </div>
               </div>
 
-              {/* Grid: 1-Click Export & 1-Click Restore */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* 1-Click Export */}
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-3 flex flex-col justify-between space-y-3">
-                  <div>
-                    <div className="flex items-center space-x-2 text-emerald-400 font-cinzel font-bold text-xs mb-1">
-                      <Download size={14} />
-                      <span>Download Savegame Backup</span>
+              {/* 2-Column Action Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Left Card: Export Snapshot */}
+                <div className="p-4 rounded-xl bg-surface2/30 border border-border flex flex-col justify-between space-y-3.5 hover:border-border/80 transition-colors">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-success font-bold text-xs">
+                      <div className="w-6 h-6 rounded-md bg-success/10 border border-success/20 flex items-center justify-center">
+                        <Download size={14} className="text-success" />
+                      </div>
+                      <span>Export Savegame Backup</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Snapshots your live characters, inventory, storage, zeny, quest progress, and stock portfolio into a Zero-Knowledge encrypted binary (<code className="text-ro-gold">.sql.gz.enc</code>).
+                    <p className="text-xs text-muted leading-relaxed">
+                      Downloads a complete snapshot of your characters, inventories, storage, quest progression, and market holdings.
                     </p>
                   </div>
 
                   {backupFeedback && (
                     <div
-                      className={`text-[11px] p-2 rounded border ${
+                      className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
                         backupFeedback.type === "success"
-                          ? "bg-emerald-950/40 border-emerald-700/50 text-emerald-300"
-                          : "bg-red-950/40 border-red-700/50 text-red-300"
+                          ? "bg-success/10 border-success/20 text-success"
+                          : "bg-danger/10 border-danger/20 text-danger"
                       }`}
                     >
-                      {backupFeedback.text}
+                      {backupFeedback.type === "success" ? (
+                        <CheckCircle size={15} className="shrink-0" />
+                      ) : (
+                        <AlertTriangle size={15} className="shrink-0" />
+                      )}
+                      <span>{backupFeedback.text}</span>
                     </div>
                   )}
 
                   <button
                     onClick={handleExportBackup}
                     disabled={isExporting}
-                    className="w-full bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-cinzel font-bold text-xs py-2 px-3 rounded flex items-center justify-center gap-2 border border-emerald-500/40 shadow transition-colors"
+                    className="w-full bg-success/20 hover:bg-success/30 text-success border border-success/30 font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                   >
                     {isExporting ? (
                       <>
-                        <RefreshCw size={13} className="animate-spin" />
-                        <span>Encrypting & Streaming...</span>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Packaging Savegame...</span>
                       </>
                     ) : (
                       <>
-                        <Download size={13} />
-                        <span>Download Encrypted Backup</span>
+                        <Download size={14} />
+                        <span>Download Savegame Backup</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                {/* 1-Click Restore */}
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-3 flex flex-col justify-between space-y-3">
-                  <div>
-                    <div className="flex items-center space-x-2 text-amber-400 font-cinzel font-bold text-xs mb-1">
-                      <Upload size={14} />
-                      <span>Disaster Recovery Restore</span>
+                {/* Right Card: Restore from Backup */}
+                <div className="p-4 rounded-xl bg-surface2/30 border border-border flex flex-col justify-between space-y-3.5 hover:border-border/80 transition-colors">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-accent font-bold text-xs">
+                      <div className="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center">
+                        <Upload size={14} className="text-accent" />
+                      </div>
+                      <span>Restore from Backup</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Restore from an encrypted snapshot. Overwrites database state with backup contents safely.
+                    <p className="text-xs text-muted leading-relaxed">
+                      Restores your server game data and stock exchange state from a previously exported backup file.
                     </p>
                   </div>
 
-                  {/* File Input Box */}
-                  <div className="bg-[#0d121c] border border-dashed border-ro-borderLight/60 rounded p-2 text-center text-xs">
+                  {/* File Picker */}
+                  <div
+                    className="p-3 rounded-lg bg-background border border-dashed border-border hover:border-accent/50 text-center cursor-pointer transition-colors"
+                    onClick={() => document.getElementById("admin-backup-file-upload")?.click()}
+                  >
                     <input
                       type="file"
-                      accept=".enc,.sql"
+                      accept=".enc,.sql,.gz"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           setSelectedFile(e.target.files[0]);
@@ -427,51 +510,53 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                         }
                       }}
                       className="hidden"
-                      id="backup-file-upload"
+                      id="admin-backup-file-upload"
                     />
-                    <label
-                      htmlFor="backup-file-upload"
-                      className="cursor-pointer block text-slate-300 hover:text-ro-gold font-medium py-1"
-                    >
-                      {selectedFile ? (
-                        <span className="text-emerald-400 font-mono text-[11px]">
-                          📁 {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-slate-400">Click to pick .sql.gz.enc file</span>
-                      )}
-                    </label>
+                    <div className="flex flex-col items-center gap-1 text-xs text-muted">
+                      <FileArchive size={16} className="text-accent" />
+                      <span className={`font-medium ${selectedFile ? "text-success font-mono" : "text-primary"}`}>
+                        {selectedFile ? `📁 ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : "Click to select backup file"}
+                      </span>
+                      <span className="text-[10px] text-muted">
+                        Select an exported .sql.gz.enc backup file
+                      </span>
+                    </div>
                   </div>
 
                   {restoreFeedback && (
                     <div
-                      className={`text-[11px] p-2 rounded border ${
+                      className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
                         restoreFeedback.type === "success"
-                          ? "bg-emerald-950/40 border-emerald-700/50 text-emerald-300"
-                          : "bg-red-950/40 border-red-700/50 text-red-300"
+                          ? "bg-success/10 border-success/20 text-success"
+                          : "bg-danger/10 border-danger/20 text-danger"
                       }`}
                     >
-                      {restoreFeedback.text}
+                      {restoreFeedback.type === "success" ? (
+                        <CheckCircle size={15} className="shrink-0" />
+                      ) : (
+                        <AlertTriangle size={15} className="shrink-0" />
+                      )}
+                      <span>{restoreFeedback.text}</span>
                     </div>
                   )}
 
                   {restoreConfirm ? (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1 text-[11px] text-red-400 font-bold justify-center">
-                        <AlertTriangle size={12} />
-                        <span>Confirm database overwrite?</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1 text-[11px] text-danger font-bold justify-center">
+                        <AlertTriangle size={13} />
+                        <span>Warning: This will overwrite existing game data!</span>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={handleRestoreBackup}
                           disabled={isRestoring}
-                          className="flex-1 bg-red-700 hover:bg-red-600 text-white font-cinzel font-bold text-xs py-1.5 px-2 rounded border border-red-500/50"
+                          className="flex-1 bg-danger hover:bg-danger/90 text-background font-bold text-xs py-2 px-3 rounded-lg border border-danger/50 transition-colors cursor-pointer"
                         >
                           {isRestoring ? "Restoring..." : "Yes, Restore Now"}
                         </button>
                         <button
                           onClick={() => setRestoreConfirm(false)}
-                          className="bg-[#2a3c50] text-slate-300 font-cinzel text-xs px-3 py-1.5 rounded"
+                          className="bg-surface2 hover:bg-surface2/80 text-muted hover:text-primary text-xs px-3 py-2 rounded-lg border border-border transition-colors cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -481,16 +566,16 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                     <button
                       onClick={() => {
                         if (!selectedFile) {
-                          setRestoreFeedback({ type: "error", text: "Please pick a backup file first." });
+                          setRestoreFeedback({ type: "error", text: "Please select a backup file first." });
                           return;
                         }
                         setRestoreConfirm(true);
                       }}
                       disabled={!selectedFile || isRestoring}
-                      className="w-full bg-[#2a3c50] hover:bg-[#3b5370] disabled:opacity-50 text-slate-200 font-cinzel font-bold text-xs py-2 px-3 rounded flex items-center justify-center gap-2 border border-ro-borderLight/40 shadow transition-colors"
+                      className="w-full bg-surface2 hover:bg-surface2/80 text-primary border border-border font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                     >
-                      <Upload size={13} />
-                      <span>Restore Database</span>
+                      <Upload size={14} className="text-accent" />
+                      <span>Restore Game Database</span>
                     </button>
                   )}
                 </div>
@@ -498,36 +583,39 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
             </div>
           )}
 
-          {/* TAB 2: DAY 1 SETUP & ACCOUNTS */}
-          {activeTab === "setup" && (
+          {/* TAB 2: ACCOUNT MANAGER */}
+          {activeTab === "accounts" && (
             <div className="space-y-4">
-              <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-3 text-xs space-y-3">
-                <div className="flex items-center space-x-2 text-ro-gold font-cinzel font-bold text-xs">
-                  <UserPlus size={14} />
-                  <span>Create Player or Master Account</span>
+              <div className="p-4 rounded-xl bg-surface2/40 border border-border space-y-3">
+                <div className="flex items-center gap-2 text-primary font-bold text-xs">
+                  <UserPlus size={16} className="text-accent" />
+                  <span>Create Game Account</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  Instant account setup directly into the primary database. No need to open HeidiSQL or run terminal queries.
+                <p className="text-xs text-muted leading-relaxed">
+                  Instantly provision new player or Game Master (GM) accounts for your server without manual database tools.
                 </p>
 
                 {accountFeedback && (
                   <div
-                    className={`text-[11px] p-2 rounded border ${
+                    className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
                       accountFeedback.type === "success"
-                        ? "bg-emerald-950/40 border-emerald-700/50 text-emerald-300"
-                        : "bg-red-950/40 border-red-700/50 text-red-300"
+                        ? "bg-success/10 border-success/20 text-success"
+                        : "bg-danger/10 border-danger/20 text-danger"
                     }`}
                   >
-                    {accountFeedback.text}
+                    {accountFeedback.type === "success" ? (
+                      <CheckCircle size={15} className="shrink-0" />
+                    ) : (
+                      <AlertTriangle size={15} className="shrink-0" />
+                    )}
+                    <span>{accountFeedback.text}</span>
                   </div>
                 )}
 
-                <form onSubmit={handleCreateAccount} className="space-y-3">
+                <form onSubmit={handleCreateAccount} className="space-y-3 pt-1">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Username
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-muted">Username</label>
                       <input
                         type="text"
                         required
@@ -535,13 +623,11 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                         value={newUsername}
                         onChange={(e) => setNewUsername(e.target.value)}
                         placeholder="e.g. AliceHero"
-                        className="w-full bg-[#0d121c] border border-ro-borderLight/50 rounded px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-ro-gold font-mono"
+                        className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none transition-colors"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Password
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-muted">Password</label>
                       <input
                         type="password"
                         required
@@ -549,33 +635,29 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-[#0d121c] border border-ro-borderLight/50 rounded px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-ro-gold font-mono"
+                        className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none transition-colors"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Gender
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-muted">Gender</label>
                       <select
                         value={newSex}
                         onChange={(e) => setNewSex(e.target.value as "M" | "F")}
-                        className="w-full bg-[#0d121c] border border-ro-borderLight/50 rounded px-2 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-ro-gold"
+                        className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary outline-none transition-colors"
                       >
                         <option value="M">Male (M)</option>
                         <option value="F">Female (F)</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Account Role
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-muted">Account Role</label>
                       <select
                         value={newGroupId}
                         onChange={(e) => setNewGroupId(Number(e.target.value))}
-                        className="w-full bg-[#0d121c] border border-ro-borderLight/50 rounded px-2 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-ro-gold"
+                        className="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary outline-none transition-colors"
                       >
                         <option value={0}>Standard Player (Group 0)</option>
                         <option value={99}>Master Administrator / GM (Group 99)</option>
@@ -586,17 +668,17 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                   <button
                     type="submit"
                     disabled={isCreatingAccount}
-                    className="w-full bg-ro-gold/20 hover:bg-ro-gold/30 text-ro-gold font-cinzel font-bold text-xs py-2 px-3 rounded border border-ro-gold/50 shadow transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer mt-2 disabled:opacity-50"
                   >
                     {isCreatingAccount ? (
                       <>
-                        <RefreshCw size={13} className="animate-spin" />
+                        <RefreshCw size={14} className="animate-spin" />
                         <span>Creating Account...</span>
                       </>
                     ) : (
                       <>
-                        <UserPlus size={13} />
-                        <span>Create Account in Database</span>
+                        <UserCheck size={14} />
+                        <span>Create Account</span>
                       </>
                     )}
                   </button>
@@ -605,69 +687,96 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
             </div>
           )}
 
-          {/* TAB 3: SYSTEM HEALTH & STATS */}
-          {activeTab === "stats" && (
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-2.5 text-center">
-                  <Users size={16} className="text-ro-gold mx-auto mb-1" />
-                  <span className="text-[10px] text-slate-400 block uppercase">Accounts</span>
-                  <span className="text-sm font-bold font-mono text-slate-100">
+          {/* TAB 3: SERVER OVERVIEW */}
+          {activeTab === "overview" && (
+            <div className="space-y-3.5">
+              {!isKeyUnlocked && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2.5">
+                  <Key size={16} className="shrink-0 text-amber-400" />
+                  <span>Master Key required to query live metrics. Enter your key in the top bar to authenticate.</span>
+                </div>
+              )}
+
+              {/* 4-Stat Metric Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+                  <Users size={16} className="text-accent mx-auto mb-1" />
+                  <div className="text-[10px] text-muted uppercase tracking-wider font-medium">Accounts</div>
+                  <div className="text-sm font-bold font-mono text-primary mt-0.5">
                     {stats ? stats.totalAccounts : "—"}
-                  </span>
+                  </div>
                 </div>
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-2.5 text-center">
-                  <Server size={16} className="text-emerald-400 mx-auto mb-1" />
-                  <span className="text-[10px] text-slate-400 block uppercase">Characters</span>
-                  <span className="text-sm font-bold font-mono text-slate-100">
+                <div className="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+                  <Server size={16} className="text-info mx-auto mb-1" />
+                  <div className="text-[10px] text-muted uppercase tracking-wider font-medium">Characters</div>
+                  <div className="text-sm font-bold font-mono text-primary mt-0.5">
                     {stats ? stats.totalCharacters : "—"}
-                  </span>
+                  </div>
                 </div>
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-2.5 text-center">
-                  <Coins size={16} className="text-amber-400 mx-auto mb-1" />
-                  <span className="text-[10px] text-slate-400 block uppercase">Circulating Zeny</span>
-                  <span className="text-xs font-bold font-mono text-amber-300 block truncate">
-                    {stats ? formatZeny(stats.totalZeny) : "—"}
-                  </span>
+                <div className="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+                  <Coins size={16} className="text-accent mx-auto mb-1" />
+                  <div className="text-[10px] text-muted uppercase tracking-wider font-medium">Circulating Zeny</div>
+                  <div className="text-xs font-bold font-mono text-accent mt-1 truncate">
+                    {stats ? formatZeny(stats.totalZeny) : "—"} Z
+                  </div>
                 </div>
-                <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-2.5 text-center">
-                  <Database size={16} className="text-info mx-auto mb-1" />
-                  <span className="text-[10px] text-slate-400 block uppercase">Active Online</span>
-                  <span className="text-sm font-bold font-mono text-emerald-400">
-                    {stats ? stats.onlineCharacters : "—"}
-                  </span>
+                <div className="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+                  <Database size={16} className="text-success mx-auto mb-1" />
+                  <div className="text-[10px] text-muted uppercase tracking-wider font-medium">Online Players</div>
+                  <div className="text-sm font-bold font-mono text-success mt-0.5">
+                    {stats ? `${stats.onlineCharacters} Live` : "—"}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-[#141b28] border border-ro-borderLight/40 rounded p-3 space-y-2">
+              {/* Services Card */}
+              <div className="p-4 rounded-xl bg-surface2/40 border border-border space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-cinzel font-bold text-slate-200">Database Topology</span>
+                  <div className="flex items-center gap-2 font-bold text-xs text-primary">
+                    <Server size={15} className="text-info" />
+                    <span>Server Services Status</span>
+                  </div>
                   <button
                     onClick={fetchStatus}
-                    className="text-slate-400 hover:text-ro-gold flex items-center gap-1 text-[10px]"
+                    className="text-xs text-muted hover:text-primary flex items-center gap-1 font-medium transition-colors cursor-pointer"
                   >
-                    <RefreshCw size={11} className={isLoadingStats ? "animate-spin" : ""} />
+                    <RefreshCw size={12} className={`text-accent ${isLoadingStats ? "animate-spin" : ""}`} />
                     <span>Refresh</span>
                   </button>
                 </div>
-                <div className="text-[11px] text-slate-300 space-y-1 font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Read Replica (Analytics & Web):</span>
-                    <span className="text-emerald-400">Connected (:3307)</span>
+
+                <div className="text-xs text-muted space-y-1.5 pt-1">
+                  <div className="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                    <span className="text-muted font-medium">Primary Game Database:</span>
+                    <span className="text-success font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                      Connected
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Primary Database (Live Game & Backups):</span>
-                    <span className="text-emerald-400">Connected (:3306)</span>
+                  <div className="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                    <span className="text-muted font-medium">Live Analytics & Web Portal:</span>
+                    <span className="text-success font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                      Active
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Zero-Knowledge AES Engine:</span>
-                    <span className="text-ro-gold">Enabled (Hardware AES-256)</span>
+                  <div className="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                    <span className="text-muted font-medium">Savegame Backup Engine:</span>
+                    <span className="text-accent font-bold">Ready</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
-        </RoWindow>
+        </div>
+
+        {/* 5. Modal Footer */}
+        <div className="bg-surface2 border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted shrink-0">
+          <span>Solo-Centric Server Management</span>
+          <span className="text-primary/70">
+            Press <kbd className="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px]">ESC</kbd> to close
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -41,9 +41,9 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2 text-[11px] text-muted">
               <span className="font-medium">Player Portal</span>
               <span>•</span>
-              <span className="flex items-center gap-1 text-info font-mono">
+              <span className="flex items-center gap-1 text-success font-mono">
                 <Database size={11} />
-                Replica :3307 (RO)
+                Live Realm Connection
               </span>
             </div>
           </div>
@@ -94,7 +94,6 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="bg-surface2 border border-border px-2.5 py-1 rounded flex items-center space-x-1.5 text-xs">
                 <User size={13} className="text-accent" />
                 <span className="font-semibold text-primary">{user.userid}</span>
-                <span className="text-[10px] text-muted font-mono">#{user.accountId}</span>
               </div>
               <button
                 onClick={logout}

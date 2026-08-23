@@ -54,6 +54,17 @@ Access at **`http://localhost:3001`**.
 
 ---
 
+## 🎨 Interactive Demos & Wireframes
+
+All interactive prototypes and UI design benchmarks are consolidated in **[`web/demos/`](./demos/)**:
+
+- **[`demos/index.html`](./demos/index.html)**: **Master Showcase Hub** — Interactive Tactical Cockpit (Option A Proportional Asset Bar, 4th Job Traits, 48h Rest Bonus, Scalable Roster), Asset Lab, and Eden Bounties.
+- **[`demos/asset-allocation-lab.html`](./demos/asset-allocation-lab.html)**: Dynamic stress test lab comparing 4 asset allocation widget designs across digit ranges (1M to 2.14B Zeny).
+- **[`demos/bounties-dashboard.html`](./demos/bounties-dashboard.html)**: Eden Group solo hunting quest boards and progression trackers.
+- **[`demos/archive/`](./demos/archive/)**: Historical wireframes and exploratory prototypes.
+
+---
+
 ## 📖 Specifications & Roadmap
 For the detailed architectural specification, database formulas, and roadmap, see:
 👉 [Web Portal Specification & Architecture](../ai/plans/web_portal_plan.md)

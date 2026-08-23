@@ -17,6 +17,8 @@
 | **HOT (1x)** | `NPC_PAGINATION` | Paginate all dynamic query loops | Max 4-5 items per page with `next;` in NPC dialogues |
 | **HOT (1x)** | `WEB_DEPLOY` | For every web change, always rebuild docker compose | Auto-run `docker compose ... up -d --build web-portal` on web edits |
 | **HOT (1x)** | `CHART_DATA` | No unanchored synthetic history; integer price format | Never inject unanchored fake history into live DBs; configure integer priceFormat for Zeny |
+| **HOT (1x)** | `UI_TOKEN_DRIFT` | Standardize on Bento tokens & modal ergonomics | All web dialogs must use `bento-card` shell, semantic tokens, and Esc/backdrop dismiss |
+| **HOT (1x)** | `UI_DOMAIN_METADATA` | Distinguish domain IDs (keep) vs infra plumbing (scrub) | Keep Item/Mob/Map IDs for gameplay/wiki lookup; scrub `accountId`, DB ports (`:3307`), and engine cluster roles |
 
 ## Hot Caveman Log
 - [2026-08-01] NPC_HEADER_TAB [FREQ: 4] | BAD: map-server crash `expected tab, found space` | WHY: space between header fields | FIX: single literal `\t` | RULE: strictly literal `\t` in NPC/warp/shop/monster headers
@@ -31,5 +33,7 @@
 - [2026-08-23] DOCKERIGNORE_NESTED_NODE_MODULES [FREQ: 1] | BAD: ENOENT reading /app/apps/server/node_modules/elysia | WHY: .dockerignore had bare node_modules instead of **/node_modules; copied host Windows NTFS symlinks into Linux Alpine | FIX: use **/node_modules in .dockerignore | RULE: always use **/node_modules and **/dist in monorepo .dockerignore
 - [2026-08-23] NPC_DIALOGUE_OVERFLOW [FREQ: 1] | BAD: dynamic tickers/items clipped off-screen | WHY: unpaginated mes loop exceeded 6-8 line RO dialog height | FIX: 4-5 items per page with next; | RULE: always paginate dynamic lists to 4-5 items per dialog page
 - [2026-08-23] CHART_SYNTHETIC_CLIFF [FREQ: 1] | BAD: artificial price cliff & 24h fake history | WHY: synthetic seeder drifted from live DB price | FIX: organic live shifts only + custom integer priceFormat | RULE: never inject unanchored synthetic data into live time-series DBs
+- [2026-08-23] UI_TOKEN_DRIFT [FREQ: 1] | BAD: orphaned skeuomorphic window with hardcoded hex colors & broken Esc/backdrop UX | WHY: bypassed Tailwind semantic tokens & modal interaction standards | FIX: refactored to bento-card with semantic tokens, Esc listener, and backdrop click | RULE: all web modals must use standard bento-card shell, semantic tokens, and Esc/backdrop dismiss
+- [2026-08-23] UI_DOMAIN_METADATA [FREQ: 1] | BAD: conflating domain IDs (Item/Mob/Map) with plumbing leaks, or leaking accountId/replica ports | WHY: lack of clear taxonomy between gameplay wiki identifiers and infrastructure storage plumbing | FIX: keep Item/Mob/Map IDs; scrub accountId and :3307/MariaDB | RULE: preserve domain gameplay IDs for player lookups; strictly scrub auth IDs and database topology
 
 *For historical 1-off debug logs and domain edge cases, see [MISTAKES_ARCHIVE.md](file:///E:/Games/Ragnarok/rathena-solo-centric/MISTAKES_ARCHIVE.md).*

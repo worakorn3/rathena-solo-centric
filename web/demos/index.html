@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photonic RO - Tactical Web Portal Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            surface3: '#3f3f46',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            purple: '#c084fc',
+            ro: {
+              str: '#f87171',
+              agi: '#fbbf24',
+              vit: '#4ade80',
+              int: '#60a5fa',
+              dex: '#c084fc',
+              luk: '#fb923c'
+            },
+            trait: {
+              pow: '#f87171',
+              sta: '#4ade80',
+              wis: '#60a5fa',
+              spl: '#c084fc',
+              con: '#fbbf24',
+              crt: '#f472b6'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .bento-card:hover { border-color: #3f3f46; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+  </style>
+</head>
+<body class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+
+  <!-- Master Top Navigation -->
+  <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+        <i data-lucide="shield" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-bold tracking-tight">Photonic RO Web Showcase</h1>
+          <span class="text-[10px] font-mono font-bold bg-surface2 px-1.5 py-0.5 rounded border border-border text-accent">v2.4 Proportional</span>
+        </div>
+        <p class="text-xs text-muted">Consolidated Interactive Demos • Tactical Cockpit & Economic Terminal</p>
+      </div>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="flex items-center gap-1 bg-surface p-1 rounded-lg border border-border">
+      <button onclick="switchTab('cockpit')" id="tab-btn-cockpit" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-accent text-background transition">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Tactical Cockpit
+      </button>
+      <button onclick="switchTab('assets')" id="tab-btn-assets" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-muted hover:text-primary transition">
+        <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i> Asset Lab
+      </button>
+      <button onclick="switchTab('bounties')" id="tab-btn-bounties" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-muted hover:text-primary transition">
+        <i data-lucide="target" class="w-3.5 h-3.5"></i> Eden Bounties
+      </button>
+      <button onclick="switchTab('archive')" id="tab-btn-archive" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-muted hover:text-primary transition">
+        <i data-lucide="folder-archive" class="w-3.5 h-3.5"></i> Archive
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= TAB 1: TACTICAL COCKPIT (UPDATED WITH OPTION A ASSET BAR) ================= -->
+  <section id="tab-cockpit" class="space-y-4">
+    <!-- Top Hero Net Worth -->
+    <div class="bento-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-surface via-surface to-surface2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+          <i data-lucide="coins" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[10px] uppercase font-bold text-muted tracking-wider">Consolidated Net Worth</span>
+          <div class="text-2xl font-black font-mono text-primary flex items-center gap-2">
+            159,533,474 <span class="text-sm font-sans font-bold text-accent">Z</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-xs font-mono">
+        <div class="bg-surface2/50 px-3 py-1.5 rounded-md border border-border">
+          <span class="text-muted block text-[9px] uppercase font-sans font-semibold">24h Gain</span>
+          <span class="text-success font-bold">+1,420,000 Z (+0.9%)</span>
+        </div>
+        <div class="bg-surface2/50 px-3 py-1.5 rounded-md border border-border">
+          <span class="text-muted block text-[9px] uppercase font-sans font-semibold">Bank Interest/hr</span>
+          <span class="text-accent font-bold">+18,750 Z</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main 5:7 Grid -->
+    <div class="grid grid-cols-12 gap-4">
+      
+      <!-- Left 5 Cols: Asset Allocation (Option A) + Bank + Municipal Stocks -->
+      <div class="col-span-12 lg:col-span-5 space-y-4">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- 1. Asset Allocation (Option A Proportional Bar) -->
+          <div class="bento-card p-3 flex flex-col justify-between">
+            <div class="w-full flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
+              <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-accent"></i> Asset Split
+              </h3>
+              <span class="text-[11px] font-mono font-bold text-primary">159.5M Z</span>
+            </div>
+
+            <!-- Proportional Bar -->
+            <div class="w-full my-1">
+              <div class="w-full h-2 rounded-full overflow-hidden flex bg-surface2 border border-border/40 gap-[1px]">
+                <div style="width: 85.2%" class="h-full bg-emerald-400 hover:brightness-110 transition-all" title="Stocks: 85.2%"></div>
+                <div style="width: 10.8%" class="h-full bg-amber-400 hover:brightness-110 transition-all" title="Cash: 10.8%"></div>
+                <div style="width: 4.0%" class="h-full bg-blue-400 hover:brightness-110 transition-all" title="Bank: 4.0%"></div>
+              </div>
+            </div>
+
+            <!-- Breakdown Rows -->
+            <div class="space-y-1 font-mono text-[10px]">
+              <div class="flex items-center justify-between px-1.5 py-0.5 rounded bg-surface2/30 border border-border/40">
+                <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Stocks <span class="text-muted/60">(85%)</span></span>
+                <span class="font-bold text-emerald-400">135,922,520 Z</span>
+              </div>
+              <div class="flex items-center justify-between px-1.5 py-0.5 rounded bg-surface2/30 border border-border/40">
+                <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-medium"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Cash <span class="text-muted/60">(11%)</span></span>
+                <span class="font-bold text-primary">17,229,615 Z</span>
+              </div>
+              <div class="flex items-center justify-between px-1.5 py-0.5 rounded bg-surface2/30 border border-border/40">
+                <span class="flex items-center gap-1 text-[9px] text-muted font-sans font-medium"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Bank <span class="text-muted/60">(4%)</span></span>
+                <span class="font-bold text-primary">6,381,339 Z</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Bank Widget -->
+          <div class="bento-card p-3 flex flex-col justify-between">
+            <div class="w-full flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
+              <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <i data-lucide="building-2" class="w-3.5 h-3.5 text-info"></i> Vault Status
+              </h3>
+              <span class="text-[9px] font-mono text-success font-bold bg-success/10 px-1 py-0.5 rounded border border-success/20">3.5% APY</span>
+            </div>
+            <div class="space-y-1">
+              <span class="text-[9px] text-muted block">Current Principal</span>
+              <div class="text-sm font-black font-mono text-primary">6,381,339 Z</div>
+            </div>
+            <div class="pt-1 border-t border-border/40 flex items-center justify-between text-[9px] font-mono text-muted">
+              <span>Next Payout:</span>
+              <span class="text-accent font-bold">24m 12s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Municipal Stock Holdings -->
+        <div class="bento-card p-3 space-y-2">
+          <div class="flex items-center justify-between border-b border-border pb-1.5">
+            <h3 class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i> Stock Positions
+            </h3>
+            <span class="text-[10px] font-mono text-muted">3 Municipalities</span>
+          </div>
+
+          <div class="space-y-1.5 font-mono text-xs">
+            <div class="flex items-center justify-between p-2 rounded bg-surface2/40 border border-border/50">
+              <div>
+                <div class="font-bold text-primary text-[11px] flex items-center gap-1">
+                  <span>PRON</span> <span class="text-[9px] font-normal text-muted font-sans">(Prontera)</span>
+                </div>
+                <div class="text-[9px] text-muted">2,500 Shares @ 42,100 Z</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-primary">105,250,000 Z</div>
+                <div class="text-[9px] text-success font-bold">+6.4% (+6.3M)</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-2 rounded bg-surface2/40 border border-border/50">
+              <div>
+                <div class="font-bold text-primary text-[11px] flex items-center gap-1">
+                  <span>GEFF</span> <span class="text-[9px] font-normal text-muted font-sans">(Geffen)</span>
+                </div>
+                <div class="text-[9px] text-muted">800 Shares @ 28,500 Z</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-primary">22,800,000 Z</div>
+                <div class="text-[9px] text-danger font-bold">-1.8% (-420K)</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-2 rounded bg-surface2/40 border border-border/50">
+              <div>
+                <div class="font-bold text-primary text-[11px] flex items-center gap-1">
+                  <span>PAYN</span> <span class="text-[9px] font-normal text-muted font-sans">(Payon)</span>
+                </div>
+                <div class="text-[9px] text-muted">350 Shares @ 22,492 Z</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-primary">7,872,520 Z</div>
+                <div class="text-[9px] text-success font-bold">+12.1% (+850K)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right 7 Cols: Character Details, 4th Job Traits, 48h Rest Bonus -->
+      <div class="col-span-12 lg:col-span-7 space-y-4">
+        
+        <!-- Active Hero Character Card -->
+        <div class="bento-card p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-border pb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-purple/10 border border-purple/30 flex items-center justify-center text-purple font-black text-sm">
+                4th
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="font-bold text-sm text-primary">Valkyrie_Blade</h2>
+                  <span class="text-[10px] font-mono px-1.5 py-0.2 bg-purple/20 text-purple border border-purple/30 rounded font-bold">Dragon Knight</span>
+                </div>
+                <div class="text-[10px] text-muted font-mono">Lv. 245 / 45 • Prontera Guild District</div>
+              </div>
+            </div>
+            
+            <!-- 48h Rest Bonus Indicator -->
+            <div class="text-right bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-md">
+              <span class="text-[9px] font-sans font-bold text-accent uppercase block">48h Rest Bonus</span>
+              <span class="text-xs font-mono font-bold text-accent">+100% EXP (3.4M Pool)</span>
+            </div>
+          </div>
+
+          <!-- 4th Job Traits Grid (POW, STA, WIS, SPL, CON, CRT) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] uppercase font-bold text-muted tracking-wider">4th Job Trait Attributes</span>
+              <span class="text-[10px] font-mono text-accent">Trait Points: 0 remaining</span>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-center">
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-pow font-bold">POW</span>
+                <span class="text-xs font-black text-primary">100</span>
+                <span class="text-[8px] text-muted block">+50 P.Atk</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-sta font-bold">STA</span>
+                <span class="text-xs font-black text-primary">75</span>
+                <span class="text-[8px] text-muted block">+37 Res</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-wis font-bold">WIS</span>
+                <span class="text-xs font-black text-primary">15</span>
+                <span class="text-[8px] text-muted block">+7 Mres</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-spl font-bold">SPL</span>
+                <span class="text-xs font-black text-primary">0</span>
+                <span class="text-[8px] text-muted block">+0 S.Matk</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-con font-bold">CON</span>
+                <span class="text-xs font-black text-primary">85</span>
+                <span class="text-[8px] text-muted block">+42 Hit/Flee</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/50 border border-border">
+                <span class="text-[9px] block text-trait-crt font-bold">CRT</span>
+                <span class="text-xs font-black text-primary">45</span>
+                <span class="text-[8px] text-muted block">+22 C.Rate</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Base Stats (STR, AGI, VIT, INT, DEX, LUK) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] uppercase font-bold text-muted tracking-wider">Base Attributes</span>
+              <span class="text-[10px] font-mono text-muted">Total: 650 Stats</span>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-center">
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-str font-bold">STR</span>
+                <span class="text-xs font-black text-primary">125+18</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-agi font-bold">AGI</span>
+                <span class="text-xs font-black text-primary">90+12</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-vit font-bold">VIT</span>
+                <span class="text-xs font-black text-primary">110+20</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-int font-bold">INT</span>
+                <span class="text-xs font-black text-primary">45+8</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-dex font-bold">DEX</span>
+                <span class="text-xs font-black text-primary">115+15</span>
+              </div>
+              <div class="p-1.5 rounded bg-surface2/30 border border-border/50">
+                <span class="text-[9px] block text-ro-luk font-bold">LUK</span>
+                <span class="text-xs font-black text-primary">60+6</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Roster Quick Switcher -->
+        <div class="bento-card p-3 space-y-2">
+          <div class="flex items-center justify-between border-b border-border pb-1">
+            <span class="text-[10px] uppercase font-bold text-muted tracking-wider">Account Character Roster (4 Slots)</span>
+            <span class="text-[10px] font-mono text-muted">Click to inspect</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+            <div class="p-2 rounded bg-surface2 border border-accent text-left cursor-pointer">
+              <div class="font-bold text-accent text-[11px]">Valkyrie_Blade</div>
+              <div class="text-[9px] text-muted">Lv.245 Dragon K.</div>
+            </div>
+            <div class="p-2 rounded bg-surface2/40 border border-border text-left hover:border-border/80 cursor-pointer">
+              <div class="font-bold text-primary text-[11px]">Shadow_Chaser</div>
+              <div class="text-[9px] text-muted">Lv.230 Abyss Ch.</div>
+            </div>
+            <div class="p-2 rounded bg-surface2/40 border border-border text-left hover:border-border/80 cursor-pointer">
+              <div class="font-bold text-primary text-[11px]">Arch_Healer</div>
+              <div class="text-[9px] text-muted">Lv.215 Cardinal</div>
+            </div>
+            <div class="p-2 rounded bg-surface2/40 border border-border text-left hover:border-border/80 cursor-pointer">
+              <div class="font-bold text-primary text-[11px]">Solo_Mecha</div>
+              <div class="text-[9px] text-muted">Lv.200 Meister</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= TAB 2: ASSET LAB (COMPARATIVE BENCHMARK) ================= -->
+  <section id="tab-assets" class="hidden space-y-4">
+    <div class="flex items-center justify-between border-b border-border pb-2">
+      <div>
+        <h2 class="text-sm font-bold text-primary">Asset Allocation UI Design Lab</h2>
+        <p class="text-xs text-muted">Live benchmark comparison with dynamic number stress testing</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="setLabValues(17229615, 6381339, 135922520)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border">159.5M (Default)</button>
+        <button onclick="setLabValues(450000000, 120000000, 1577483647)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border">2.14B (Max Zeny)</button>
+        <button onclick="setLabValues(120000, 45000, 850000)" class="px-2.5 py-1 text-xs font-mono bg-surface2 hover:bg-surface3 rounded border border-border">1.01M (Early Game)</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Option A (Active Pick) -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-success flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Option A: Proportional Segmented Bar (Active in Codebase)</span>
+        </div>
+        <div class="bento-card p-3 space-y-2 ring-1 ring-success/30">
+          <div class="flex items-center justify-between border-b border-border pb-1.5">
+            <span class="font-bold text-[11px] uppercase tracking-wider text-primary flex items-center gap-1.5"><i data-lucide="pie-chart" class="w-3.5 h-3.5 text-accent"></i> Asset Allocation</span>
+            <span id="labA-total" class="font-mono text-[11px] font-bold text-primary">159,533,474 Z</span>
+          </div>
+          <div class="h-2 rounded-full overflow-hidden flex bg-surface2 border border-border/40 gap-[1px]">
+            <div id="labA-stocks" class="h-full bg-emerald-400" style="width: 85%"></div>
+            <div id="labA-cash" class="h-full bg-amber-400" style="width: 11%"></div>
+            <div id="labA-bank" class="h-full bg-blue-400" style="width: 4%"></div>
+          </div>
+          <div class="space-y-1 font-mono text-[10px]">
+            <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40">
+              <span class="text-[9px] text-muted font-sans flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Stocks <span id="labA-stocks-pct">(85%)</span></span>
+              <span id="labA-stocks-val" class="font-bold text-emerald-400">135,922,520 Z</span>
+            </div>
+            <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40">
+              <span class="text-[9px] text-muted font-sans flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Cash <span id="labA-cash-pct">(11%)</span></span>
+              <span id="labA-cash-val" class="font-bold text-primary">17,229,615 Z</span>
+            </div>
+            <div class="flex items-center justify-between px-2 py-0.5 rounded bg-surface2/30 border border-border/40">
+              <span class="text-[9px] text-muted font-sans flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Bank <span id="labA-bank-pct">(4%)</span></span>
+              <span id="labA-bank-val" class="font-bold text-primary">6,381,339 Z</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Old Donut (Clipped) -->
+      <div class="space-y-2 opacity-75">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-danger flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Old Donut (Historical Reference - Clipped)</span>
+        </div>
+        <div class="bento-card p-3 flex items-center gap-3">
+          <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#27272a" stroke-width="14" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#4ade80" stroke-width="14" stroke-dasharray="203 238" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#fbbf24" stroke-width="14" stroke-dasharray="25 238" stroke-dashoffset="-203" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#60a5fa" stroke-width="14" stroke-dasharray="10 238" stroke-dashoffset="-228" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span class="text-[8px] uppercase font-bold text-muted">Total</span>
+              <span id="lab-old-donut-val" class="text-[10px] font-black font-mono text-primary truncate max-w-[55px]">159,533,474</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-muted space-y-1">
+            <p class="text-danger font-semibold">Problem Identified:</p>
+            <p>Monospace formatted strings exceed the 48px inner circle diameter. Replaced with Option A.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 3: EDEN BOUNTIES ================= -->
+  <section id="tab-bounties" class="hidden space-y-4">
+    <div class="border-b border-border pb-2 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold text-primary">Eden Group Solo Bounty Boards</h2>
+        <p class="text-xs text-muted">Automated hunt tasks, reward tiers, and reputation system</p>
+      </div>
+      <span class="text-xs font-mono text-accent bg-surface2 px-2 py-0.5 rounded border border-border">3 Active Tasks</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bento-card p-3 space-y-2 border-l-4 border-l-success">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-success">Tier 1 • Completed</span>
+          <span class="text-[10px] font-mono text-muted">Payon Forest</span>
+        </div>
+        <h3 class="font-bold text-xs text-primary">Wolf Extermination</h3>
+        <p class="text-[11px] text-muted">Hunt 50 Wolves in Payon Dungeon area.</p>
+        <div class="pt-2 border-t border-border flex items-center justify-between text-xs font-mono">
+          <span class="text-success font-bold">50 / 50</span>
+          <span class="text-accent font-bold">+150K Z + 500K EXP</span>
+        </div>
+      </div>
+
+      <div class="bento-card p-3 space-y-2 border-l-4 border-l-accent">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-accent">Tier 2 • In Progress</span>
+          <span class="text-[10px] font-mono text-muted">Magma Dungeon</span>
+        </div>
+        <h3 class="font-bold text-xs text-primary">Lava Golem Core Extraction</h3>
+        <p class="text-[11px] text-muted">Collect 30 Burning Cores from Lava Golems.</p>
+        <div class="pt-2 border-t border-border flex items-center justify-between text-xs font-mono">
+          <span class="text-accent font-bold">18 / 30</span>
+          <span class="text-accent font-bold">+450K Z + 2.5M EXP</span>
+        </div>
+      </div>
+
+      <div class="bento-card p-3 space-y-2 border-l-4 border-l-purple">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-purple">Tier 3 • Weekly Elite</span>
+          <span class="text-[10px] font-mono text-muted">Glast Heim</span>
+        </div>
+        <h3 class="font-bold text-xs text-primary">Abyssal Knight Suppression</h3>
+        <p class="text-[11px] text-muted">Defeat 15 Abyssal Knights in Glast Heim Chivalry.</p>
+        <div class="pt-2 border-t border-border flex items-center justify-between text-xs font-mono">
+          <span class="text-muted">4 / 15</span>
+          <span class="text-accent font-bold">+1.8M Z + 12M EXP</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 4: ARCHIVE EXPLORER ================= -->
+  <section id="tab-archive" class="hidden space-y-4">
+    <div class="border-b border-border pb-2">
+      <h2 class="text-sm font-bold text-primary">Prototype & Historical Archive</h2>
+      <p class="text-xs text-muted">Historical wireframes and exploratory prototypes cataloged in <code>web/demos/archive/</code></p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 font-mono text-xs">
+      <a href="asset-allocation-lab.html" class="bento-card p-3 block hover:border-accent/50 transition">
+        <div class="font-bold text-primary flex items-center gap-1.5"><i data-lucide="flask-conical" class="w-4 h-4 text-accent"></i> Asset Lab Standalone</div>
+        <div class="text-[10px] text-muted mt-1">Standalone dynamic comparison between 4 layout variations.</div>
+      </a>
+      <a href="bounties-dashboard.html" class="bento-card p-3 block hover:border-accent/50 transition">
+        <div class="font-bold text-primary flex items-center gap-1.5"><i data-lucide="target" class="w-4 h-4 text-success"></i> Bounties Dashboard</div>
+        <div class="text-[10px] text-muted mt-1">Dedicated full-page Eden Quest and Bounty board design.</div>
+      </a>
+      <a href="archive/demo-roster-and-assets.html" class="bento-card p-3 block hover:border-accent/50 transition">
+        <div class="font-bold text-primary flex items-center gap-1.5"><i data-lucide="archive" class="w-4 h-4 text-muted"></i> Demo Roster & Donut (Legacy)</div>
+        <div class="text-[10px] text-muted mt-1">Earlier iteration with SVG circle donut before Option A adoption.</div>
+      </a>
+      <a href="archive/demo-option-a.html" class="bento-card p-3 block hover:border-accent/50 transition">
+        <div class="font-bold text-primary flex items-center gap-1.5"><i data-lucide="archive" class="w-4 h-4 text-muted"></i> Demo Option A (Early)</div>
+        <div class="text-[10px] text-muted mt-1">First pass 5:7 split grid layout prototype.</div>
+      </a>
+      <a href="archive/demo-option-b.html" class="bento-card p-3 block hover:border-accent/50 transition">
+        <div class="font-bold text-primary flex items-center gap-1.5"><i data-lucide="archive" class="w-4 h-4 text-muted"></i> Demo Option B (Early)</div>
+        <div class="text-[10px] text-muted mt-1">Multi-tab modal experimental wireframe.</div>
+      </a>
+    </div>
+  </section>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tabId) {
+      ['cockpit', 'assets', 'bounties', 'archive'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === tabId) {
+          el.classList.remove('hidden');
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-accent text-background transition';
+        } else {
+          el.classList.add('hidden');
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md text-muted hover:text-primary transition';
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function setLabValues(cash, bank, stocks) {
+      const total = cash + bank + stocks;
+      const cashPct = (cash / total) * 100;
+      const bankPct = (bank / total) * 100;
+      const stockPct = (stocks / total) * 100;
+
+      document.getElementById('labA-total').textContent = total.toLocaleString('en-US') + ' Z';
+      document.getElementById('labA-stocks').style.width = stockPct + '%';
+      document.getElementById('labA-cash').style.width = cashPct + '%';
+      document.getElementById('labA-bank').style.width = bankPct + '%';
+      document.getElementById('labA-stocks-pct').textContent = `(${stockPct.toFixed(0)}%)`;
+      document.getElementById('labA-cash-pct').textContent = `(${cashPct.toFixed(0)}%)`;
+      document.getElementById('labA-bank-pct').textContent = `(${bankPct.toFixed(0)}%)`;
+      document.getElementById('labA-stocks-val').textContent = stocks.toLocaleString('en-US') + ' Z';
+      document.getElementById('labA-cash-val').textContent = cash.toLocaleString('en-US') + ' Z';
+      document.getElementById('labA-bank-val').textContent = bank.toLocaleString('en-US') + ' Z';
+
+      document.getElementById('lab-old-donut-val').textContent = total.toLocaleString('en-US');
+    }
+  </script>
+</body>
+</html>

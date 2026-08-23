@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System & Zero-Knowledge Vault — Bento UI Demo</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease-in-out;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col items-center justify-center p-4">
+
+  <!-- Background Demo Portal Shell -->
+  <div class="w-full max-w-5xl space-y-4 filter blur-sm pointer-events-none opacity-40">
+    <div class="flex items-center justify-between bg-surface border border-border p-4 rounded-xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-surface2 border border-border flex items-center justify-center text-accent">
+          <i data-lucide="shield" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="font-bold text-sm text-primary uppercase">Photonic Singularity • Solo RO</div>
+          <div class="text-xs text-muted">Player Portal & Stock Exchange Terminal</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="px-3 py-1.5 rounded-lg bg-surface2 border border-border text-xs text-muted font-mono">:3307 Live</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bento-card p-5 h-64"></div>
+      <div class="bento-card p-5 h-64"></div>
+      <div class="bento-card p-5 h-64"></div>
+    </div>
+  </div>
+
+  <!-- THE BENTO SYSTEM & VAULT MODAL -->
+  <div id="vaultModalOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150" onclick="handleBackdropClick(event)">
+    <div id="vaultModalCard" class="bento-card w-full max-w-2xl max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border" onclick="event.stopPropagation()">
+      
+      <!-- 1. Header & Title Bar -->
+      <div class="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+            <i data-lucide="shield" class="w-4 h-4 text-accent"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm text-primary tracking-wide">System Setup & Zero-Knowledge Vault</span>
+              <span class="bg-accent/10 text-accent border border-accent/20 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">AES-256</span>
+            </div>
+            <div class="text-[11px] text-muted flex items-center gap-1.5">
+              <span>Hardware Encryption</span>
+              <span>•</span>
+              <span class="text-success font-mono flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                Replica :3307
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <button onclick="toggleModal()" class="text-muted hover:text-primary transition-colors p-1.5 rounded-md hover:bg-surface shrink-0 cursor-pointer" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- 2. Master Key Security Drawer -->
+      <div class="bg-surface border-b border-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2 text-xs flex-1 min-w-[240px]">
+          <i data-lucide="key" id="keyIcon" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span class="text-muted font-medium text-xs">Master Key:</span>
+          <input 
+            type="password" 
+            id="adminKeyInput"
+            value="SoloCentricKey2026!" 
+            class="bg-background border border-border focus:border-accent rounded px-2.5 py-1 text-xs text-primary font-mono outline-none flex-1 max-w-xs transition-colors"
+            placeholder="Enter Master Admin Key..."
+          />
+          <button 
+            id="keySaveBtn"
+            onclick="toggleKeySave()" 
+            class="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+          >
+            Saved
+          </button>
+        </div>
+
+        <div class="text-[11px] font-mono text-muted flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Admin Authenticated</span>
+        </div>
+      </div>
+
+      <!-- 3. Clean Segmented Navigation Tabs -->
+      <div class="flex border-b border-border bg-surface px-4 pt-2 gap-2 shrink-0">
+        <button 
+          id="tab-vault" 
+          onclick="switchTab('vault')"
+          class="px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 border-accent text-accent bg-surface2/40"
+        >
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>Zero-Knowledge Vault</span>
+        </button>
+        <button 
+          id="tab-setup" 
+          onclick="switchTab('setup')"
+          class="px-3.5 py-2 text-xs font-medium text-muted hover:text-primary rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 border-transparent"
+        >
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span>Day 1 Setup</span>
+        </button>
+        <button 
+          id="tab-stats" 
+          onclick="switchTab('stats')"
+          class="px-3.5 py-2 text-xs font-medium text-muted hover:text-primary rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 border-transparent"
+        >
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>Topology & Health</span>
+        </button>
+      </div>
+
+      <!-- 4. Tab Body Content -->
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm">
+        
+        <!-- TAB 1: ZERO-KNOWLEDGE VAULT -->
+        <div id="content-vault" class="space-y-4">
+          <!-- Passphrase Bento Card -->
+          <div class="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-accent"></i>
+                <span class="font-bold text-xs text-primary">AES-256-GCM Backup Encryption Passphrase</span>
+              </div>
+              <span class="text-[10px] font-mono text-muted bg-surface px-2 py-0.5 rounded border border-border">PBKDF2 SHA-256 (100k iters)</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <input 
+                  type="password" 
+                  id="passphraseInput"
+                  value="SoloCentricKey2026!" 
+                  class="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none pr-9 transition-colors"
+                  placeholder="Enter secret passphrase..."
+                />
+                <button 
+                  type="button" 
+                  onclick="togglePassVisibility()" 
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors p-1"
+                >
+                  <i data-lucide="eye" id="passEyeIcon" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <button 
+                onclick="generateNewKey()" 
+                class="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5"
+              >
+                <i data-lucide="refresh-cw" class="w-3 h-3 text-accent"></i>
+                <span>Generate</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2-Column Bento Action Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            
+            <!-- Left Card: Export Snapshot -->
+            <div class="p-4 rounded-xl bg-surface2/30 border border-border flex flex-col justify-between space-y-3.5 hover:border-border/80 transition-colors">
+              <div class="space-y-2">
+                <div class="flex items-center gap-2 text-success font-bold text-xs">
+                  <div class="w-6 h-6 rounded-md bg-success/10 border border-success/20 flex items-center justify-center">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-success"></i>
+                  </div>
+                  <span>1-Click Savegame Export</span>
+                </div>
+                <p class="text-xs text-muted leading-relaxed">
+                  Snapshots live characters, inventory, bank deposits, quest progression, and municipal stock holdings into an encrypted <code class="text-accent font-mono">.sql.gz.enc</code> binary.
+                </p>
+              </div>
+
+              <div id="exportAlert" class="hidden p-2.5 rounded-lg bg-success/10 border border-success/20 text-success text-xs flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4 shrink-0"></i>
+                <span id="exportAlertText">Encrypted snapshot downloaded successfully.</span>
+              </div>
+
+              <button 
+                onclick="triggerExportDemo()" 
+                id="exportBtn"
+                class="w-full bg-success/20 hover:bg-success/30 text-success border border-success/30 font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+              >
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download Encrypted Backup</span>
+              </button>
+            </div>
+
+            <!-- Right Card: Disaster Recovery Restore -->
+            <div class="p-4 rounded-xl bg-surface2/30 border border-border flex flex-col justify-between space-y-3.5 hover:border-border/80 transition-colors">
+              <div class="space-y-2">
+                <div class="flex items-center gap-2 text-accent font-bold text-xs">
+                  <div class="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center">
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-accent"></i>
+                  </div>
+                  <span>Disaster Recovery Restore</span>
+                </div>
+                <p class="text-xs text-muted leading-relaxed">
+                  Safely restores emulator databases and stock state from a local encrypted snapshot.
+                </p>
+              </div>
+
+              <!-- Drag / Drop File Picker -->
+              <div class="p-3 rounded-lg bg-background border border-dashed border-border hover:border-accent/50 text-center cursor-pointer transition-colors" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" class="hidden" onchange="handleFileSelected(event)" accept=".enc,.sql" />
+                <div class="flex flex-col items-center gap-1 text-xs text-muted">
+                  <i data-lucide="file-archive" class="w-4 h-4 text-accent"></i>
+                  <span id="fileLabel" class="font-medium text-primary">Click to select .sql.gz.enc file</span>
+                  <span class="text-[10px] text-muted">Local file never leaves your machine unencrypted</span>
+                </div>
+              </div>
+
+              <div id="restoreAlert" class="hidden p-2.5 rounded-lg bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+                <span id="restoreAlertText">Please pick a backup file first.</span>
+              </div>
+
+              <button 
+                onclick="triggerRestoreDemo()" 
+                id="restoreBtn"
+                class="w-full bg-surface2 hover:bg-surface2/80 text-primary border border-border font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <i data-lucide="upload" class="w-4 h-4 text-accent"></i>
+                <span>Restore Database</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 2: DAY 1 SETUP & ACCOUNTS -->
+        <div id="content-setup" class="hidden space-y-4">
+          <div class="p-4 rounded-xl bg-surface2/40 border border-border space-y-3">
+            <div class="flex items-center gap-2 text-primary font-bold text-xs">
+              <i data-lucide="user-plus" class="w-4 h-4 text-accent"></i>
+              <span>Provision Player or GM Account</span>
+            </div>
+            <p class="text-xs text-muted leading-relaxed">
+              Direct SQL account injection into the primary game database (:3306). No external database GUI or manual terminal commands required.
+            </p>
+
+            <form onsubmit="handleAccountCreate(event)" class="space-y-3 pt-1">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-medium uppercase tracking-wider text-muted">Username</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="e.g. AliceHero"
+                    class="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none transition-colors"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] font-medium uppercase tracking-wider text-muted">Password</label>
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder="••••••••"
+                    class="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary font-mono outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-medium uppercase tracking-wider text-muted">Gender</label>
+                  <select class="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary outline-none transition-colors">
+                    <option value="M">Male (M)</option>
+                    <option value="F">Female (F)</option>
+                  </select>
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] font-medium uppercase tracking-wider text-muted">Account Role</label>
+                  <select class="w-full bg-background border border-border focus:border-accent rounded-lg px-3 py-2 text-xs text-primary outline-none transition-colors">
+                    <option value="0">Standard Player (Group 0)</option>
+                    <option value="99">Master Administrator / GM (Group 99)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                class="w-full bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer mt-2"
+              >
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span>Create Account in Database</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 3: SYSTEM TOPOLOGY & HEALTH -->
+        <div id="content-stats" class="hidden space-y-3.5">
+          <!-- 4-Stat Metric Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+              <i data-lucide="users" class="w-4 h-4 text-accent mx-auto mb-1"></i>
+              <div class="text-[10px] text-muted uppercase tracking-wider font-medium">Accounts</div>
+              <div class="text-sm font-bold font-mono text-primary mt-0.5">14</div>
+            </div>
+            <div class="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+              <i data-lucide="shield" class="w-4 h-4 text-info mx-auto mb-1"></i>
+              <div class="text-[10px] text-muted uppercase tracking-wider font-medium">Characters</div>
+              <div class="text-sm font-bold font-mono text-primary mt-0.5">28</div>
+            </div>
+            <div class="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+              <i data-lucide="coins" class="w-4 h-4 text-accent mx-auto mb-1"></i>
+              <div class="text-[10px] text-muted uppercase tracking-wider font-medium">Circulating Zeny</div>
+              <div class="text-xs font-bold font-mono text-accent mt-1 truncate">84,250,000 Z</div>
+            </div>
+            <div class="bg-surface2/50 border border-border rounded-xl p-3 text-center">
+              <i data-lucide="server" class="w-4 h-4 text-success mx-auto mb-1"></i>
+              <div class="text-[10px] text-muted uppercase tracking-wider font-medium">Online Active</div>
+              <div class="text-sm font-bold font-mono text-success mt-0.5">1 Live</div>
+            </div>
+          </div>
+
+          <!-- Topology Card -->
+          <div class="p-4 rounded-xl bg-surface2/40 border border-border space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-xs text-primary">
+                <i data-lucide="database" class="w-4 h-4 text-info"></i>
+                <span>Database Node Topology</span>
+              </div>
+              <button class="text-xs text-muted hover:text-primary flex items-center gap-1 font-mono transition-colors">
+                <i data-lucide="refresh-cw" class="w-3 h-3 text-accent"></i>
+                <span>Check Ping</span>
+              </button>
+            </div>
+            
+            <div class="text-xs text-muted space-y-1.5 font-mono pt-1">
+              <div class="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                <span class="text-muted">Analytics Read Replica:</span>
+                <span class="text-success font-bold flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                  Active (:3307)
+                </span>
+              </div>
+              <div class="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                <span class="text-muted">Primary Game Master Node:</span>
+                <span class="text-success font-bold flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                  Connected (:3306)
+                </span>
+              </div>
+              <div class="flex justify-between items-center bg-background/60 p-2 rounded-lg border border-border/50">
+                <span class="text-muted">Hardware Zero-Knowledge Engine:</span>
+                <span class="text-accent font-bold">AES-256 GCM Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 5. Modal Footer -->
+      <div class="bg-surface2 border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted font-mono shrink-0">
+        <span>Solo-Centric Platform Security</span>
+        <span class="text-primary/70">Press <kbd class="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px]">ESC</kbd> to dismiss</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      ['vault', 'setup', 'stats'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (t === tabId) {
+          btn.className = "px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 border-accent text-accent bg-surface2/40";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "px-3.5 py-2 text-xs font-medium text-muted hover:text-primary rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 border-transparent";
+          content.classList.add('hidden');
+        }
+      });
+      lucide.createIcons();
+    }
+
+    // Modal Visibility & Keyboard Ergonomics
+    function toggleModal() {
+      const overlay = document.getElementById('vaultModalOverlay');
+      overlay.classList.toggle('hidden');
+    }
+
+    function handleBackdropClick(event) {
+      if (event.target === document.getElementById('vaultModalOverlay')) {
+        toggleModal();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const overlay = document.getElementById('vaultModalOverlay');
+        if (!overlay.classList.contains('hidden')) {
+          overlay.classList.add('hidden');
+        }
+      }
+    });
+
+    // Passphrase Visibility Toggle
+    function togglePassVisibility() {
+      const passInput = document.getElementById('passphraseInput');
+      const passEye = document.getElementById('passEyeIcon');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+      } else {
+        passInput.type = 'password';
+      }
+    }
+
+    // Random Key Generator
+    function generateNewKey() {
+      const rand = Math.random().toString(36).substring(2, 10);
+      document.getElementById('passphraseInput').value = `Ragnarok_${rand}!`;
+    }
+
+    // Export Demo
+    function triggerExportDemo() {
+      const alert = document.getElementById('exportAlert');
+      alert.classList.remove('hidden');
+      setTimeout(() => alert.classList.add('hidden'), 4000);
+    }
+
+    // Restore File Picker Demo
+    function handleFileSelected(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('fileLabel').textContent = `📁 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('fileLabel').classList.add('text-success', 'font-mono');
+      }
+    }
+
+    function triggerRestoreDemo() {
+      const file = document.getElementById('fileInput').files[0];
+      const alert = document.getElementById('restoreAlert');
+      if (!file) {
+        alert.classList.remove('hidden');
+        setTimeout(() => alert.classList.add('hidden'), 3500);
+      } else {
+        alert.className = "p-2.5 rounded-lg bg-success/10 border border-success/20 text-success text-xs flex items-center gap-2";
+        alert.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4 shrink-0"></i><span>Backup snapshot validated and restored!</span>';
+        alert.classList.remove('hidden');
+        lucide.createIcons();
+      }
+    }
+
+    function handleAccountCreate(event) {
+      event.preventDefault();
+      alert("Demo: Account creation payload generated with direct primary DB connection!");
+    }
+  </script>
+</body>
+</html>

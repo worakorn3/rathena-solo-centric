@@ -57,20 +57,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* 1. DESKTOP VIEWPORT: Exact 16-width Left Cockpit Rail (md:flex)           */}
       {/* ========================================================================= */}
       <aside className="hidden md:flex w-16 bg-surface border-r border-border flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-full select-none">
-        {/* Top Section: Brand & Navigation Rail */}
-        <div className="flex flex-col items-center gap-4 w-full">
-          {/* Brand Logo */}
+        {/* Top Section: Brand & Primary Navigation Tabs */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          {/* Brand Logo with Integrated Live Pulse Indicator */}
           <div
-            className="w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors"
+            className="relative w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors"
             title="Photonic Singularity • Solo RO"
           >
             <Shield className="w-5 h-5 text-accent" />
+            <span
+              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface animate-pulse shadow-[0_0_6px_#4ade80]"
+              title="Kafra Live Network: Synchronized"
+            />
           </div>
 
-          <div className="w-6 h-px bg-border my-0.5" />
+          <div className="w-6 h-px bg-border my-1" />
 
-          {/* Navigation Tabs */}
-          <nav className="flex flex-col items-center gap-2.5 w-full">
+          {/* Primary Navigation Tabs */}
+          <nav className="flex flex-col items-center gap-3.5 w-full">
             {/* Tab 1: Financial HQ */}
             <button
               onClick={() => onTabChange("FINANCE")}
@@ -139,18 +143,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
           </nav>
+        </div>
 
-          <div className="w-6 h-px bg-border my-0.5" />
-
-          {/* Action Buttons: Sync / Refresh & Armory Search */}
-          <div className="flex flex-col items-center gap-2">
+        {/* Bottom Section: Utility Tools & User Account */}
+        <div className="flex flex-col items-center gap-2.5 w-full">
+          {/* Utility Tools Group */}
+          <div className="flex flex-col items-center gap-2 w-full">
             {/* Manual Refresh / Sync Button */}
             {onRefresh && (
               <button
                 onClick={handleSyncClick}
                 disabled={spinning}
                 className="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-muted hover:text-primary transition-all group disabled:opacity-50"
-                title="Sync Live MariaDB Data (:3307)"
+                title="Sync Live Realm Data"
               >
                 <RefreshCw
                   className={`w-4 h-4 text-accent transition-transform ${
@@ -173,37 +178,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {onOpenAdmin && (
               <button
                 onClick={onOpenAdmin}
-                className="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-ro-gold/30 flex items-center justify-center text-ro-gold hover:text-ro-gold transition-all"
+                className="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border hover:border-ro-gold/40 flex items-center justify-center text-ro-gold transition-all"
                 title="System Setup & Zero-Knowledge Vault"
               >
                 <Shield className="w-4 h-4 text-ro-gold" />
               </button>
             )}
           </div>
-        </div>
 
-        {/* Bottom Section: MariaDB Status & User Profile / Login */}
-        <div className="flex flex-col items-center gap-2.5 w-full">
-          {/* DB Health Dot */}
-          <div
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-surface2 border border-border"
-            title="Connected to MariaDB Replica (:3307)"
-          >
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_#4ade80]" />
-          </div>
+          <div className="w-6 h-px bg-border my-1" />
 
-          {/* User Badge / Avatar */}
+          {/* User Badge / Login Action */}
           {user ? (
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-1.5 w-full">
               <div
-                className="w-9 h-9 rounded-xl bg-surface2 border border-accent/40 flex items-center justify-center text-accent font-bold text-xs shadow-inner cursor-default uppercase"
-                title={`Logged in as ${user.userid} (#${user.accountId})`}
+                className="w-10 h-10 rounded-xl bg-surface2 border border-accent/40 flex items-center justify-center text-accent font-bold text-xs shadow-inner cursor-default uppercase"
+                title={`Logged in as ${user.userid}`}
               >
                 {user.userid.charAt(0)}
               </div>
               <button
                 onClick={logout}
-                className="p-1 rounded hover:bg-danger/20 text-danger/60 hover:text-danger transition-colors text-[10px]"
+                className="w-10 h-6 rounded-lg bg-surface2/40 hover:bg-danger/20 text-muted hover:text-danger flex items-center justify-center border border-border/50 transition-colors text-[10px]"
                 title="Logout"
               >
                 <LogOut size={12} />
@@ -212,40 +208,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             <button
               onClick={openLoginModal}
-              className="w-9 h-9 rounded-xl bg-primary hover:bg-primary/90 text-background flex items-center justify-center font-bold transition-colors shadow-sm"
+              className="w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-background flex items-center justify-center font-bold transition-colors shadow-sm"
               title="Log In"
             >
-              <User size={15} />
+              <User size={16} />
             </button>
           )}
         </div>
       </aside>
 
       {/* ========================================================================= */}
-      {/* 2. MOBILE VIEWPORT: Sleek Top Header Bar (md:hidden)                       */}
+      {/* 2. MOBILE VIEWPORT: Streamlined Top Header Bar (md:hidden)                */}
       {/* ========================================================================= */}
-      <header className="md:hidden sticky top-0 z-40 w-full bg-surface/95 backdrop-blur border-b border-border px-3.5 py-2.5 flex items-center justify-between shadow-sm select-none">
-        {/* Brand & Database Status */}
+      <header className="md:hidden sticky top-0 z-40 w-full bg-surface/95 backdrop-blur border-b border-border px-3.5 py-2 flex items-center justify-between shadow-sm select-none">
+        {/* Brand & Live Sync Badge */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-surface2 border border-border flex items-center justify-center shadow-inner">
+          <div className="relative w-8 h-8 rounded-lg bg-surface2 border border-border flex items-center justify-center shadow-inner">
             <Shield className="w-4 h-4 text-accent" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-success ring-1 ring-surface animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-none">
               <span className="font-bold text-xs text-primary uppercase tracking-wide">
                 Photonic <span className="text-accent">RO</span>
               </span>
-              <span className="flex items-center gap-1 text-[9px] font-mono text-success bg-success/10 px-1.5 py-0.5 rounded border border-success/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_6px_#4ade80]" />
-                :3307
-              </span>
             </div>
             <span className="text-[10px] text-muted font-medium">Solo Portal</span>
           </div>
         </div>
 
-        {/* Quick Actions & Profile */}
-        <div className="flex items-center gap-1.5">
+        {/* Streamlined Quick Actions & Profile */}
+        <div className="flex items-center gap-2">
           {/* Sync Button */}
           {onRefresh && (
             <button
@@ -271,20 +264,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Search className="w-3.5 h-3.5 text-info" />
           </button>
 
-          {/* Admin & Vault Button (Mobile) */}
+          {/* Admin Button (Mobile) */}
           {onOpenAdmin && (
             <button
               onClick={onOpenAdmin}
-              className="w-8 h-8 rounded-lg bg-surface2/60 hover:bg-surface2 border border-ro-gold/30 flex items-center justify-center text-ro-gold hover:text-ro-gold transition-all"
-              title="Admin & Vault"
+              className="w-8 h-8 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-ro-gold transition-all"
+              title="Server Management & Backups"
             >
               <Shield className="w-3.5 h-3.5 text-ro-gold" />
             </button>
           )}
 
-          {/* User Account Button */}
+          {/* User Account / Login */}
           {user ? (
-            <div className="flex items-center gap-1 pl-1 border-l border-border/80">
+            <div className="flex items-center gap-1 pl-1.5 border-l border-border">
               <div
                 className="w-8 h-8 rounded-lg bg-surface2 border border-accent/40 flex items-center justify-center text-accent font-bold text-xs uppercase"
                 title={`Logged in as ${user.userid}`}
@@ -293,7 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <button
                 onClick={logout}
-                className="w-7 h-7 rounded flex items-center justify-center hover:bg-danger/20 text-danger/60 hover:text-danger transition-colors"
+                className="w-8 h-8 rounded-lg bg-surface2/40 hover:bg-danger/20 border border-border flex items-center justify-center text-muted hover:text-danger transition-colors"
                 title="Logout"
               >
                 <LogOut size={13} />

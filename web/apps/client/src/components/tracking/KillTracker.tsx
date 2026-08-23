@@ -255,7 +255,7 @@ export const KillTracker: React.FC<KillTrackerProps> = ({ progression }) => {
           </div>
 
           <div className="text-[10px] text-muted text-center border-t border-border pt-2 font-mono">
-            Logs saved passively to MariaDB Replica (:3307)
+            Hunting milestones recorded passively to adventurer journal
           </div>
         </div>
       </div>
