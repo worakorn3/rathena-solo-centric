@@ -11,13 +11,6 @@ export async function initMarketCron() {
     console.error("[MarketCron] Error catching up offline dividends:", err);
   }
 
-  // Seed initial candle history if empty
-  try {
-    await MarketSimulationService.seedInitialHistoryIfEmpty();
-  } catch (err) {
-    console.error("[MarketCron] Error seeding initial market history:", err);
-  }
-
   // 10-Minute Price Shift: runs every 10 minutes (0, 10, 20, 30, 40, 50)
   const shiftJob = new CronJob("*/10 * * * *", async () => {
     try {

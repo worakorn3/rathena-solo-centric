@@ -52,6 +52,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
         borderColor: "#27272a",
         timeVisible: true,
         secondsVisible: false,
+        barSpacing: 14,
+        minBarSpacing: 6,
       },
       height: 220,
     });
@@ -63,6 +65,11 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
       borderDownColor: "#EF4444",
       wickUpColor: "#10B981",
       wickDownColor: "#EF4444",
+      priceFormat: {
+        type: "custom",
+        minMove: 1,
+        formatter: (price: number) => `${Math.round(price)} Z`,
+      },
     });
 
     chart.subscribeCrosshairMove((param) => {
