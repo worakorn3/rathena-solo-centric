@@ -42,6 +42,24 @@ describe("Database Replica & Read-Only Safety Tests", () => {
     expect(Array.isArray(data.events)).toBe(true);
   });
 
+  it("should fetch ticker-filtered events with query parameter", async () => {
+    const response = await app.handle(new Request("http://localhost:4000/api/economy/events?ticker=PRT"));
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as any;
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.events)).toBe(true);
+  });
+
+  it("should fetch full ticker Black Swan news dispatches", async () => {
+    const response = await app.handle(new Request("http://localhost:4000/api/economy/events/ticker/PRT"));
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as any;
+    expect(data.success).toBe(true);
+    expect(data.ticker).toBe("PRT");
+    expect(Array.isArray(data.activeEvents)).toBe(true);
+    expect(Array.isArray(data.historicalEvents)).toBe(true);
+  });
+
   it("should fetch active market events from replica", async () => {
     const response = await app.handle(new Request("http://localhost:4000/api/economy/events/active"));
     expect(response.status).toBe(200);

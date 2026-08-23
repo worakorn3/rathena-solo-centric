@@ -37,5 +37,7 @@ export const config = {
   server: {
     port: parseInt(process.env.PORT || "4000", 10),
     jwtSecret: getRequiredEnv("JWT_SECRET", "test_jwt_secret_for_unit_tests_only"),
+    adminKey: process.env.ADMIN_KEY || "SoloCentricKey2026!",
+    allowAnonymousAdmin: process.env.ALLOW_ANONYMOUS_ADMIN === "true",
   }
 };

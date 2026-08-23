@@ -318,4 +318,68 @@ describe("Feature F13: Optimistic State Synchronization", () => {
     expect(updatedRoster.find(c => c.charId === 602)?.dispatchStart).toBeNull();
     expect(selectedCharId).toBe(602);
   });
+
+  it("F13-T2-6: Roster switch immediately updates activeChar and recalculates offline rest and expedition EXP yields", () => {
+    const charA = createMockCharacter({
+      charId: 701,
+      baseLevel: 100,
+      online: false,
+      lastLogoutTime: 1724330000 - 3600, // 60 min ago
+      unclaimedRestMin: 30, // 30 min banked
+    });
+    const charB = createMockCharacter({
+      charId: 702,
+      baseLevel: 50,
+      online: false,
+      lastLogoutTime: 1724330000 - 7200, // 120 min ago
+      unclaimedRestMin: 0,
+    });
+
+    const roster: CharacterSummary[] = [charA, charB];
+    let selectedCharId = 701;
+    let selectedCharDetail: any = { ...charA, paperdoll: {} };
+
+    // Function matching App.tsx activeChar derivation
+    const getActiveChar = (selId: number, selDetail: any, chars: CharacterSummary[]) =>
+      (selDetail && selDetail.charId === selId)
+        ? selDetail
+        : chars.find((c) => c.charId === selId) || selDetail;
+
+    // Active character is initially Char A
+    let active = getActiveChar(selectedCharId, selectedCharDetail, roster);
+    expect(active.charId).toBe(701);
+    expect(active.baseLevel).toBe(100);
+
+    const now = 1724330000;
+    const calcYields = (c: CharacterSummary) => {
+      const elapsedSec = !c.online ? Math.max(0, now - (c.lastLogoutTime || now)) : 0;
+      const totalAccruedMin = (c.unclaimedRestMin || 0) + (!c.online ? Math.floor(elapsedSec / 60) : 0);
+      const cappedMin = Math.min(2880, totalAccruedMin);
+      const estBaseExp = Math.floor(c.baseLevel * 10 * cappedMin);
+      const estJobExp = Math.floor(c.baseLevel * 5 * cappedMin);
+      return { cappedMin, estBaseExp, estJobExp };
+    };
+
+    const yieldA = calcYields(active);
+    expect(yieldA.cappedMin).toBe(90); // 30 banked + 60 elapsed
+    expect(yieldA.estBaseExp).toBe(100 * 10 * 90); // 90,000
+    expect(yieldA.estJobExp).toBe(100 * 5 * 90); // 45,000
+
+    // User switches to Char B in Roster
+    selectedCharId = 702;
+    active = getActiveChar(selectedCharId, selectedCharDetail, roster);
+
+    expect(active.charId).toBe(702);
+    expect(active.baseLevel).toBe(50);
+
+    const yieldB = calcYields(active);
+    expect(yieldB.cappedMin).toBe(120); // 0 banked + 120 elapsed
+    expect(yieldB.estBaseExp).toBe(50 * 10 * 120); // 60,000
+    expect(yieldB.estJobExp).toBe(50 * 5 * 120); // 30,000
+
+    // Yields and stats changed cleanly between characters
+    expect(yieldB.estBaseExp).not.toBe(yieldA.estBaseExp);
+    expect(yieldB.estJobExp).not.toBe(yieldA.estJobExp);
+  });
 });
+

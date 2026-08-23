@@ -212,8 +212,8 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
     : [];
 
   return (
-    <div className="bento-card p-3 sm:p-4 flex flex-col justify-between min-h-0 h-full">
-      <div className="space-y-2.5">
+    <div className="bento-card p-3 sm:p-4 flex flex-col min-h-0 h-full overflow-hidden">
+      <div className="space-y-2.5 flex-1 min-h-0 overflow-y-auto">
         {/* Header with Sub-Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
           <div className="flex items-center gap-2">
@@ -258,16 +258,15 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
         </div>
 
         {/* 2-COLUMN PAPERDOLL GRID */}
-        <div className="grid grid-cols-2 gap-2 min-h-[220px]">
+        <div className="grid grid-cols-2 gap-2">
           {/* Left Column Slots */}
           <div className="space-y-1.5">{leftSlots.map(renderSlotButton)}</div>
           {/* Right Column Slots */}
           <div className="space-y-1.5">{rightSlots.map(renderSlotButton)}</div>
         </div>
-      </div>
 
-      {/* ACTIVE GEAR INSPECTION CARD (Divine Pride DB Terminal) */}
-      <div className="mt-3 p-3 bg-surface2/40 rounded-xl border border-border flex flex-col gap-2">
+        {/* ACTIVE GEAR INSPECTION CARD (Divine Pride DB Terminal) */}
+        <div className="mt-3 p-3 bg-surface2/40 rounded-xl border border-border flex flex-col gap-2 shrink-0">
         {activeItem && selectedSlot ? (
           <>
             <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 border-b border-border pb-1.5">
@@ -352,6 +351,7 @@ export const Paperdoll: React.FC<PaperdollProps> = ({ paperdoll }) => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

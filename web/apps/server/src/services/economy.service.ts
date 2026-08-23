@@ -4,9 +4,12 @@ import {
   NetWorthSummary,
   StockActiveEvent,
   StockEventLog,
+  TickerNewsResponse,
   StockHolding,
   StockMarketQuote,
   DailyBounty,
+  StockCandle,
+  StockHistoryResponse,
   getJobName
 } from "@rathena/shared";
 
@@ -320,12 +323,21 @@ export class EconomyService {
     }
   }
 
-  static async getEventHistory(limit = 20): Promise<StockEventLog[]> {
+  static async getEventHistory(limit = 20, ticker?: string): Promise<StockEventLog[]> {
     try {
-      const rows = await query<StockEventLogRow>(
-        "SELECT log_id, event_id, event_name, category, ticker_target, headline, details, triggered_by, created_at FROM `solo_stock_events_log` ORDER BY log_id DESC LIMIT ?",
-        [limit]
-      );
+      let sql = "SELECT log_id, event_id, event_name, category, ticker_target, headline, details, triggered_by, created_at FROM `solo_stock_events_log`";
+      const params: any[] = [];
+
+      if (ticker && ticker.trim()) {
+        const cleanTicker = ticker.trim().toUpperCase();
+        sql += " WHERE (ticker_target = ? OR ticker_target = 'ALL' OR ticker_target LIKE ?)";
+        params.push(cleanTicker, `%${cleanTicker}%`);
+      }
+
+      sql += " ORDER BY log_id DESC LIMIT ?";
+      params.push(limit);
+
+      const rows = await query<StockEventLogRow>(sql, params);
 
       return rows.map((r) => ({
         logId: Number(r.log_id),
@@ -340,6 +352,58 @@ export class EconomyService {
       }));
     } catch {
       return [];
+    }
+  }
+
+  static async getTickerNews(ticker: string): Promise<TickerNewsResponse> {
+    const cleanTicker = ticker.trim().toUpperCase();
+    try {
+      // 1. Real-time active events currently disrupting the market
+      const activeRows = await query<StockActiveEventRow>(
+        "SELECT id, event_id, ticker, start_time, end_time, remaining_shifts, tax_rate_override, mood_override, headline FROM `solo_stock_events_active` WHERE remaining_shifts > 0 AND (ticker = ? OR ticker = 'ALL' OR ticker LIKE ?) ORDER BY id DESC",
+        [cleanTicker, `%${cleanTicker}%`]
+      );
+
+      // 2. Real historical logged incidents triggered in the simulation
+      const logRows = await query<StockEventLogRow>(
+        "SELECT log_id, event_id, event_name, category, ticker_target, headline, details, triggered_by, created_at FROM `solo_stock_events_log` WHERE (ticker_target = ? OR ticker_target = 'ALL' OR ticker_target LIKE ?) ORDER BY log_id DESC LIMIT 30",
+        [cleanTicker, `%${cleanTicker}%`]
+      );
+
+      return {
+        success: true,
+        ticker: cleanTicker,
+        activeEvents: activeRows.map((r) => ({
+          id: Number(r.id),
+          eventId: r.event_id,
+          ticker: r.ticker,
+          startTime: Number(r.start_time),
+          endTime: Number(r.end_time),
+          remainingShifts: Number(r.remaining_shifts),
+          taxRateOverride: Number(r.tax_rate_override),
+          moodOverride: Number(r.mood_override),
+          headline: r.headline,
+        })),
+        historicalEvents: logRows.map((r) => ({
+          logId: Number(r.log_id),
+          eventId: r.event_id,
+          eventName: r.event_name,
+          category: r.category,
+          tickerTarget: r.ticker_target,
+          headline: r.headline,
+          details: r.details,
+          triggeredBy: r.triggered_by,
+          createdAt: String(r.created_at),
+        })),
+      };
+    } catch (err) {
+      console.error(`[EconomyService] Failed to fetch news for ticker ${cleanTicker}:`, err);
+      return {
+        success: false,
+        ticker: cleanTicker,
+        activeEvents: [],
+        historicalEvents: [],
+      };
     }
   }
 
@@ -375,6 +439,94 @@ export class EconomyService {
     } catch (err) {
       console.error("[EconomyService] Failed to fetch daily bounties", err);
       return [];
+    }
+  }
+
+  /**
+   * Get OHLC candlestick price history for TradingView chart
+   * Uses Replica connection (3307)
+   */
+  static async getStockHistory(ticker: string, timeframe = "1D"): Promise<StockHistoryResponse> {
+    const cleanTicker = (ticker || "").trim().toUpperCase();
+    const validTf = ["1D", "1W", "1M", "ALL"].includes(timeframe.toUpperCase())
+      ? timeframe.toUpperCase()
+      : "1D";
+
+    try {
+      let candles: StockCandle[] = [];
+
+      if (validTf === "1D") {
+        // Last 24 hours of 10-minute candles
+        const rows = await query<any>(
+          "SELECT open_price, high_price, low_price, close_price, volume, UNIX_TIMESTAMP(`timestamp`) as ts FROM `solo_stock_history` WHERE ticker = ? AND `timestamp` >= NOW() - INTERVAL 1 DAY ORDER BY `timestamp` ASC",
+          [cleanTicker]
+        );
+        candles = rows.map((r) => ({
+          time: Number(r.ts),
+          open: Number(r.open_price),
+          high: Number(r.high_price),
+          low: Number(r.low_price),
+          close: Number(r.close_price),
+          volume: Number(r.volume) || 0,
+        }));
+      } else if (validTf === "1W") {
+        // Last 7 days of candles
+        const rows = await query<any>(
+          "SELECT open_price, high_price, low_price, close_price, volume, UNIX_TIMESTAMP(`timestamp`) as ts FROM `solo_stock_history` WHERE ticker = ? AND `timestamp` >= NOW() - INTERVAL 7 DAY ORDER BY `timestamp` ASC",
+          [cleanTicker]
+        );
+        candles = rows.map((r) => ({
+          time: Number(r.ts),
+          open: Number(r.open_price),
+          high: Number(r.high_price),
+          low: Number(r.low_price),
+          close: Number(r.close_price),
+          volume: Number(r.volume) || 0,
+        }));
+      } else if (validTf === "1M") {
+        // Last 30 days of daily aggregated candles
+        const rows = await query<any>(
+          "SELECT open_price, high_price, low_price, close_price, volume, DATE_FORMAT(`date`, '%Y-%m-%d') as dt FROM `solo_stock_history_daily` WHERE ticker = ? AND `date` >= CURDATE() - INTERVAL 30 DAY ORDER BY `date` ASC",
+          [cleanTicker]
+        );
+        candles = rows.map((r) => ({
+          time: String(r.dt),
+          open: Number(r.open_price),
+          high: Number(r.high_price),
+          low: Number(r.low_price),
+          close: Number(r.close_price),
+          volume: Number(r.volume) || 0,
+        }));
+      } else {
+        // ALL Time daily aggregated candles
+        const rows = await query<any>(
+          "SELECT open_price, high_price, low_price, close_price, volume, DATE_FORMAT(`date`, '%Y-%m-%d') as dt FROM `solo_stock_history_daily` WHERE ticker = ? ORDER BY `date` ASC",
+          [cleanTicker]
+        );
+        candles = rows.map((r) => ({
+          time: String(r.dt),
+          open: Number(r.open_price),
+          high: Number(r.high_price),
+          low: Number(r.low_price),
+          close: Number(r.close_price),
+          volume: Number(r.volume) || 0,
+        }));
+      }
+
+      return {
+        success: true,
+        ticker: cleanTicker,
+        timeframe: validTf,
+        candles,
+      };
+    } catch (err) {
+      console.error(`[EconomyService] Failed to fetch stock history for ${cleanTicker}:`, err);
+      return {
+        success: false,
+        ticker: cleanTicker,
+        timeframe: validTf,
+        candles: [],
+      };
     }
   }
 }

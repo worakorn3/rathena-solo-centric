@@ -116,7 +116,7 @@ const CHAR_COLUMNS = `
   COALESCE(
     (SELECT CAST(\`value\` AS UNSIGNED) FROM \`char_reg_num\` WHERE \`char_id\` = \`char\`.\`char_id\` AND \`key\` = 'LastLogoutTime' LIMIT 1),
     UNIX_TIMESTAMP(\`last_login\`),
-    UNIX_TIMESTAMP()
+    0
   ) AS \`last_logout_time\`,
   COALESCE(
     (SELECT CAST(\`value\` AS UNSIGNED) FROM \`char_reg_num\` WHERE \`char_id\` = \`char\`.\`char_id\` AND \`key\` = 'UnclaimedRestMin' LIMIT 1),

@@ -1,108 +1,409 @@
-import React from "react";
-import { Briefcase, TrendingUp, TrendingDown } from "lucide-react";
-import { StockHolding } from "@rathena/shared";
+import React, { useState, useMemo } from "react";
+import {
+  Briefcase,
+  TrendingUp,
+  TrendingDown,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  PieChart as PieIcon,
+  Coins,
+  Newspaper,
+} from "lucide-react";
+import { StockHolding, StockMarketQuote } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
+import { getTickerTheme } from "../../lib/tickerTheme";
+import { TickerDetailModal } from "./TickerDetailModal";
 
 interface StockPortfolioProps {
   holdings: StockHolding[];
+  totalNetWorth?: number;
+  onSelectTicker?: (ticker: string) => void;
 }
 
-export const StockPortfolio: React.FC<StockPortfolioProps> = ({ holdings }) => {
-  const totalValue = holdings.reduce(
-    (sum, h) => sum + h.currentPrice * h.shares,
-    0
+type FilterTab = "ALL" | "GAINERS" | "LOSERS";
+type SortOption = "VALUE" | "WEIGHT" | "PNL";
+
+export const StockPortfolio: React.FC<StockPortfolioProps> = ({
+  holdings,
+  totalNetWorth,
+  onSelectTicker,
+}) => {
+  const [filterTab, setFilterTab] = useState<FilterTab>("ALL");
+  const [sortBy, setSortBy] = useState<SortOption>("VALUE");
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [selectedQuoteForModal, setSelectedQuoteForModal] = useState<StockMarketQuote | null>(null);
+
+  // Total Market Value of stock portfolio
+  const totalStockValue = useMemo(
+    () => holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+    [holdings]
   );
+
+  // Calculate ratios and enrich holdings
+  const enrichedHoldings = useMemo(() => {
+    return holdings.map((h) => {
+      const marketVal = h.currentPrice * h.shares;
+      const stockRatio =
+        totalStockValue > 0 ? (marketVal / totalStockValue) * 100 : 0;
+      const netWorthRatio =
+        totalNetWorth && totalNetWorth > 0
+          ? (marketVal / totalNetWorth) * 100
+          : null;
+
+      return {
+        ...h,
+        marketVal,
+        stockRatio,
+        netWorthRatio,
+        isPositive: h.unrealizedPnL >= 0,
+      };
+    });
+  }, [holdings, totalStockValue, totalNetWorth]);
+
+  // Filter holdings
+  const filteredHoldings = useMemo(() => {
+    return enrichedHoldings.filter((h) => {
+      if (filterTab === "GAINERS") return h.unrealizedPnL > 0;
+      if (filterTab === "LOSERS") return h.unrealizedPnL < 0;
+      return true;
+    });
+  }, [enrichedHoldings, filterTab]);
+
+  // Sort holdings
+  const sortedHoldings = useMemo(() => {
+    return [...filteredHoldings].sort((a, b) => {
+      if (sortBy === "VALUE") return b.marketVal - a.marketVal;
+      if (sortBy === "WEIGHT") return b.stockRatio - a.stockRatio;
+      if (sortBy === "PNL") return b.unrealizedPnLPercent - a.unrealizedPnLPercent;
+      return 0;
+    });
+  }, [filteredHoldings, sortBy]);
+
+  const toggleExpand = (ticker: string) => {
+    setExpandedTicker((prev) => (prev === ticker ? null : ticker));
+  };
 
   return (
     <div className="bento-card p-3 sm:p-3.5 flex-1 min-h-0 flex flex-col">
-      <div className="flex items-center justify-between border-b border-border pb-2 mb-2.5 shrink-0">
+      {/* Header: Title + Total Portfolio Value */}
+      <div className="flex items-center justify-between border-b border-border pb-2 mb-2 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-info" /> Municipal Portfolio
           </h3>
           <span className="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
-            {holdings.length} {holdings.length === 1 ? "Position" : "Positions"}
+            {holdings.length} {holdings.length === 1 ? "Asset" : "Assets"}
           </span>
         </div>
         {holdings.length > 0 && (
           <div className="text-[11px] font-mono font-bold flex items-center gap-1.5">
             <span className="text-muted text-[10px]">Total Value:</span>
-            <span className="text-primary">{formatZeny(totalValue)} Z</span>
+            <span className="text-primary">{formatZeny(totalStockValue)} Z</span>
           </div>
         )}
       </div>
 
-      <div className="space-y-2 flex-1 overflow-y-auto pr-1">
+      {holdings.length > 0 && (
+        <>
+          {/* Dime!-style Top Proportion Distribution Bar */}
+          <div className="mb-2 shrink-0">
+            <div className="w-full h-1.5 bg-surface2 rounded-full overflow-hidden flex">
+              {enrichedHoldings.map((h) => {
+                const theme = getTickerTheme(h.ticker);
+                return (
+                  <div
+                    key={`bar-${h.ticker}`}
+                    className={`h-full ${theme.fillColorClass} transition-all duration-300`}
+                    style={{ width: `${Math.max(1.5, h.stockRatio)}%` }}
+                    title={`${h.ticker}: ${h.stockRatio.toFixed(1)}%`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dime!-style Filter Tabs & Sort Controls */}
+          <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-border/40 shrink-0 text-[10px]">
+            {/* Category Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+              <button
+                type="button"
+                onClick={() => setFilterTab("ALL")}
+                className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                  filterTab === "ALL"
+                    ? "bg-primary text-background font-bold shadow-sm"
+                    : "bg-surface2/60 text-muted hover:text-primary hover:bg-surface2"
+                }`}
+              >
+                All ({holdings.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab("GAINERS")}
+                className={`px-2 py-0.5 rounded-full font-medium transition-colors flex items-center gap-1 ${
+                  filterTab === "GAINERS"
+                    ? "bg-success/20 text-success border border-success/40 font-bold"
+                    : "bg-surface2/60 text-muted hover:text-success hover:bg-surface2"
+                }`}
+              >
+                <TrendingUp className="w-2.5 h-2.5" />
+                Gainers (
+                {holdings.filter((h) => h.unrealizedPnL > 0).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab("LOSERS")}
+                className={`px-2 py-0.5 rounded-full font-medium transition-colors flex items-center gap-1 ${
+                  filterTab === "LOSERS"
+                    ? "bg-danger/20 text-danger border border-danger/40 font-bold"
+                    : "bg-surface2/60 text-muted hover:text-danger hover:bg-surface2"
+                }`}
+              >
+                <TrendingDown className="w-2.5 h-2.5" />
+                Losers (
+                {holdings.filter((h) => h.unrealizedPnL < 0).length})
+              </button>
+            </div>
+
+            {/* Sort Toggle */}
+            <div className="flex items-center gap-1 shrink-0 font-mono">
+              <span className="text-[9px] text-muted hidden sm:inline flex items-center gap-0.5">
+                <SlidersHorizontal className="w-2.5 h-2.5 inline" /> Sort:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                aria-label="Sort portfolio assets by"
+                className="bg-surface2 border border-border text-primary text-[10px] rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-accent"
+              >
+                <option value="VALUE">Value ▾</option>
+                <option value="WEIGHT">Weight % ▾</option>
+                <option value="PNL">PnL % ▾</option>
+              </select>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Holdings List (Dime!-style Asset Rows) */}
+      <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
         {holdings.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted text-xs">
             <Briefcase className="w-8 h-8 mb-2 opacity-40 text-muted" />
-            <span className="font-bold text-primary/80">No active stock positions</span>
+            <span className="font-bold text-primary/80">
+              No active stock positions
+            </span>
             <span className="text-[11px] text-muted/80 mt-1 max-w-xs">
-              Visit Midgard Stock Exchange brokers in Prontera or major cities to purchase municipal equity shares.
+              Visit Midgard Stock Exchange brokers in Prontera or major cities to
+              purchase municipal equity shares.
             </span>
           </div>
+        ) : sortedHoldings.length === 0 ? (
+          <div className="text-center py-6 text-muted text-xs">
+            No assets match the selected filter.
+          </div>
         ) : (
-          holdings.map((h) => {
-            const pos = h.unrealizedPnL >= 0;
-            const dotColor =
-              h.ticker === "PRON" || h.ticker === "PRT"
-                ? "bg-info"
-                : h.ticker === "GEFF" || h.ticker === "GEF"
-                ? "bg-danger"
-                : h.ticker === "MORR" || h.ticker === "MOR"
-                ? "bg-accent"
-                : "bg-success";
+          sortedHoldings.map((h) => {
+            const theme = getTickerTheme(h.ticker);
+            const isExpanded = expandedTicker === h.ticker;
 
             return (
               <div
                 key={h.ticker}
-                className="p-2.5 rounded-lg bg-surface2/30 border border-border hover:border-accent/40 hover:bg-surface2/50 transition-all flex justify-between items-center group"
+                className={`rounded-lg border transition-all duration-200 overflow-hidden ${
+                  isExpanded
+                    ? "bg-surface2/60 border-border shadow-md"
+                    : "bg-surface2/25 border-border/70 hover:border-border hover:bg-surface2/40"
+                }`}
               >
-                <div className="min-w-0 flex-1 pr-2">
-                  <div className="text-xs font-bold text-primary flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${dotColor} shrink-0`} />
-                    <span className="font-mono">{h.ticker}</span>
-                    <span className="text-[10px] text-muted font-normal truncate hidden sm:inline">
-                      {h.name}
-                    </span>
+                {/* Main Clickable Row (Dime! layout) */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleExpand(h.ticker)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleExpand(h.ticker);
+                    }
+                  }}
+                  className="p-2 sm:p-2.5 flex items-center justify-between gap-2.5 cursor-pointer select-none"
+                >
+                  {/* Left: 2-Letter Glyph Avatar + Ticker & Dime!-style Ratio */}
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {/* Dime!-style Circular Avatar */}
+                    <div
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-mono font-black text-xs shrink-0 border ${theme.bgClass}`}
+                    >
+                      {theme.avatarText}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {/* Ticker Symbol & Full Name */}
+                      <div className="text-xs font-bold text-primary flex items-center gap-1.5">
+                        <span className="font-mono">{h.ticker}</span>
+                        <span className="text-[10px] text-muted font-normal truncate hidden sm:inline">
+                          {h.name}
+                        </span>
+                      </div>
+
+                      {/* Dime!-style Pie Ratio Display: ◔ {ratio}% */}
+                      <div className="text-[10px] font-mono text-muted flex items-center gap-1.5 mt-0.5">
+                        <span className="inline-flex items-center gap-0.5 text-primary/90 font-bold bg-surface px-1 py-0.2 rounded border border-border/40">
+                          <PieIcon className="w-2.5 h-2.5 text-accent inline shrink-0" />
+                          <span>{h.stockRatio.toFixed(1)}%</span>
+                        </span>
+                        {h.netWorthRatio !== null && (
+                          <span className="text-muted/70 text-[9px] hidden sm:inline">
+                            • {h.netWorthRatio.toFixed(1)}% NW
+                          </span>
+                        )}
+                        <span className="text-muted/60 hidden md:inline">
+                          • {h.shares.toLocaleString()} sh
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-muted font-mono mt-0.5 flex items-center gap-1.5">
-                    <span>{h.shares.toLocaleString()} shares</span>
-                    <span>•</span>
-                    <span>Avg {formatZeny(h.avgBuyPrice)} Z</span>
-                    <span>•</span>
-                    <span className="text-primary/70">
-                      Now {formatZeny(h.currentPrice)} Z
-                    </span>
+
+                  {/* Right: Holding Market Value + Unrealized PnL */}
+                  <div className="text-right shrink-0">
+                    <div className="text-xs font-bold font-mono text-primary">
+                      {formatZeny(h.marketVal)} Z
+                    </div>
+                    <div
+                      className={`text-[10px] font-bold font-mono flex items-center justify-end gap-0.5 mt-0.5 ${
+                        h.isPositive ? "text-success" : "text-danger"
+                      }`}
+                    >
+                      {h.isPositive ? (
+                        <TrendingUp className="w-2.5 h-2.5 inline shrink-0" />
+                      ) : (
+                        <TrendingDown className="w-2.5 h-2.5 inline shrink-0" />
+                      )}
+                      <span>
+                        {h.isPositive ? "+" : ""}
+                        {h.unrealizedPnLPercent.toFixed(1)}%
+                      </span>
+                      <span className="text-[9px] opacity-80 hidden sm:inline">
+                        ({h.isPositive ? "+" : ""}
+                        {formatZeny(h.unrealizedPnL)})
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-3 h-3 text-muted ml-0.5 inline" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 text-muted ml-0.5 inline opacity-60" />
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div
-                    className={`text-xs font-bold font-mono flex items-center justify-end gap-1 ${
-                      pos ? "text-success" : "text-danger"
-                    }`}
-                  >
-                    {pos ? (
-                      <TrendingUp className="w-3 h-3 inline" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3 inline" />
-                    )}
-                    <span>
-                      {pos ? "+" : ""}
-                      {h.unrealizedPnLPercent.toFixed(1)}% ({pos ? "+" : ""}
-                      {formatZeny(h.unrealizedPnL)} Z)
-                    </span>
+                {/* Dime!-style Expandable Details Micro-Drawer */}
+                {isExpanded && (
+                  <div className="px-2.5 pb-2.5 pt-1 border-t border-border/40 bg-surface/50 text-[10px] font-mono animate-fadeIn">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
+                        <span className="text-[9px] text-muted block">
+                          Shares Held
+                        </span>
+                        <span className="font-bold text-primary">
+                          {h.shares.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
+                        <span className="text-[9px] text-muted block">
+                          Avg Buy Price
+                        </span>
+                        <span className="font-bold text-primary">
+                          {formatZeny(h.avgBuyPrice)} Z
+                        </span>
+                      </div>
+                      <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
+                        <span className="text-[9px] text-muted block">
+                          Current Price
+                        </span>
+                        <span className="font-bold text-primary">
+                          {formatZeny(h.currentPrice)} Z
+                        </span>
+                      </div>
+                      <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
+                        <span className="text-[9px] text-muted block">
+                          Total Invested
+                        </span>
+                        <span className="font-bold text-primary">
+                          {formatZeny(h.avgBuyPrice * h.shares)} Z
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Secondary Metrics Bar */}
+                    <div className="mt-1.5 pt-1.5 border-t border-border/20 flex items-center justify-between text-[9px] text-muted">
+                      <div className="flex items-center gap-2">
+                        <span>
+                          PnL Amount:{" "}
+                          <strong
+                            className={
+                              h.isPositive ? "text-success" : "text-danger"
+                            }
+                          >
+                            {h.isPositive ? "+" : ""}
+                            {formatZeny(h.unrealizedPnL)} Z
+                          </strong>
+                        </span>
+                        {h.pendingDividends > 0 && (
+                          <span className="text-accent font-medium flex items-center gap-0.5">
+                            <Coins className="w-2.5 h-2.5 inline" />
+                            Div: {formatZeny(h.pendingDividends)} Z
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted/80">
+                          Weight: {h.stockRatio.toFixed(2)}%
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectTicker) {
+                              onSelectTicker(h.ticker);
+                            } else {
+                              setSelectedQuoteForModal({
+                                ticker: h.ticker,
+                                name: h.name,
+                                sector: h.sector,
+                                archetype: h.archetype,
+                                price: h.currentPrice,
+                                priceOld: h.priceOld,
+                                changeAmount: h.changeAmount,
+                                changePercent: h.changePercent,
+                                dividend: h.dividendRate,
+                                divAcc: 0,
+                                splitCount: 0,
+                              });
+                            }
+                          }}
+                          className="px-2 py-0.5 rounded bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                          title="View related Black Swan news, events and catalysts"
+                        >
+                          <Newspaper className="w-2.5 h-2.5" />
+                          <span>News & Intel</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs font-bold font-mono text-primary mt-0.5">
-                    {formatZeny(h.currentPrice * h.shares)} Z
-                  </div>
-                </div>
+                )}
               </div>
             );
           })
         )}
       </div>
+
+      {/* Standalone Ticker Details Modal if not controlled */}
+      <TickerDetailModal
+        quote={selectedQuoteForModal}
+        onClose={() => setSelectedQuoteForModal(null)}
+      />
     </div>
   );
 };

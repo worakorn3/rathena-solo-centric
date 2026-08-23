@@ -8,6 +8,7 @@ import { economyRoutes } from "./routes/economy.routes";
 import { characterRoutes } from "./routes/character.routes";
 import { trackingRoutes } from "./routes/tracking.routes";
 import { assetsRoutes } from "./routes/assets.routes";
+import { adminRoutes } from "./routes/admin.routes";
 import { config } from "./config";
 import { initMarketCron } from "./cron/marketCron";
 
@@ -37,7 +38,8 @@ export const app = new Elysia()
   .use(economyRoutes)
   .use(characterRoutes)
   .use(trackingRoutes)
-  .use(assetsRoutes);
+  .use(assetsRoutes)
+  .use(adminRoutes);
 
 // In production or container mode, serve static assets and SPA index fallback
 if (hasClientDist) {

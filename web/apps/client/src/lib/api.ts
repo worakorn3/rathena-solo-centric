@@ -2,11 +2,15 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("rathena_token");
+  const adminKey = localStorage.getItem("rathena_admin_key");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (adminKey) {
+    headers["x-admin-key"] = adminKey;
   }
   return headers;
 }

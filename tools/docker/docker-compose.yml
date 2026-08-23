@@ -165,8 +165,34 @@ services:
             - db-replica
             - db
 
+    ngrok:
+        image: "ngrok/ngrok:latest"
+        container_name: "rathena-ngrok"
+        restart: "no"
+        profiles:
+            - "manual"
+            - "ngrok"
+        entrypoint:
+            - "/bin/sh"
+            - "-c"
+            - |
+              printf 'version: "2"\nweb_addr: "0.0.0.0:4040"\n' > /tmp/ngrok.yml
+              if [ -n "$$NGROK_DOMAIN" ]; then
+                exec ngrok http web-portal:3000 --config /tmp/ngrok.yml --url "$$NGROK_DOMAIN" --log=stdout
+              else
+                exec ngrok http web-portal:3000 --config /tmp/ngrok.yml --log=stdout
+              fi
+        ports:
+            - "4040:4040" # ngrok local web inspection UI & API
+        environment:
+            NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN:-}"
+            NGROK_DOMAIN: "${NGROK_DOMAIN:-}"
+        depends_on:
+            - web-portal
+
 
 
 volumes:
     rathenadb:
     rathenadb_replica:
+

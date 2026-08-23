@@ -28,6 +28,7 @@ export class MarketSimulationService {
     );
 
     let upCount = 0;
+    const candlesToInsert: { ticker: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
 
     for (const stock of stockRows) {
       const city = stock.ticker;
@@ -61,6 +62,25 @@ export class MarketSimulationService {
       }
 
       if (newPrice > price) upCount++;
+
+      // Compute OHLC candle wicks
+      const wickSpread = Math.max(1, Math.round(newPrice * 0.008));
+      const open = price;
+      const close = newPrice;
+      const high = Math.max(open, close) + Math.floor(Math.random() * wickSpread);
+      const low = Math.max(1, Math.min(open, close) - Math.floor(Math.random() * wickSpread));
+      const volume = Math.floor(Math.random() * 120) + 10;
+      candlesToInsert.push({ ticker: city, open, high, low, close, volume });
+    }
+
+    // Ponytail: Atomic multi-row batch insert of 10-minute snapshot in 1 single SQL query
+    if (candlesToInsert.length > 0) {
+      const placeholders = candlesToInsert.map(() => "(?, ?, ?, ?, ?, ?, NOW())").join(", ");
+      const params = candlesToInsert.flatMap((c) => [c.ticker, c.open, c.high, c.low, c.close, c.volume]);
+      await primaryExecute(
+        `INSERT INTO \`solo_stock_history\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`timestamp\`) VALUES ${placeholders}`,
+        params
+      );
     }
 
     if (tickerMoods.size === 0) {
@@ -90,6 +110,36 @@ export class MarketSimulationService {
     
     // Ponytail: Atomic price_old rollover for all tickers in 1 single SQL query
     await primaryExecute("UPDATE `solo_stock_market` SET price_old = price");
+
+    // Option 2: Downsample and rollup completed days into solo_stock_history_daily
+    try {
+      await primaryExecute(`
+        INSERT INTO \`solo_stock_history_daily\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`date\`)
+        SELECT 
+          ticker,
+          CAST(SUBSTRING_INDEX(GROUP_CONCAT(open_price ORDER BY timestamp ASC), ',', 1) AS UNSIGNED) AS open_price,
+          MAX(high_price) AS high_price,
+          MIN(low_price) AS low_price,
+          CAST(SUBSTRING_INDEX(GROUP_CONCAT(close_price ORDER BY timestamp DESC), ',', 1) AS UNSIGNED) AS close_price,
+          SUM(volume) AS volume,
+          DATE(timestamp) AS \`date\`
+        FROM \`solo_stock_history\`
+        WHERE timestamp < CURDATE()
+        GROUP BY ticker, DATE(timestamp)
+        ON DUPLICATE KEY UPDATE
+          open_price = VALUES(open_price),
+          high_price = VALUES(high_price),
+          low_price = VALUES(low_price),
+          close_price = VALUES(close_price),
+          volume = VALUES(volume)
+      `);
+
+      // Prune high-frequency 10-minute candles older than 45 days (daily history is preserved permanently)
+      await primaryExecute("DELETE FROM `solo_stock_history` WHERE timestamp < NOW() - INTERVAL 45 DAY");
+      console.log("[MarketSimulation] Midnight daily OHLC downsampling & pruning complete.");
+    } catch (err) {
+      console.error("[MarketSimulation] Error during daily OHLC downsampling:", err);
+    }
 
     const bscRows = await primaryQuery("SELECT mval FROM `solo_stock_meta` WHERE mkey = 'BlackSwanChance'");
     const bsc = bscRows.length > 0 ? bscRows[0].mval : 2;
@@ -313,5 +363,90 @@ export class MarketSimulationService {
       [ev.event_id, ev.event_name, ev.category, ev.ticker_target, ev.headline, ev.description || ""]
     );
     await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LatestEventTime'", [now]);
+  }
+
+  /**
+   * Seed initial OHLC candle history if table is empty (Bootstrap)
+   */
+  static async seedInitialHistoryIfEmpty() {
+    try {
+      const existing = await primaryQuery("SELECT COUNT(*) as cnt FROM `solo_stock_history`");
+      const count = Number(existing[0]?.cnt) || 0;
+      if (count > 0) return;
+
+      console.log("[MarketSimulation] solo_stock_history is empty. Seeding initial 24h/30d OHLC candles...");
+      const stocks = await primaryQuery("SELECT ticker, price, beta FROM `solo_stock_market` WHERE enabled = 1");
+      if (stocks.length === 0) return;
+
+      const now = Math.floor(Date.now() / 1000);
+      const historyBatch: any[] = [];
+      const dailyBatch: any[] = [];
+
+      for (const stock of stocks) {
+        const city = stock.ticker;
+        const currentPrice = Number(stock.price) || 100;
+        const beta = Number(stock.beta) || 1.0;
+        const volatility = Math.max(2, Math.round(currentPrice * 0.02 * beta));
+
+        // 1. Seed 144 ten-minute candles (last 24 hours)
+        let priceCursor = Math.max(50, Math.round(currentPrice - (Math.random() - 0.5) * volatility * 10));
+        for (let i = 144; i >= 1; i--) {
+          const tsSeconds = now - i * 600;
+          const open = priceCursor;
+          const delta = Math.round((Math.random() - 0.49) * volatility);
+          const close = Math.max(50, open + delta);
+          const high = Math.max(open, close) + Math.floor(Math.random() * (volatility * 0.5));
+          const low = Math.max(45, Math.min(open, close) - Math.floor(Math.random() * (volatility * 0.5)));
+          const volume = Math.floor(Math.random() * 80) + 10;
+          priceCursor = close;
+
+          const dateObj = new Date(tsSeconds * 1000);
+          const mysqlTs = dateObj.toISOString().slice(0, 19).replace("T", " ");
+          historyBatch.push([city, open, high, low, close, volume, mysqlTs]);
+        }
+
+        // 2. Seed 30 daily candles (last 30 days)
+        let dailyCursor = Math.max(50, Math.round(currentPrice * 0.85));
+        for (let d = 30; d >= 1; d--) {
+          const daySecs = now - d * 86400;
+          const dateStr = new Date(daySecs * 1000).toISOString().slice(0, 10);
+          const open = dailyCursor;
+          const delta = Math.round((Math.random() - 0.48) * volatility * 3);
+          const close = Math.max(50, open + delta);
+          const high = Math.max(open, close) + Math.floor(Math.random() * (volatility * 1.5));
+          const low = Math.max(45, Math.min(open, close) - Math.floor(Math.random() * (volatility * 1.5)));
+          const volume = Math.floor(Math.random() * 1200) + 200;
+          dailyCursor = close;
+
+          dailyBatch.push([city, open, high, low, close, volume, dateStr]);
+        }
+      }
+
+      // Batch insert into solo_stock_history in chunks of 500
+      for (let i = 0; i < historyBatch.length; i += 500) {
+        const chunk = historyBatch.slice(i, i + 500);
+        const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const params = chunk.flat();
+        await primaryExecute(
+          `INSERT INTO \`solo_stock_history\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`timestamp\`) VALUES ${placeholders}`,
+          params
+        );
+      }
+
+      // Batch insert into solo_stock_history_daily
+      for (let i = 0; i < dailyBatch.length; i += 500) {
+        const chunk = dailyBatch.slice(i, i + 500);
+        const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const params = chunk.flat();
+        await primaryExecute(
+          `INSERT INTO \`solo_stock_history_daily\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`date\`) VALUES ${placeholders} ON DUPLICATE KEY UPDATE open_price=VALUES(open_price), high_price=VALUES(high_price), low_price=VALUES(low_price), close_price=VALUES(close_price)`,
+          params
+        );
+      }
+
+      console.log(`[MarketSimulation] Seeded ${historyBatch.length} intraday candles & ${dailyBatch.length} daily candles.`);
+    } catch (err) {
+      console.error("[MarketSimulation] Error seeding initial history:", err);
+    }
   }
 }

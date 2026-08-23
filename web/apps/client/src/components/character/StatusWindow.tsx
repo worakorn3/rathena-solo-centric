@@ -17,7 +17,7 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
       setNow(Math.floor(Date.now() / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [char.online, char.lastLogoutTime]);
+  }, [char.charId, char.online, char.lastLogoutTime]);
 
   const hpPct = char.maxHp > 0 ? (char.hp / char.maxHp) * 100 : 0;
   const spPct = char.maxSp > 0 ? (char.sp / char.maxSp) * 100 : 0;
@@ -39,7 +39,7 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
 
   const displayHours = Math.floor(cappedMin / 60);
   const displayMins = cappedMin % 60;
-  const displaySecs = isOffline ? elapsedSec % 60 : 0;
+  const displaySecs = isOffline && totalAccruedMin < 2880 ? elapsedSec % 60 : 0;
   const pad = (n: number) => String(n).padStart(2, "0");
   const timeDisplay = `${pad(displayHours)}h ${pad(displayMins)}m ${pad(displaySecs)}s`;
 

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Midgard Chronicle & Market Gazette — Solo RO Demo</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            parchment: '#fef3c7',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease-in-out;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+    
+    .news-print-border {
+      border-bottom: 2px solid #27272a;
+      position: relative;
+    }
+    .news-print-border::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #3f3f46;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col selection:bg-accent/30 selection:text-accent">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP TICKER RIBBON (Live Market Sentiment & Shifts)                      -->
+  <!-- ========================================================================= -->
+  <header class="bg-surface border-b border-border text-xs px-4 py-2 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 font-mono text-[11px] text-accent font-bold">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+        </span>
+        MSE MARKET PULSE
+      </div>
+      <span class="text-border">|</span>
+      <div class="flex items-center gap-2 font-mono text-[11px]">
+        <span class="text-muted">Sentiment:</span>
+        <span class="px-2 py-0.5 rounded bg-success/15 border border-success/30 text-success font-bold flex items-center gap-1">
+          <i data-lucide="trending-up" class="w-3 h-3"></i> BULLISH (+2.4% Drift)
+        </span>
+      </div>
+    </div>
+
+    <!-- Quick Stats Ticker -->
+    <div class="flex items-center gap-4 text-[11px] font-mono overflow-x-auto py-0.5">
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-primary">PRT</span>
+        <span class="text-success font-bold">142z</span>
+        <span class="text-success text-[10px]">+8.2%</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-primary">LHZ</span>
+        <span class="text-success font-bold">390z</span>
+        <span class="text-success text-[10px]">+22.5%</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-primary">MOR</span>
+        <span class="text-danger font-bold">85z</span>
+        <span class="text-danger text-[10px]">-14.1%</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-primary">ADB</span>
+        <span class="text-primary font-bold">210z</span>
+        <span class="text-muted text-[10px]">0.0%</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-primary">RAC</span>
+        <span class="text-success font-bold">315z</span>
+        <span class="text-success text-[10px]">+4.5%</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. NEWSPAPER EDITORIAL MASTHEAD (Cinzel Serif Luxury Press)                -->
+  <!-- ========================================================================= -->
+  <div class="container mx-auto px-4 pt-6 pb-4">
+    <div class="news-print-border pb-4 text-center">
+      <!-- Gazette Subheader & Issue Metadata -->
+      <div class="flex flex-wrap items-center justify-between text-[11px] text-muted font-mono uppercase tracking-widest pb-2 border-b border-border/60">
+        <div class="flex items-center gap-2">
+          <i data-lucide="scroll" class="w-3.5 h-3.5 text-accent"></i>
+          <span>VOL. CCLXXIV • NO. 884</span>
+        </div>
+        <div class="text-accent font-bold tracking-wider">
+          THE VOICE OF THE RUNE-MIDGARTS REALM
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-info"></i>
+          <span id="currentDate">TODAY • MIDNIGHT CRON EDITION</span>
+        </div>
+      </div>
+
+      <!-- Main Masthead Title -->
+      <div class="py-4">
+        <h1 class="font-serif text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-primary uppercase drop-shadow-sm flex items-center justify-center gap-3">
+          <i data-lucide="shield" class="w-8 h-8 sm:w-10 sm:h-10 text-accent hidden sm:inline-block"></i>
+          The Midgard Chronicle
+          <i data-lucide="shield" class="w-8 h-8 sm:w-10 sm:h-10 text-accent hidden sm:inline-block"></i>
+        </h1>
+        <p class="text-xs sm:text-sm text-muted font-serif italic mt-1 tracking-wide">
+          Official Journal of Commerce, Regional Municipal Equities, Trade Wars & Black Swan Events
+        </p>
+      </div>
+
+      <!-- Bottom Masthead Bar -->
+      <div class="flex flex-wrap items-center justify-between text-[11px] text-muted font-mono pt-2 border-t border-border/60">
+        <span>Published under Royal Sovereign Charter • Prontera Press Guild</span>
+        <span>22 Municipal Enterprises Monitored</span>
+        <span class="text-accent font-semibold">Live MariaDB Sync :3307</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 3. INTERACTIVE CONTROL BAR (Category Filters, City Selector, Search)      -->
+  <!-- ========================================================================= -->
+  <section class="container mx-auto px-4 py-3">
+    <div class="bento-card p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      
+      <!-- Category Filter Chips -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none" id="categoryFilters">
+        <button onclick="setCategory('ALL', this)" class="category-btn active px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-background">
+          All Editions (<span id="countAll">8</span>)
+        </button>
+        <button onclick="setCategory('MUNICIPAL_BOOM', this)" class="category-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-primary hover:bg-surface2 transition-all">
+          📈 Booms (<span id="countBoom">2</span>)
+        </button>
+        <button onclick="setCategory('MUNICIPAL_CRISIS', this)" class="category-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-primary hover:bg-surface2 transition-all">
+          🔥 Crises (<span id="countCrisis">2</span>)
+        </button>
+        <button onclick="setCategory('TRADE_WAR', this)" class="category-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-primary hover:bg-surface2 transition-all">
+          ⚔️ Trade Wars (<span id="countWar">2</span>)
+        </button>
+        <button onclick="setCategory('MACRO_GLOBAL', this)" class="category-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-primary hover:bg-surface2 transition-all">
+          🌌 Macro (<span id="countMacro">1</span>)
+        </button>
+        <button onclick="setCategory('STRUCTURAL', this)" class="category-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-primary hover:bg-surface2 transition-all">
+          🏛️ Structural (<span id="countStruct">1</span>)
+        </button>
+      </div>
+
+      <!-- Search & City Select -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- City Select Dropdown -->
+        <div class="relative">
+          <select id="cityFilter" onchange="filterNews()" class="bg-surface2 border border-border rounded-lg text-xs px-2.5 py-1.5 text-primary font-mono focus:outline-none focus:border-accent">
+            <option value="ALL">All Cities (22)</option>
+            <option value="PRT">PRT · Prontera</option>
+            <option value="GEF">GEF · Geffen</option>
+            <option value="MOR">MOR · Morroc</option>
+            <option value="PAY">PAY · Payon</option>
+            <option value="ALB">ALB · Alberta</option>
+            <option value="LHZ">LHZ · Lighthalzen</option>
+            <option value="EIN">EIN · Einbroch</option>
+            <option value="YUN">YUN · Yuno</option>
+            <option value="RAC">RAC · Rachel</option>
+            <option value="CMD">CMD · Comodo</option>
+          </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative min-w-[180px] sm:min-w-[220px]">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            oninput="filterNews()" 
+            placeholder="Search lore, headlines..." 
+            class="w-full bg-surface2 border border-border rounded-lg text-xs pl-8 pr-3 py-1.5 text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent font-sans"
+          />
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 4. ACTIVE ONGOING BLACK SWAN BANNER (Real-time Event)                     -->
+  <!-- ========================================================================= -->
+  <section class="container mx-auto px-4 py-2">
+    <div class="bento-card p-4 bg-gradient-to-r from-danger/10 via-surface to-accent/10 border-danger/40 relative overflow-hidden">
+      <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-danger/10 rounded-full blur-2xl pointer-events-none"></div>
+      
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 relative z-10">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-danger/20 border border-danger/30 flex items-center justify-center text-danger shrink-0 mt-0.5">
+            <i data-lucide="alert-triangle" class="w-5 h-5 animate-pulse"></i>
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded bg-danger text-background text-[10px] font-black uppercase tracking-wider animate-pulse">
+                BREAKING BLACK SWAN
+              </span>
+              <span class="text-xs font-mono font-bold text-danger">
+                [LHZ_CRISIS_BIOLAB_BREACH]
+              </span>
+              <span class="text-xs text-muted font-mono">· Duration: 14 Shifts Remaining</span>
+            </div>
+            <h2 class="text-base sm:text-lg font-bold text-primary leading-tight">
+              Somatology Bio-Lab Breach halts R&D operations; LHZ Equities Plunge!
+            </h2>
+            <p class="text-xs text-muted mt-1 font-sans max-w-3xl leading-relaxed">
+              Containment breach in Somatology Bio-Laboratory Level 3 releases hazardous experimental subjects. Military quarantine active across Lighthalzen upper sector.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-end lg:self-center shrink-0">
+          <div class="text-right font-mono pr-3 border-r border-border">
+            <div class="text-[10px] text-muted uppercase">Target Stock</div>
+            <div class="text-xs font-bold text-danger flex items-center gap-1 justify-end">
+              <span>LHZ</span> <span class="bg-danger/20 px-1.5 py-0.2 rounded text-[11px]">-60%</span>
+            </div>
+          </div>
+          <button onclick="openModalById('LHZ_CRISIS_BIOLAB_BREACH')" class="bg-primary hover:bg-primary/90 text-background font-bold text-xs px-3.5 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+            <span>Read Dispatch</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 5. MAIN GAZETTE GRID (Lead Story + Editorial Stream)                      -->
+  <!-- ========================================================================= -->
+  <main class="container mx-auto px-4 py-4 flex-1">
+    <div class="grid grid-cols-12 gap-4">
+      
+      <!-- Left 7 Cols: Lead Editorial Article -->
+      <div class="col-span-12 lg:col-span-7 flex flex-col gap-4">
+        <article class="bento-card p-5 sm:p-6 flex-1 flex flex-col justify-between hover:border-accent/50 transition-all group relative">
+          <div>
+            <!-- Section Badge & Metadata -->
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded bg-success/15 border border-success/30 text-success text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
+                  <i data-lucide="sparkles" class="w-3 h-3"></i> MUNICIPAL BOOM
+                </span>
+                <span class="text-xs font-mono font-bold bg-surface2 px-2 py-0.5 rounded text-accent border border-border">
+                  PRT · Prontera
+                </span>
+              </div>
+              <span class="text-xs text-muted font-mono">Front Page Lead Story</span>
+            </div>
+
+            <!-- Main Headline -->
+            <h2 class="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-primary group-hover:text-accent transition-colors leading-snug">
+              Royal Monopoly Grant: PRT Capital Awarded Exclusive Kingdom Trade Charter
+            </h2>
+
+            <!-- Editorial Lead Paragraph -->
+            <div class="mt-3 text-xs sm:text-sm text-primary/90 font-sans leading-relaxed space-y-2">
+              <p>
+                The Crown of Tristan III has officially designated Prontera Capital Enterprises as the sole treasury underwriter and trade custodian for the Kingdom of Rune-Midgarts. The royal sovereign decree has initiated massive capital inflows, driving PRT shares upward by +75% in overnight market shifts.
+              </p>
+              <p class="text-muted text-xs">
+                Merchant guilds from Alberta to Geffen have begun relocating corporate treasury reserves directly into capital bond vaults, ensuring record quarterly municipal dividend distribution.
+              </p>
+            </div>
+
+            <!-- Market Impact Stats Strip -->
+            <div class="grid grid-cols-3 gap-2 mt-5 p-3 rounded-lg bg-surface2/60 border border-border font-mono text-center">
+              <div>
+                <div class="text-[10px] text-muted uppercase">Price Impact</div>
+                <div class="font-bold text-success text-sm mt-0.5">+75%</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-muted uppercase">Dividend Boost</div>
+                <div class="font-bold text-success text-sm mt-0.5">+10 Z / Share</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-muted uppercase">Market Mood</div>
+                <div class="font-bold text-accent text-sm mt-0.5">Hyper-Bullish</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Article Footer -->
+          <div class="flex items-center justify-between pt-4 mt-5 border-t border-border/70 text-xs text-muted font-mono">
+            <span>By: Senior Guild Correspondent</span>
+            <button onclick="openModalById('PRT_BOOM_ROYAL_GRANT')" class="text-accent hover:underline font-bold flex items-center gap-1">
+              Read Analysis & Lore <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <!-- Right 5 Cols: Chronological News Stream -->
+      <div class="col-span-12 lg:col-span-5 flex flex-col gap-3 min-h-0" id="newsStream">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bento-card p-12 text-center my-8">
+      <i data-lucide="newspaper" class="w-12 h-12 text-muted mx-auto mb-3 opacity-40"></i>
+      <h3 class="text-base font-bold text-primary">No Articles Found</h3>
+      <p class="text-xs text-muted mt-1 max-w-sm mx-auto">
+        No dispatches match the selected category or city filter. Try resetting your search query.
+      </p>
+      <button onclick="resetFilters()" class="mt-4 px-4 py-1.5 rounded-lg bg-accent text-background font-bold text-xs">
+        Reset All Filters
+      </button>
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 6. MODAL: DETAILED DISPATCH & MUNICIPAL LORE INSPECTOR                    -->
+  <!-- ========================================================================= -->
+  <div id="articleModal" class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bento-card max-w-lg w-full p-0 overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="bg-surface2 border-b border-border px-5 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="scroll-text" class="w-4 h-4 text-accent"></i>
+          <span class="font-bold text-sm text-primary" id="modalCategoryBadge">Dispatch Details</span>
+        </div>
+        <button onclick="closeModal()" class="text-muted hover:text-primary p-1 rounded-md hover:bg-surface">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 text-xs sm:text-sm font-sans max-h-[80vh] overflow-y-auto">
+        <!-- Event Code & Ticker -->
+        <div class="flex items-center justify-between text-xs font-mono">
+          <span class="text-muted" id="modalEventId">EVENT_ID</span>
+          <span class="px-2 py-0.5 rounded bg-accent/10 border border-accent/30 text-accent font-bold" id="modalTickerBadge">
+            TICKER
+          </span>
+        </div>
+
+        <h3 class="font-serif text-lg font-bold text-primary leading-snug" id="modalHeadline">
+          Headline
+        </h3>
+
+        <!-- Full Story Paragraph -->
+        <div class="p-3.5 rounded-lg bg-surface2/50 border border-border text-primary/90 leading-relaxed font-sans" id="modalDetails">
+          Details
+        </div>
+
+        <!-- Economic Breakdown -->
+        <div class="grid grid-cols-2 gap-2 text-center font-mono">
+          <div class="p-2.5 rounded bg-surface2 border border-border">
+            <div class="text-[10px] text-muted uppercase">Target Shift</div>
+            <div class="font-bold text-xs sm:text-sm mt-0.5" id="modalPriceShift">--</div>
+          </div>
+          <div class="p-2.5 rounded bg-surface2 border border-border">
+            <div class="text-[10px] text-muted uppercase">Dividend Action</div>
+            <div class="font-bold text-xs sm:text-sm mt-0.5 text-success" id="modalDivShift">--</div>
+          </div>
+        </div>
+
+        <!-- Municipal Lore Snippet -->
+        <div class="p-3 rounded-lg bg-surface border border-border text-xs text-muted leading-relaxed">
+          <div class="font-bold uppercase tracking-wider text-[10px] text-accent mb-1 flex items-center gap-1">
+            <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Exchange Trading Note
+          </div>
+          <p id="modalTradingNote">
+            Market orders can be placed via city stock brokers in Prontera Central Exchange or regional satellite offices.
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-surface2 px-5 py-3 border-t border-border flex items-center justify-between">
+        <span class="text-[10px] font-mono text-muted">MariaDB Source: `solo_stock_events_log`</span>
+        <button onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-surface hover:bg-surface/80 border border-border text-primary text-xs font-semibold">
+          Close Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 7. SCRIPT LOGIC (Interactive Filtering & Real Data Dataset)               -->
+  <!-- ========================================================================= -->
+  <script>
+    // Sample Dataset straight from `solo_stock_events_def` and `solo_stock_events_log`
+    const NEWS_ARTICLES = [
+      {
+        id: "PRT_BOOM_ROYAL_GRANT",
+        category: "MUNICIPAL_BOOM",
+        categoryLabel: "Boom",
+        ticker: "PRT",
+        cityName: "Prontera",
+        headline: "PRT Capital awarded exclusive royal trade and sovereign banking charter!",
+        details: "The Crown designates Prontera Capital as the sole treasury underwriter for the Kingdom, sending stock prices soaring and securing royal gold reserves.",
+        pricePct: 75,
+        divChange: 10,
+        timeAgo: "2 hours ago",
+        date: "2026-08-23 00:00"
+      },
+      {
+        id: "LHZ_CRISIS_BIOLAB_BREACH",
+        category: "MUNICIPAL_CRISIS",
+        categoryLabel: "Crisis",
+        ticker: "LHZ",
+        cityName: "Lighthalzen",
+        headline: "Somatology Bio-Lab Breach halts R&D operations; LHZ Equities Plunge!",
+        details: "Containment breach in Somatology Bio-Laboratory Level 3 releases hazardous experimental subjects. Military quarantine active across Lighthalzen.",
+        pricePct: -60,
+        divChange: 0,
+        timeAgo: "4 hours ago",
+        date: "2026-08-22 20:00",
+        isActive: true
+      },
+      {
+        id: "WAR_ALB_OVER_MOR",
+        category: "TRADE_WAR",
+        categoryLabel: "Trade War",
+        ticker: "ALB",
+        secondaryTicker: "MOR",
+        cityName: "Alberta / Morroc",
+        headline: "Maritime Route Hegemony: Alberta opens direct sea lanes, bypassing desert tariffs!",
+        details: "Merchants abandon expensive overland Sograt desert toll routes in favor of deep-water ocean shipping, transferring heavy market capitalization from Morroc to Alberta.",
+        pricePct: 70,
+        secPricePct: -45,
+        divChange: 0,
+        timeAgo: "7 hours ago",
+        date: "2026-08-22 17:00"
+      },
+      {
+        id: "GEF_BOOM_TRANSMUTATION",
+        category: "MUNICIPAL_BOOM",
+        categoryLabel: "Boom",
+        ticker: "GEF",
+        cityName: "Geffen",
+        headline: "Geffen Alchemist Guild discovers stable synthetic gold catalyst!",
+        details: "Revolutionary arcane chemistry drastically cuts magical fabrication costs, causing explosive equity growth across Geffen Tower research divisions.",
+        pricePct: 85,
+        divChange: 15,
+        timeAgo: "12 hours ago",
+        date: "2026-08-22 12:00"
+      },
+      {
+        id: "MOR_CRISIS_SATAN_RIFTS",
+        category: "MUNICIPAL_CRISIS",
+        categoryLabel: "Crisis",
+        ticker: "MOR",
+        cityName: "Morroc",
+        headline: "Dimensional seismic rifts tear through the central Morroc bazaar!",
+        details: "Catastrophic tremors and dark energy emissions swallow commercial warehouses and disrupt trading caravans along the spice corridor.",
+        pricePct: -60,
+        divChange: -15,
+        timeAgo: "18 hours ago",
+        date: "2026-08-22 06:00"
+      },
+      {
+        id: "WAR_YUN_OVER_GEF",
+        category: "TRADE_WAR",
+        categoryLabel: "Trade War",
+        ticker: "YUN",
+        secondaryTicker: "GEF",
+        cityName: "Yuno / Geffen",
+        headline: "Ancient Physics Supremacy: Yuno Juperos quantum patents outshine Geffen alchemy!",
+        details: "Schwarzwald deep-tech venture research draws private institutional capital away from Rune-Midgarts magical academies.",
+        pricePct: 70,
+        secPricePct: -40,
+        divChange: 0,
+        timeAgo: "1 day ago",
+        date: "2026-08-21 21:00"
+      },
+      {
+        id: "MACRO_GOLDEN_JUBILEE",
+        category: "MACRO_GLOBAL",
+        categoryLabel: "Macro",
+        ticker: "ALL",
+        cityName: "Kingdom-wide",
+        headline: "Midgard Golden Age Jubilee lifts equities across all 22 municipal sectors!",
+        details: "Festive celebrations, record harvest yields, and open trade corridors lift every municipal stock across Midgard into an extended bull run.",
+        pricePct: 35,
+        divChange: 5,
+        timeAgo: "2 days ago",
+        date: "2026-08-21 00:00"
+      },
+      {
+        id: "FIN_TAX_HOLIDAY",
+        category: "STRUCTURAL",
+        categoryLabel: "Structural",
+        ticker: "ALL",
+        cityName: "Royal Treasury",
+        headline: "King Tristan III declares a 72-Hour 0% Dividend Tax Holiday!",
+        details: "All dividend withholding taxes are suspended kingdom-wide to celebrate sovereign prosperity, boosting net cash flow to all active shareholders.",
+        pricePct: 0,
+        divChange: 0,
+        timeAgo: "3 days ago",
+        date: "2026-08-20 00:00"
+      }
+    ];
+
+    let currentCategory = 'ALL';
+
+    function getCategoryStyle(category) {
+      switch(category) {
+        case 'MUNICIPAL_BOOM':
+          return { bg: 'bg-success/10', border: 'border-success/30', text: 'text-success', icon: 'trending-up' };
+        case 'MUNICIPAL_CRISIS':
+          return { bg: 'bg-danger/10', border: 'border-danger/30', text: 'text-danger', icon: 'flame' };
+        case 'TRADE_WAR':
+          return { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', icon: 'swords' };
+        case 'MACRO_GLOBAL':
+          return { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-300', icon: 'globe' };
+        case 'STRUCTURAL':
+          return { bg: 'bg-info/10', border: 'border-info/30', text: 'text-info', icon: 'landmark' };
+        default:
+          return { bg: 'bg-surface2', border: 'border-border', text: 'text-muted', icon: 'scroll' };
+      }
+    }
+
+    function renderNews(articles) {
+      const stream = document.getElementById('newsStream');
+      const empty = document.getElementById('emptyState');
+      
+      if (articles.length === 0) {
+        stream.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      stream.innerHTML = articles.map(item => {
+        const style = getCategoryStyle(item.category);
+        const isUp = item.pricePct > 0;
+        const isDown = item.pricePct < 0;
+
+        return `
+          <article onclick="openModalById('${item.id}')" class="bento-card p-4 hover:border-accent/40 cursor-pointer transition-all group flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.border} ${style.text}">
+                    ${item.categoryLabel}
+                  </span>
+                  <span class="text-[10px] font-mono font-bold bg-surface2 px-1.5 py-0.5 rounded text-accent border border-border">
+                    ${item.ticker}
+                  </span>
+                  ${item.secondaryTicker ? `
+                    <span class="text-[10px] font-mono text-muted">vs</span>
+                    <span class="text-[10px] font-mono font-bold bg-surface2 px-1.5 py-0.5 rounded text-danger border border-border">
+                      ${item.secondaryTicker}
+                    </span>
+                  ` : ''}
+                </div>
+                <span class="text-[10px] text-muted font-mono">${item.timeAgo}</span>
+              </div>
+
+              <h3 class="font-bold text-xs sm:text-sm text-primary group-hover:text-accent transition-colors leading-snug line-clamp-2">
+                ${item.headline}
+              </h3>
+              
+              <p class="text-xs text-muted mt-1.5 line-clamp-2 leading-relaxed font-sans">
+                ${item.details}
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-2.5 mt-3 border-t border-border/50 text-[11px] font-mono">
+              <span class="text-muted truncate max-w-[150px]">${item.cityName}</span>
+              <div class="flex items-center gap-1.5">
+                ${item.pricePct !== 0 ? `
+                  <span class="font-bold ${isUp ? 'text-success' : 'text-danger'}">
+                    ${isUp ? '▲ +' : '▼ '}${item.pricePct}%
+                  </span>
+                ` : '<span class="text-muted">Tax/Mood Event</span>'}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function setCategory(cat, btnElement) {
+      currentCategory = cat;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-accent', 'text-background');
+        btn.classList.add('text-muted');
+      });
+      if (btnElement) {
+        btnElement.classList.add('active', 'bg-accent', 'text-background');
+        btnElement.classList.remove('text-muted');
+      }
+      filterNews();
+    }
+
+    function filterNews() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const city = document.getElementById('cityFilter').value;
+
+      const filtered = NEWS_ARTICLES.filter(item => {
+        const matchCat = currentCategory === 'ALL' || item.category === currentCategory;
+        const matchCity = city === 'ALL' || item.ticker === city || item.ticker === 'ALL';
+        const matchSearch = !search || 
+          item.headline.toLowerCase().includes(search) || 
+          item.details.toLowerCase().includes(search) || 
+          item.ticker.toLowerCase().includes(search) ||
+          item.cityName.toLowerCase().includes(search);
+
+        return matchCat && matchCity && matchSearch;
+      });
+
+      renderNews(filtered);
+    }
+
+    function resetFilters() {
+      currentCategory = 'ALL';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('cityFilter').value = 'ALL';
+      document.querySelectorAll('.category-btn').forEach((btn, idx) => {
+        if (idx === 0) {
+          btn.classList.add('active', 'bg-accent', 'text-background');
+          btn.classList.remove('text-muted');
+        } else {
+          btn.classList.remove('active', 'bg-accent', 'text-background');
+          btn.classList.add('text-muted');
+        }
+      });
+      renderNews(NEWS_ARTICLES);
+    }
+
+    function openModalById(id) {
+      const article = NEWS_ARTICLES.find(a => a.id === id);
+      if (!article) return;
+
+      const style = getCategoryStyle(article.category);
+      document.getElementById('modalCategoryBadge').innerText = article.categoryLabel;
+      document.getElementById('modalEventId').innerText = article.id;
+      document.getElementById('modalTickerBadge').innerText = `${article.ticker} · ${article.cityName}`;
+      document.getElementById('modalHeadline').innerText = article.headline;
+      document.getElementById('modalDetails').innerText = article.details;
+      
+      const priceEl = document.getElementById('modalPriceShift');
+      if (article.pricePct > 0) {
+        priceEl.className = "font-bold text-xs sm:text-sm mt-0.5 text-success";
+        priceEl.innerText = `▲ +${article.pricePct}% Surge`;
+      } else if (article.pricePct < 0) {
+        priceEl.className = "font-bold text-xs sm:text-sm mt-0.5 text-danger";
+        priceEl.innerText = `▼ ${article.pricePct}% Dip`;
+      } else {
+        priceEl.className = "font-bold text-xs sm:text-sm mt-0.5 text-muted";
+        priceEl.innerText = "Neutral / Tax Rule";
+      }
+
+      const divEl = document.getElementById('modalDivShift');
+      if (article.divChange > 0) {
+        divEl.innerText = `+${article.divChange} Z / Share`;
+      } else if (article.divChange < 0) {
+        divEl.innerText = `${article.divChange} Z / Share`;
+      } else {
+        divEl.innerText = "No Dividend Alteration";
+      }
+
+      const modal = document.getElementById('articleModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('articleModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('articleModal');
+      if (event.target === modal) closeModal();
+    };
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNews(NEWS_ARTICLES);
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

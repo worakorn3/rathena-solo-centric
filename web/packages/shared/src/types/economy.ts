@@ -102,3 +102,28 @@ export interface DailyBounty {
   mobName: string;
   mobLevel: number;
 }
+
+export interface TickerNewsResponse {
+  success: boolean;
+  ticker: string;
+  activeEvents: StockActiveEvent[];
+  historicalEvents: StockEventLog[];
+}
+
+export interface StockCandle {
+  time: number | string; // Unix timestamp in seconds (for intraday) or 'YYYY-MM-DD' (for daily)
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
+export interface StockHistoryResponse {
+  success: boolean;
+  ticker: string;
+  timeframe: string;
+  candles: StockCandle[];
+}
+
+

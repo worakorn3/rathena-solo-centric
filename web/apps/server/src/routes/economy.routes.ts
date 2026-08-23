@@ -32,8 +32,20 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
   })
   .get("/events", async ({ query }) => {
     const limit = query && query.limit ? Number(query.limit) : 20;
-    const events = await EconomyService.getEventHistory(limit);
+    const ticker = query && query.ticker ? String(query.ticker) : undefined;
+    const events = await EconomyService.getEventHistory(limit, ticker);
     return { success: true, events };
+  })
+  .get("/events/ticker/:ticker", async ({ params }) => {
+    const ticker = params.ticker;
+    const news = await EconomyService.getTickerNews(ticker);
+    return news;
+  })
+  .get("/history/:ticker", async ({ params, query }) => {
+    const ticker = params.ticker;
+    const timeframe = query && query.timeframe ? String(query.timeframe) : "1D";
+    const history = await EconomyService.getStockHistory(ticker, timeframe);
+    return history;
   })
   .get("/events/active", async () => {
     const activeEvents = await EconomyService.getActiveEvents();

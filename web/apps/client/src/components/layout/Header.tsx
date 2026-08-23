@@ -9,12 +9,14 @@ interface HeaderProps {
   onRefresh?: () => Promise<void> | void;
   isRefreshing?: boolean;
   onOpenSearch: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   netWorth,
   onRefresh,
   onOpenSearch,
+  onOpenAdmin,
 }) => {
   const { user, openLoginModal, logout } = useAuth();
 
@@ -69,6 +71,18 @@ export const Header: React.FC<HeaderProps> = ({
             <Search size={14} className="text-info" />
             <span className="hidden sm:inline">Armory Search</span>
           </button>
+
+          {/* Admin & Vault */}
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="flex items-center gap-1.5 py-1 px-2.5 rounded hover:bg-surface2 transition-colors text-ro-gold hover:text-ro-gold/90 text-xs font-cinzel font-bold border border-ro-gold/30"
+              title="Open System Setup & Zero-Knowledge Vault"
+            >
+              <Shield size={13} className="text-ro-gold" />
+              <span className="hidden sm:inline">Admin & Vault</span>
+            </button>
+          )}
 
           {/* Manual Refresh / Sync Button */}
           {onRefresh && <SyncButton onSync={onRefresh} />}

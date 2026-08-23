@@ -19,6 +19,7 @@ interface SidebarProps {
   onRefresh?: () => Promise<void> | void;
   isRefreshing?: boolean;
   onOpenSearch: () => void;
+  onOpenAdmin?: () => void;
   user: { userid: string; accountId: number } | null;
   openLoginModal: () => void;
   logout: () => void;
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRefresh,
   isRefreshing = false,
   onOpenSearch,
+  onOpenAdmin,
   user,
   openLoginModal,
   logout,
@@ -166,6 +168,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Search className="w-4 h-4 text-info" />
             </button>
+
+            {/* Admin & Vault Button */}
+            {onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-ro-gold/30 flex items-center justify-center text-ro-gold hover:text-ro-gold transition-all"
+                title="System Setup & Zero-Knowledge Vault"
+              >
+                <Shield className="w-4 h-4 text-ro-gold" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -257,6 +270,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Search className="w-3.5 h-3.5 text-info" />
           </button>
+
+          {/* Admin & Vault Button (Mobile) */}
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="w-8 h-8 rounded-lg bg-surface2/60 hover:bg-surface2 border border-ro-gold/30 flex items-center justify-center text-ro-gold hover:text-ro-gold transition-all"
+              title="Admin & Vault"
+            >
+              <Shield className="w-3.5 h-3.5 text-ro-gold" />
+            </button>
+          )}
 
           {/* User Account Button */}
           {user ? (

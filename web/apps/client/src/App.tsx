@@ -12,6 +12,7 @@ import { KillTracker } from "./components/tracking/KillTracker";
 import { PublicSearch } from "./components/armory/PublicSearch";
 import { BountyBoard } from "./components/economy/BountyBoard";
 import { LoginModal } from "./components/auth/LoginModal";
+import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { useAuth } from "./context/AuthContext";
 import { api } from "./lib/api";
 import {
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
   // ponytail: url hash persistence for active tab across reload & back/forward history
   const [activeTab, setActiveTab] = useState<NavTab>(getTabFromHash);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAdminVaultOpen, setIsAdminVaultOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Authenticated Player Data State
@@ -160,6 +162,7 @@ export const App: React.FC = () => {
         onRefresh={user ? loadUserData : loadPublicData}
         isRefreshing={isRefreshing}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenAdmin={() => setIsAdminVaultOpen(true)}
         user={user}
         openLoginModal={openLoginModal}
         logout={logout}
@@ -188,7 +191,10 @@ export const App: React.FC = () => {
                       />
                       <BankWidget bank={netWorth.bank} />
                     </div>
-                    <StockPortfolio holdings={netWorth.holdings} />
+                    <StockPortfolio
+                      holdings={netWorth.holdings}
+                      totalNetWorth={netWorth.totalNetWorth}
+                    />
                   </div>
 
                   {/* Right 7 Cols: Full Stock Exchange Terminal */}
@@ -250,21 +256,38 @@ export const App: React.FC = () => {
                   onSelect={setSelectedCharId}
                 />
 
-                {selectedCharDetail ? (
-                  /* 6:6 Balanced Split: Left Combat Sheet & Expedition, Right 10-Slot Paperdoll & Inspector */
-                  <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
-                    <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
-                      <StatusWindow char={selectedCharDetail} />
+                {(() => {
+                  const activeChar =
+                    selectedCharDetail && selectedCharDetail.charId === selectedCharId
+                      ? selectedCharDetail
+                      : characters.find((c) => c.charId === selectedCharId) || selectedCharDetail;
+
+                  if (!activeChar) {
+                    return (
+                      <div className="bento-card flex-1 flex items-center justify-center text-xs text-muted font-medium">
+                        Select a character above to inspect equipment paperdoll and combat telemetry.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    /* 6:6 Balanced Split: Left Combat Sheet & Expedition, Right 10-Slot Paperdoll & Inspector */
+                    <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
+                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                        <StatusWindow key={activeChar.charId} char={activeChar} />
+                      </div>
+                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                        <Paperdoll
+                          paperdoll={
+                            selectedCharDetail?.charId === activeChar.charId
+                              ? selectedCharDetail.paperdoll
+                              : {}
+                          }
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
-                      <Paperdoll paperdoll={selectedCharDetail.paperdoll} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bento-card flex-1 flex items-center justify-center text-xs text-muted font-medium">
-                    Select a character above to inspect equipment paperdoll and combat telemetry.
-                  </div>
-                )}
+                  );
+                })()}
               </>
             ) : (
               <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
@@ -338,6 +361,7 @@ export const App: React.FC = () => {
       {/* Global Modals */}
       <LoginModal />
       <PublicSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {isAdminVaultOpen && <AdminVaultWindow onClose={() => setIsAdminVaultOpen(false)} />}
     </div>
   );
 };

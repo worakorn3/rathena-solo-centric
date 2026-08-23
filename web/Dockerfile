@@ -24,6 +24,8 @@ RUN bun run build
 # Stage 2: Production Runtime
 FROM oven/bun:1-alpine AS runner
 
+RUN apk add --no-cache mariadb-client
+
 WORKDIR /app
 
 ENV NODE_ENV=production

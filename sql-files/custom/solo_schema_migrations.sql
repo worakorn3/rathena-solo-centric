@@ -167,3 +167,33 @@ ALTER TABLE `solo_stock_events_active`
 ALTER TABLE `solo_stock_events_log`
   MODIFY COLUMN `ticker_target` VARCHAR(64) NOT NULL;
 
+-- --------------------------------------------------------
+-- Table structure for `solo_stock_history` (10-minute intraday snapshots)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `solo_stock_history` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `ticker` VARCHAR(10) NOT NULL,
+  `open_price` INT NOT NULL,
+  `high_price` INT NOT NULL,
+  `low_price` INT NOT NULL,
+  `close_price` INT NOT NULL,
+  `volume` INT DEFAULT 0,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_history_ticker_ts` (`ticker`, `timestamp` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- Table structure for `solo_stock_history_daily` (Consolidated macro daily candles)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `solo_stock_history_daily` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `ticker` VARCHAR(10) NOT NULL,
+  `open_price` INT NOT NULL,
+  `high_price` INT NOT NULL,
+  `low_price` INT NOT NULL,
+  `close_price` INT NOT NULL,
+  `volume` INT DEFAULT 0,
+  `date` DATE NOT NULL,
+  UNIQUE KEY `uk_history_ticker_date` (`ticker`, `date`),
+  INDEX `idx_history_daily_ticker_date` (`ticker`, `date` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
