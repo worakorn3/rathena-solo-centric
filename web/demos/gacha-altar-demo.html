@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midgard Egg Spinner Altar - Web Gacha Interactive Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#090d16',
+            surface: '#0f172a',
+            surface2: '#1e293b',
+            border: '#334155',
+            primary: '#f8fafc',
+            muted: '#94a3b8',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#34d399',
+            info: '#38bdf8',
+            purple: {
+              400: '#c084fc',
+              500: '#a855f7',
+              950: '#3b0764'
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              950: '#451a03'
+            },
+            sky: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              950: '#082f49'
+            },
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              950: '#022c22'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          },
+          keyframes: {
+            crank: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' }
+            },
+            eggDrop: {
+              '0%': { transform: 'translateY(-60px) scale(0.4)', opacity: '0' },
+              '60%': { transform: 'translateY(10px) scale(1.1)', opacity: '1' },
+              '80%': { transform: 'translateY(-4px) scale(0.95)' },
+              '100%': { transform: 'translateY(0) scale(1)' }
+            },
+            coinInsert: {
+              '0%': { transform: 'translateY(-30px)', opacity: '0' },
+              '50%': { transform: 'translateY(0)', opacity: '1' },
+              '100%': { transform: 'translateY(15px)', opacity: '0' }
+            },
+            beamBurst: {
+              '0%': { transform: 'scale(0.3) rotate(0deg)', opacity: '0' },
+              '50%': { transform: 'scale(1.2) rotate(45deg)', opacity: '0.9' },
+              '100%': { transform: 'scale(1.8) rotate(90deg)', opacity: '0' }
+            },
+            cardFlip: {
+              '0%': { transform: 'rotateY(90deg)', opacity: '0' },
+              '100%': { transform: 'rotateY(0deg)', opacity: '1' }
+            },
+            floatSlow: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' }
+            }
+          },
+          animation: {
+            'crank-spin': 'crank 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            'egg-drop': 'eggDrop 0.6s ease-out forwards',
+            'coin-drop': 'coinInsert 0.5s ease-in forwards',
+            'beam-burst': 'beamBurst 0.9s ease-out forwards',
+            'card-flip': 'cardFlip 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+            'float': 'floatSlow 3s ease-in-out infinite'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .bento-card { background: #0f172a; border: 1px solid #334155; border-radius: 0.75rem; }
+    .gold-glow { text-shadow: 0 0 12px rgba(251, 191, 36, 0.6); }
+    .purple-glow { text-shadow: 0 0 12px rgba(192, 132, 252, 0.6); }
+    .perspective-1000 { perspective: 1000px; }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col selection:bg-accent/30 selection:text-accent">
+
+  <!-- ==================== 1. TOP COCKPIT HEADER ==================== -->
+  <header class="bg-surface border-b border-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shadow-sm shadow-accent/10">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-sm sm:text-base text-primary tracking-tight">Midgard Egg Spinner Altar</h1>
+          <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 font-bold">Web Gacha MVP</span>
+        </div>
+        <div class="text-[11px] text-muted flex items-center gap-1.5 font-medium">
+          <span>Solo-Centric Wealth & Vanity Sink</span>
+          <span>•</span>
+          <span id="header-stock-pill" class="text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            📈 Bull Market Subsidy (-12% Zeny)
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Sub-tabs -->
+    <div class="flex items-center bg-surface2/60 p-1 rounded-xl border border-border gap-1 text-xs">
+      <button onclick="switchView('altar')" id="tab-altar" class="px-3 py-1.5 rounded-lg font-bold transition-all bg-accent text-background flex items-center gap-1.5 shadow-sm">
+        <i data-lucide="dices" class="w-3.5 h-3.5"></i>
+        <span>Gacha Altar</span>
+      </button>
+      <button onclick="switchView('stash')" id="tab-stash" class="px-3 py-1.5 rounded-lg font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5 relative">
+        <i data-lucide="package" class="w-3.5 h-3.5"></i>
+        <span>Web Stash</span>
+        <span id="stash-badge" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-accent text-background font-bold font-mono">3</span>
+      </button>
+      <button onclick="switchView('shop')" id="tab-shop" class="px-3 py-1.5 rounded-lg font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
+        <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+        <span>Exclusives Shop</span>
+      </button>
+      <button onclick="switchView('history')" id="tab-history" class="px-3 py-1.5 rounded-lg font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
+        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+        <span>History</span>
+      </button>
+      <button onclick="openAdminModal()" class="px-3 py-1.5 rounded-lg font-medium text-muted hover:text-accent transition-all flex items-center gap-1.5 border-l border-border/80 ml-1">
+        <i data-lucide="sliders" class="w-3.5 h-3.5 text-accent"></i>
+        <span>Admin</span>
+      </button>
+    </div>
+
+    <!-- Player Wealth Balances -->
+    <div class="flex items-center gap-2.5">
+      <div class="bg-surface2 border border-border px-3 py-1.5 rounded-lg flex items-center gap-2">
+        <i data-lucide="coins" class="w-4 h-4 text-accent"></i>
+        <div class="text-right">
+          <div class="text-[9px] uppercase tracking-wider text-muted font-bold">Liquid Zeny</div>
+          <div id="player-zeny" class="font-mono text-xs font-bold text-accent">2,450,000 Z</div>
+        </div>
+      </div>
+      <div class="bg-surface2 border border-border px-3 py-1.5 rounded-lg flex items-center gap-2">
+        <i data-lucide="gem" class="w-4 h-4 text-purple-400"></i>
+        <div class="text-right">
+          <div class="text-[9px] uppercase tracking-wider text-muted font-bold">Gacha Shards</div>
+          <div id="player-shards" class="font-mono text-xs font-bold text-purple-400">125 💎</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 2. MAIN COCKPIT VIEWPORT ==================== -->
+  <main class="flex-1 p-3 sm:p-4 max-w-7xl w-full mx-auto flex flex-col gap-3.5">
+
+    <!-- VIEW 1: 🎰 GACHA ALTAR & EGG SPINNER MACHINE -->
+    <div id="view-altar" class="flex-1 flex flex-col gap-3.5">
+      <!-- Banner Selector Strip -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 shrink-0">
+        <!-- Banner 1 -->
+        <div onclick="selectBanner('supplies')" id="banner-card-supplies" class="bento-card p-3 cursor-pointer transition-all border-accent bg-surface2/60 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-primary flex items-center gap-1.5">
+              <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-emerald-400"></i>
+              General Supplies
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 font-bold">Pity 20</span>
+          </div>
+          <div class="text-[11px] text-muted line-clamp-1 mb-2">Potions, Battle Manuals, Bubble Gums</div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+            <span class="text-muted font-mono text-[11px]">Cost: <span class="line-through text-muted/60">10,000z</span></span>
+            <span class="text-accent font-bold font-mono">8,800 Z</span>
+          </div>
+        </div>
+
+        <!-- Banner 2 -->
+        <div onclick="selectBanner('weapons')" id="banner-card-weapons" class="bento-card p-3 cursor-pointer transition-all border-border hover:border-accent/40 bg-surface relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-primary flex items-center gap-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-info"></i>
+              Weapons & Armors
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/20 font-bold">Pity 30</span>
+          </div>
+          <div class="text-[11px] text-muted line-clamp-1 mb-2">Safe +7/+9 Certs, HD Ores, Blessing</div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+            <span class="text-muted font-mono text-[11px]">Cost: <span class="line-through text-muted/60">35,000z</span></span>
+            <span class="text-accent font-bold font-mono">30,800 Z</span>
+          </div>
+        </div>
+
+        <!-- Banner 3 -->
+        <div onclick="selectBanner('costumes')" id="banner-card-costumes" class="bento-card p-3 cursor-pointer transition-all border-border hover:border-accent/40 bg-surface relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-primary flex items-center gap-1.5">
+              <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-400"></i>
+              Costumes & Vanity
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/20 font-bold">Pity 50</span>
+          </div>
+          <div class="text-[11px] text-muted line-clamp-1 mb-2">Archangel Wings, LK Helm, Dyes</div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+            <span class="text-muted font-mono text-[11px]">Cost: <span class="line-through text-muted/60">75,000z</span></span>
+            <span class="text-accent font-bold font-mono">66,000 Z</span>
+          </div>
+        </div>
+
+        <!-- Banner 4 -->
+        <div onclick="selectBanner('cards')" id="banner-card-cards" class="bento-card p-3 cursor-pointer transition-all border-border hover:border-accent/40 bg-surface relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-primary flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i>
+              Cards & Albums
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-400/10 text-purple-400 border border-purple-400/20 font-bold">Pity 50</span>
+          </div>
+          <div class="text-[11px] text-muted line-clamp-1 mb-2">Mystical Card Albums, Sealed Boss</div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+            <span class="text-muted font-mono text-[11px]">Cost: <span class="line-through text-muted/60">100,000z</span></span>
+            <span class="text-accent font-bold font-mono">88,000 Z</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Altar Stage (5:7 Balanced Layout) -->
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 min-h-0">
+        
+        <!-- Left 5 Columns: 3D Egg Spinner Capsule Machine -->
+        <div class="lg:col-span-5 bento-card p-4 flex flex-col justify-between items-center relative overflow-hidden">
+          <!-- Background Ambient Glow -->
+          <div class="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+
+          <!-- Top Machine Badge -->
+          <div class="w-full flex items-center justify-between z-10">
+            <div class="flex items-center gap-1.5 text-xs text-muted">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-accent"></i>
+              <span id="rotation-countdown">Resets in 04:18:32</span>
+            </div>
+            <button onclick="openRatesModal()" class="text-xs text-accent hover:underline flex items-center gap-1 font-semibold">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              <span>Drop Rates & Pity</span>
+            </button>
+          </div>
+
+          <!-- The Animated Gachapon Capsule Machine -->
+          <div class="my-4 flex flex-col items-center justify-center relative w-full max-w-[260px]">
+            <!-- Glass Capsule Dome -->
+            <div class="w-48 h-48 rounded-full bg-gradient-to-b from-sky-400/20 via-surface2/60 to-surface2 border-2 border-sky-400/40 relative flex items-center justify-center shadow-inner shadow-sky-400/20 overflow-hidden">
+              <!-- Internal Glowing Eggs -->
+              <div class="absolute inset-0 flex flex-wrap items-center justify-center p-4 gap-2 animate-float">
+                <div class="w-7 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border border-amber-200 shadow-md shadow-amber-500/50 transform rotate-12"></div>
+                <div class="w-7 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-purple-400 border border-purple-200 shadow-md shadow-purple-500/50 transform -rotate-12"></div>
+                <div class="w-7 h-9 rounded-full bg-gradient-to-tr from-sky-500 to-sky-300 border border-sky-200 shadow-md shadow-sky-500/50 transform rotate-45"></div>
+                <div class="w-7 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-emerald-300 border border-emerald-200 shadow-md shadow-emerald-500/50 transform -rotate-45"></div>
+                <div class="w-7 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border border-amber-200 shadow-md shadow-amber-500/50 transform rotate-6"></div>
+              </div>
+              <div class="absolute top-2 left-6 w-8 h-4 bg-white/20 rounded-full blur-[1px] transform -rotate-30 pointer-events-none"></div>
+            </div>
+
+            <!-- Machine Base & Dispenser Mechanism -->
+            <div class="w-56 h-28 bg-surface2 border-2 border-border rounded-b-2xl shadow-xl flex flex-col items-center justify-between p-3 relative -mt-4 z-10">
+              <!-- Coin Slot & Crank Handle -->
+              <div class="w-full flex items-center justify-around px-4">
+                <!-- Coin Slot -->
+                <div class="flex flex-col items-center">
+                  <div class="w-2.5 h-6 bg-background border border-border rounded-sm shadow-inner relative flex items-center justify-center">
+                    <div id="coin-anim" class="w-2 h-4 bg-accent rounded-sm opacity-0"></div>
+                  </div>
+                  <span class="text-[9px] text-muted font-mono mt-0.5">COIN</span>
+                </div>
+
+                <!-- Turning Crank -->
+                <div class="flex flex-col items-center">
+                  <div id="crank-handle" class="w-10 h-10 rounded-full bg-surface border-2 border-accent/60 flex items-center justify-center shadow-lg cursor-pointer hover:border-accent transition-colors">
+                    <div class="w-2 h-6 bg-accent rounded-full transform -rotate-45"></div>
+                  </div>
+                  <span class="text-[9px] text-muted font-mono mt-0.5">CRANK</span>
+                </div>
+              </div>
+
+              <!-- Output Chute with Dropped Egg Container -->
+              <div class="w-16 h-8 bg-background border border-border rounded-t-lg shadow-inner flex items-center justify-center relative overflow-hidden">
+                <div id="dropped-egg" class="w-6 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border border-amber-200 shadow-md opacity-0"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pull Controls & Options -->
+          <div class="w-full space-y-3 z-10">
+            <!-- Fast Pull Toggle -->
+            <div class="flex items-center justify-between text-xs px-1">
+              <label class="flex items-center gap-2 cursor-pointer text-muted hover:text-primary transition-colors select-none">
+                <input type="checkbox" id="fast-pull-toggle" class="rounded bg-surface2 border-border text-accent focus:ring-0">
+                <span>⚡ Fast Pull (Skip Cutscene)</span>
+              </label>
+              <span class="text-[11px] text-muted font-mono" id="banner-pity-display">Pity: 14 / 20</span>
+            </div>
+
+            <!-- Pity Bar -->
+            <div class="w-full bg-background rounded-full h-1.5 overflow-hidden border border-border">
+              <div id="pity-bar-fill" class="bg-gradient-to-r from-accent to-purple-400 h-full rounded-full transition-all" style="width: 70%;"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <button onclick="executePull(1)" id="btn-pull-1" class="bg-surface2 hover:bg-surface2/80 text-primary border border-border font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-accent/50 shadow-sm">
+                <span>Summon 1x</span>
+                <span id="price-pull-1" class="text-[11px] font-mono text-accent">8,800 Z</span>
+              </button>
+              <button onclick="executePull(10)" id="btn-pull-10" class="bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer shadow-md shadow-accent/20">
+                <span class="flex items-center gap-1">
+                  <span>Summon 10x</span>
+                  <span class="text-[9px] px-1 py-0.2 bg-background/20 rounded font-mono">-10%</span>
+                </span>
+                <span id="price-pull-10" class="text-[11px] font-mono font-extrabold text-background">79,200 Z</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 7 Columns: Active Banner Spotlight & Featured Showcase -->
+        <div class="lg:col-span-7 bento-card p-4 flex flex-col justify-between min-h-0">
+          <div class="space-y-3">
+            <!-- Banner Header & Description -->
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 id="spotlight-title" class="font-bold text-base text-primary">🧪 General Supplies Banner</h2>
+                  <span id="spotlight-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">Active Spotlight</span>
+                </div>
+                <p id="spotlight-desc" class="text-xs text-muted mt-0.5">High-tier exploration consumables, stat foods, and daily field essentials.</p>
+              </div>
+            </div>
+
+            <!-- Daily Featured SSR Hero Card -->
+            <div class="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-surface2 to-surface2 border border-amber-500/30 relative overflow-hidden">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-mono uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-amber-400 text-background flex items-center gap-1">
+                  <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                  DAILY FEATURED SSR (50% RATE-UP)
+                </span>
+                <span class="text-xs font-bold text-amber-400 font-mono">Tier SSR (5★)</span>
+              </div>
+              <div class="flex items-center gap-3.5">
+                <div class="w-14 h-14 rounded-xl bg-amber-400/15 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0 text-2xl shadow-inner shadow-amber-400/20">
+                  <span id="ssr-hero-icon">🌳</span>
+                </div>
+                <div>
+                  <div id="ssr-hero-name" class="font-bold text-sm text-primary">Bloody Branch x1</div>
+                  <div id="ssr-hero-desc" class="text-xs text-muted leading-relaxed">Summons a formidable MvP boss monster in the wilderness. High-risk, legendary loot yield.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3 Daily Featured SR Cards Grid -->
+            <div>
+              <div class="text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                <span>Daily Featured SR Spotlight (50% Rate-Up)</span>
+              </div>
+              <div id="sr-spotlight-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <!-- SR 1 -->
+                <div class="p-2.5 rounded-lg bg-surface2/60 border border-purple-500/20 flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 text-base shrink-0">🍮</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-primary truncate">Guyak Pudding</div>
+                    <div class="text-[10px] text-muted">Amount: x5</div>
+                  </div>
+                </div>
+                <!-- SR 2 -->
+                <div class="p-2.5 rounded-lg bg-surface2/60 border border-purple-500/20 flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 text-base shrink-0">🍱</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-primary truncate">Almighty Food</div>
+                    <div class="text-[10px] text-muted">Amount: x3</div>
+                  </div>
+                </div>
+                <!-- SR 3 -->
+                <div class="p-2.5 rounded-lg bg-surface2/60 border border-purple-500/20 flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 text-base shrink-0">🍬</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-xs text-primary truncate">Bubble Gum</div>
+                    <div class="text-[10px] text-muted">Amount: x1</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Summary Tip -->
+          <div class="mt-4 p-2.5 rounded-lg bg-surface2/40 border border-border text-[11px] text-muted flex items-center justify-between">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-success"></i>
+              <span>All won items are safely stored in your <strong>Web Stash</strong> to prevent inventory overflow.</span>
+            </span>
+            <button onclick="switchView('stash')" class="text-accent hover:underline font-bold">Go to Stash →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: 📦 DEDICATED WEB GACHA STASH -->
+    <div id="view-stash" class="hidden flex-1 flex flex-col gap-3.5">
+      <div class="bento-card p-4 flex flex-col flex-1">
+        <!-- Stash Header & Bulk Actions -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
+          <div>
+            <h2 class="font-bold text-base text-primary flex items-center gap-2">
+              <i data-lucide="package" class="w-4 h-4 text-accent"></i>
+              <span>My Web Gacha Stash</span>
+            </h2>
+            <p class="text-xs text-muted">Select items to dispatch to your character's in-game RO Mail or dismantle for Gacha Shards.</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2">
+            <button onclick="stashSelectAllR()" class="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
+              Select All R (3★)
+            </button>
+            <button onclick="scrapSelectedStash()" class="bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5">
+              <i data-lucide="recycle" class="w-3.5 h-3.5"></i>
+              <span>Dismantle for Shards</span>
+            </button>
+            <button onclick="mailSelectedStash()" class="bg-success/20 hover:bg-success/30 text-success border border-success/30 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5">
+              <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+              <span>Send to In-Game Mail</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stash Items Grid -->
+        <div id="stash-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 pt-4 overflow-y-auto max-h-[60vh]">
+          <!-- Dynamic Items Populated Here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: 🛍️ EXCLUSIVES-ONLY EXCHANGE SHOP -->
+    <div id="view-shop" class="hidden flex-1 flex flex-col gap-3.5">
+      <div class="bento-card p-4 flex flex-col flex-1">
+        <div class="flex items-center justify-between pb-3 border-b border-border">
+          <div>
+            <h2 class="font-bold text-base text-primary flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+              <span>Exclusives-Only Exchange Shop</span>
+            </h2>
+            <p class="text-xs text-muted">Spend Gacha Shards on prestigious items that cannot be rolled in regular gacha pools.</p>
+          </div>
+          <div class="bg-surface2 border border-purple-500/30 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold text-purple-300 flex items-center gap-1.5">
+            <i data-lucide="gem" class="w-4 h-4 text-purple-400"></i>
+            <span>Balance: <span id="shop-shard-balance">125</span> 💎</span>
+          </div>
+        </div>
+
+        <!-- Shop Catalog Grid -->
+        <div id="shop-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 overflow-y-auto max-h-[60vh]">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: 📜 PULL HISTORY LEDGER -->
+    <div id="view-history" class="hidden flex-1 flex flex-col gap-3.5">
+      <div class="bento-card p-4 flex flex-col flex-1">
+        <div class="pb-3 border-b border-border">
+          <h2 class="font-bold text-base text-primary flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-info"></i>
+            <span>Pull History Ledger</span>
+          </h2>
+          <p class="text-xs text-muted">Audit log of your recent gacha rolls and item distribution.</p>
+        </div>
+
+        <div class="pt-3 overflow-y-auto max-h-[60vh]">
+          <table class="w-full text-left text-xs font-sans">
+            <thead class="bg-surface2/60 text-muted font-mono uppercase text-[10px] border-b border-border">
+              <tr>
+                <th class="p-2.5">Timestamp</th>
+                <th class="p-2.5">Banner</th>
+                <th class="p-2.5">Item Won</th>
+                <th class="p-2.5">Tier</th>
+                <th class="p-2.5">Zeny Cost</th>
+                <th class="p-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-border/40 font-mono">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== 3. DRAMATIC SUMMON REVEAL MODAL ==================== -->
+  <div id="modal-reveal" class="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden animate-in fade-in duration-150">
+    <div class="bento-card w-full max-w-4xl max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl border-2 border-accent/40 relative">
+      
+      <!-- Ambient Beam Explosion (Canvas / Overlay) -->
+      <div id="beam-explosion" class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0">
+        <div class="w-96 h-96 rounded-full bg-gradient-to-r from-amber-400/40 via-purple-500/40 to-sky-400/40 blur-3xl animate-beam-burst"></div>
+      </div>
+
+      <!-- Reveal Modal Header -->
+      <div class="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0 z-10">
+        <div class="flex items-center gap-2 font-bold text-sm text-primary">
+          <i data-lucide="sparkles" class="w-4 h-4 text-accent"></i>
+          <span>Summon Results</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="closeRevealModal()" class="text-muted hover:text-primary p-1.5 rounded hover:bg-surface cursor-pointer">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards Grid Body -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 z-10">
+        <div id="reveal-cards-container" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <!-- Dynamically animated cards appear here -->
+        </div>
+      </div>
+
+      <!-- Reveal Modal Footer Actions -->
+      <div class="bg-surface2 border-t border-border px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+        <div class="text-xs text-muted font-medium flex items-center gap-1.5">
+          <i data-lucide="check-circle" class="w-4 h-4 text-success"></i>
+          <span>Items deposited into your <strong>Web Stash</strong></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="scrapJustPulled()" class="bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-500/40 font-bold text-xs py-2 px-3 rounded-lg transition-colors flex items-center gap-1">
+            <i data-lucide="recycle" class="w-3.5 h-3.5"></i>
+            <span>Dismantle R Items</span>
+          </button>
+          <button onclick="closeRevealModal()" class="bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2 px-4 rounded-lg transition-colors shadow-sm">
+            Collect to Stash
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. DROP RATES & PITY MODAL ==================== -->
+  <div id="modal-rates" class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bento-card w-full max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border">
+      <div class="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 font-bold text-sm text-primary">
+          <i data-lucide="info" class="w-4 h-4 text-accent"></i>
+          <span>Drop Rates & Pity Mechanics</span>
+        </div>
+        <button onclick="closeRatesModal()" class="text-muted hover:text-primary p-1 rounded hover:bg-surface cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 text-xs text-muted">
+        <div class="p-3 rounded-lg bg-surface2/60 border border-border space-y-1.5">
+          <div class="font-bold text-primary text-xs">Pity & Guarantee Rules</div>
+          <p>• <strong>10-Pull Guarantee:</strong> Every 10-pull guarantees at least one SR (4★) or higher item.</p>
+          <p>• <strong>Pity Threshold:</strong> Guaranteed SSR (5★) drop upon reaching the banner threshold (Supplies: 20, Weapons: 30, Costumes: 50, Cards: 50). Pity counter resets to 0 upon rolling an SSR.</p>
+          <p>• <strong>50% Spotlight Rate-Up:</strong> Daily featured SSR and SR items receive 50% of their respective tier's total probability share.</p>
+        </div>
+
+        <div>
+          <div class="font-bold text-primary mb-2">Tier Probabilities (Active Banner)</div>
+          <div class="grid grid-cols-3 gap-2 text-center font-mono">
+            <div class="p-2.5 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 font-bold">
+              <div>SSR (5★)</div>
+              <div class="text-sm mt-0.5" id="rates-ssr-pct">10.0%</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-purple-400/10 border border-purple-400/20 text-purple-400 font-bold">
+              <div>SR (4★)</div>
+              <div class="text-sm mt-0.5" id="rates-sr-pct">25.0%</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-sky-400/10 border border-sky-400/20 text-sky-400 font-bold">
+              <div>R (3★)</div>
+              <div class="text-sm mt-0.5" id="rates-r-pct">65.0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. 🛡️ ADMIN LIVE CUSTOMIZER MODAL ==================== -->
+  <div id="modal-admin" class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bento-card w-full max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border">
+      <div class="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 font-bold text-sm text-primary">
+          <i data-lucide="sliders" class="w-4 h-4 text-accent"></i>
+          <span>Admin Gacha Roster Customizer & Simulator</span>
+        </div>
+        <button onclick="closeAdminModal()" class="text-muted hover:text-primary p-1 rounded hover:bg-surface cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 text-xs">
+        <!-- Banner Quick Settings -->
+        <div class="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-primary text-xs flex items-center gap-1.5">
+              <i data-lucide="settings" class="w-3.5 h-3.5 text-accent"></i>
+              Banner Parameters
+            </span>
+            <button onclick="adminForceRotate()" class="bg-accent/20 hover:bg-accent/30 text-accent border border-accent/40 font-bold px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+              <span>⚡ Force Rotate Banners Now</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label class="text-[10px] text-muted uppercase font-bold">Base Price (Zeny)</label>
+              <input type="number" id="admin-base-price" value="10000" class="w-full bg-background border border-border focus:border-accent rounded p-1.5 text-xs text-primary font-mono outline-none mt-1">
+            </div>
+            <div>
+              <label class="text-[10px] text-muted uppercase font-bold">Pity Threshold (Pulls)</label>
+              <input type="number" id="admin-pity-thresh" value="20" class="w-full bg-background border border-border focus:border-accent rounded p-1.5 text-xs text-primary font-mono outline-none mt-1">
+            </div>
+            <div>
+              <label class="text-[10px] text-muted uppercase font-bold">Market Discount (%)</label>
+              <input type="number" id="admin-market-discount" value="12" class="w-full bg-background border border-border focus:border-accent rounded p-1.5 text-xs text-primary font-mono outline-none mt-1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulator Sandbox -->
+        <div class="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-3">
+          <div class="font-bold text-primary text-xs flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-info"></i>
+            Live Pull Simulator Sandbox (100x / 1,000x)
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="runSimulation(100)" class="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+              Simulate 100 Pulls
+            </button>
+            <button onclick="runSimulation(1000)" class="bg-surface2 hover:bg-surface2/80 text-primary border border-border px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+              Simulate 1,000 Pulls
+            </button>
+          </div>
+          <div id="sim-results" class="p-2.5 rounded bg-background border border-border font-mono text-[11px] text-muted">
+            Run a simulation to verify empirical drop rate distributions...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. JAVASCRIPT STATE ENGINE ==================== -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Game State
+    let playerZeny = 2450000;
+    let playerShards = 125;
+    let currentBanner = 'supplies';
+    let marketDiscountPct = 12;
+    let pityCounters = { supplies: 14, weapons: 8, costumes: 22, cards: 5 };
+    let pityThresholds = { supplies: 20, weapons: 30, costumes: 50, cards: 50 };
+
+    // Master Pools Data
+    const BANNERS_DATA = {
+      supplies: {
+        name: 'General Supplies',
+        icon: '🧪',
+        desc: 'Potions, Battle Manuals, Bubble Gums, and Exploration Essentials.',
+        basePrice: 10000,
+        pity: 20,
+        rates: { ssr: 10, sr: 25, r: 65 },
+        ssrPool: [
+          { id: 12103, name: 'Bloody Branch x1', icon: '🌳', desc: 'Summons MvP boss.' },
+          { id: 12212, name: 'Giant Fly Wing x10', icon: '🪽', desc: 'Party teleportation.' },
+          { id: 12741, name: 'Taming Gift Box x1', icon: '🎁', desc: 'Rare pet tamer.' },
+          { id: 643, name: 'Megaphone x5', icon: '📢', desc: 'Server-wide broadcast.' }
+        ],
+        srPool: [
+          { id: 12710, name: 'Guyak Pudding x5', icon: '🍮' },
+          { id: 22774, name: 'Almighty Food x3', icon: '🍱' },
+          { id: 12210, name: 'Bubble Gum x1', icon: '🍬' },
+          { id: 12208, name: 'Battle Manual x1', icon: '📖' },
+          { id: 12108, name: 'Abrasive x2', icon: '💎' }
+        ],
+        rPool: [
+          { id: 504, name: 'White Potion x20', icon: '🧪' },
+          { id: 505, name: 'Blue Potion x10', icon: '🧪' },
+          { id: 12016, name: 'Speed Potion x3', icon: '⚡' },
+          { id: 601, name: 'Fly Wing x30', icon: '🪽' },
+          { id: 602, name: 'Butterfly Wing x10', icon: '🦋' }
+        ]
+      },
+      weapons: {
+        name: 'Weapons & Armors',
+        icon: '⚔️',
+        desc: 'Refine certs, HD ores, Blacksmith blessings, and slotted gear.',
+        basePrice: 35000,
+        pity: 30,
+        rates: { ssr: 5, sr: 25, r: 70 },
+        ssrPool: [
+          { id: 6234, name: 'Safe to 7 Weapon Cert', icon: '📜', desc: '100% safe +7 weapon refine.' },
+          { id: 6235, name: 'Safe to 7 Armor Cert', icon: '📜', desc: '100% safe +7 armor refine.' },
+          { id: 6237, name: 'Safe to 9 Armor Cert', icon: '👑', desc: '100% safe +9 armor refine.' }
+        ],
+        srPool: [
+          { id: 6223, name: 'HD Oridecon x2', icon: '💎' },
+          { id: 6224, name: 'HD Elunium x2', icon: '💎' },
+          { id: 6635, name: 'Blacksmith Blessing x1', icon: '✨' },
+          { id: 1250, name: 'Infiltrator [0]', icon: '🗡️' },
+          { id: 1710, name: 'Gakkung [1]', icon: '🏹' }
+        ],
+        rPool: [
+          { id: 984, name: 'Oridecon x5', icon: '🪨' },
+          { id: 985, name: 'Elunium x5', icon: '🪨' },
+          { id: 999, name: 'Steel x15', icon: '🔩' }
+        ]
+      },
+      costumes: {
+        name: 'Costumes & Vanity',
+        icon: '👑',
+        desc: 'Wings, exclusive animated headgears, and color dyes.',
+        basePrice: 75000,
+        pity: 50,
+        rates: { ssr: 3, sr: 25, r: 72 },
+        ssrPool: [
+          { id: 20257, name: 'Costume Archangel Wings', icon: '🪽', desc: 'Pinnacle angelic wings.' },
+          { id: 20256, name: 'Costume Fallen Angel Wings', icon: '🦇', desc: 'Dark abyssal wings.' },
+          { id: 14003, name: 'Lord Knight Helm Box', icon: '⛑️', desc: 'Pinnacle golden helm.' }
+        ],
+        srPool: [
+          { id: 20017, name: 'Costume Wings of Victory', icon: '🪽' },
+          { id: 20092, name: 'Costume Fairy Wings', icon: '🧚' },
+          { id: 5384, name: 'Twin Pompom Hat', icon: '👒' }
+        ],
+        rPool: [
+          { id: 7946, name: 'Cosmetic Dye Voucher x2', icon: '🎨' },
+          { id: 5204, name: 'Rudolf Red Nose', icon: '🔴' },
+          { id: 5030, name: 'Red Glasses', icon: '👓' }
+        ]
+      },
+      cards: {
+        name: 'Cards & Albums',
+        icon: '🎴',
+        desc: 'Old Card Albums, Mystical Albums, and Sealed Bosses.',
+        basePrice: 10000,
+        pity: 50,
+        rates: { ssr: 2, sr: 23, r: 75 },
+        ssrPool: [
+          { id: 12246, name: 'Mystical Card Album', icon: '🎴', desc: 'Rare card album.' },
+          { id: 12743, name: 'Sealed Boss Card Cache', icon: '📦', desc: 'Contains sealed MVP cards.' }
+        ],
+        srPool: [
+          { id: 616, name: 'Old Card Album x1', icon: '🃏' },
+          { id: 617, name: 'Old Purple Box x2', icon: '🎁' }
+        ],
+        rPool: [
+          { id: 603, name: 'Old Blue Box x3', icon: '📦' },
+          { id: 990, name: 'Red Blood x10', icon: '🩸' }
+        ]
+      }
+    };
+
+    // Stash & Shop Items
+    let stashItems = [
+      { id: 1, nameid: 504, name: 'White Potion x20', tier: 'R', icon: '🧪', selected: false },
+      { id: 2, nameid: 12710, name: 'Guyak Pudding x5', tier: 'SR', icon: '🍮', selected: false },
+      { id: 3, nameid: 12103, name: 'Bloody Branch x1', tier: 'SSR', icon: '🌳', selected: false }
+    ];
+
+    let shopItems = [
+      { id: 20261, name: 'Costume Golden Archangel Wings', icon: '🪽', price: 500, cat: 'Mythic Vanity' },
+      { id: 20262, name: 'Costume Chromatic Valkyrie Wings', icon: '🌈', price: 500, cat: 'Mythic Vanity' },
+      { id: 20264, name: 'Costume Sovereign Crown', icon: '👑', price: 400, cat: 'Imperial Vanity' },
+      { id: 6238, name: 'Safe to +11 Weapon Cert', icon: '📜', price: 600, cat: 'Refine Mastery' },
+      { id: 6239, name: 'Safe to +11 Armor Cert', icon: '📜', price: 600, cat: 'Refine Mastery' },
+      { id: 23002, name: 'Blacksmith Master Bundle', icon: '⚒️', price: 150, cat: 'Refine Bundle' }
+    ];
+
+    let historyLog = [];
+    let lastPulledItems = [];
+
+    // Switch Main Views
+    function switchView(viewName) {
+      ['altar', 'stash', 'shop', 'history'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+        document.getElementById(`tab-${v}`).className = "px-3 py-1.5 rounded-lg font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5";
+      });
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+      document.getElementById(`tab-${viewName}`).className = "px-3 py-1.5 rounded-lg font-bold transition-all bg-accent text-background flex items-center gap-1.5 shadow-sm";
+      if (viewName === 'stash') renderStash();
+      if (viewName === 'shop') renderShop();
+      if (viewName === 'history') renderHistory();
+    }
+
+    // Select Banner
+    function selectBanner(bKey) {
+      currentBanner = bKey;
+      const bData = BANNERS_DATA[bKey];
+
+      ['supplies', 'weapons', 'costumes', 'cards'].forEach(k => {
+        const el = document.getElementById(`banner-card-${k}`);
+        if (k === bKey) {
+          el.className = "bento-card p-3 cursor-pointer transition-all border-accent bg-surface2/60 relative overflow-hidden group";
+        } else {
+          el.className = "bento-card p-3 cursor-pointer transition-all border-border hover:border-accent/40 bg-surface relative overflow-hidden group";
+        }
+      });
+
+      const discPrice1 = Math.round(bData.basePrice * (1 - marketDiscountPct / 100));
+      const discPrice10 = Math.round(discPrice1 * 10 * 0.9);
+
+      document.getElementById('price-pull-1').innerText = `${discPrice1.toLocaleString()} Z`;
+      document.getElementById('price-pull-10').innerText = `${discPrice10.toLocaleString()} Z`;
+
+      document.getElementById('spotlight-title').innerText = `${bData.icon} ${bData.name} Banner`;
+      document.getElementById('spotlight-desc').innerText = bData.desc;
+
+      const hero = bData.ssrPool[0];
+      document.getElementById('ssr-hero-name').innerText = hero.name;
+      document.getElementById('ssr-hero-icon').innerText = hero.icon;
+      document.getElementById('ssr-hero-desc').innerText = hero.desc;
+
+      // Pity Bar Update
+      const pityVal = pityCounters[bKey];
+      const pityMax = pityThresholds[bKey];
+      document.getElementById('banner-pity-display').innerText = `Pity: ${pityVal} / ${pityMax}`;
+      document.getElementById('pity-bar-fill').style.width = `${(pityVal / pityMax) * 100}%`;
+
+      document.getElementById('rates-ssr-pct').innerText = `${bData.rates.ssr}.0%`;
+      document.getElementById('rates-sr-pct').innerText = `${bData.rates.sr}.0%`;
+      document.getElementById('rates-r-pct').innerText = `${bData.rates.r}.0%`;
+    }
+
+    // Execute Gacha Pull
+    function executePull(count) {
+      const bData = BANNERS_DATA[currentBanner];
+      const discPrice1 = Math.round(bData.basePrice * (1 - marketDiscountPct / 100));
+      const totalCost = count === 10 ? Math.round(discPrice1 * 10 * 0.9) : discPrice1;
+
+      if (playerZeny < totalCost) {
+        alert('Insufficient Liquid Zeny! Please earn more Zeny in-game or from the Stock Market.');
+        return;
+      }
+
+      playerZeny -= totalCost;
+      updateBalances();
+
+      const results = [];
+      for (let i = 0; i < count; i++) {
+        pityCounters[currentBanner]++;
+        let roll = Math.random() * 100;
+        let tier = 'R';
+
+        if (pityCounters[currentBanner] >= pityThresholds[currentBanner] || roll < bData.rates.ssr) {
+          tier = 'SSR';
+          pityCounters[currentBanner] = 0; // Pity Reset
+        } else if (roll < (bData.rates.ssr + bData.rates.sr) || (count === 10 && i === 9 && !results.some(r => r.tier === 'SSR' || r.tier === 'SR'))) {
+          tier = 'SR';
+        }
+
+        let pool = tier === 'SSR' ? bData.ssrPool : (tier === 'SR' ? bData.srPool : bData.rPool);
+        let item = pool[Math.floor(Math.random() * pool.length)];
+
+        const pullItem = {
+          id: Date.now() + Math.random(),
+          nameid: item.id,
+          name: item.name,
+          tier: tier,
+          icon: item.icon,
+          selected: false
+        };
+
+        results.push(pullItem);
+        stashItems.push(pullItem);
+
+        historyLog.unshift({
+          ts: new Date().toLocaleTimeString(),
+          banner: bData.name,
+          item: item.name,
+          tier: tier,
+          cost: Math.round(totalCost / count),
+          status: 'In Stash'
+        });
+      }
+
+      lastPulledItems = results;
+      selectBanner(currentBanner); // Update Pity bar
+
+      const fastPull = document.getElementById('fast-pull-toggle').checked;
+      if (fastPull) {
+        showRevealModal(results);
+      } else {
+        // Play Crank & Drop Animation
+        playMachineAnimation(() => showRevealModal(results));
+      }
+    }
+
+    function playMachineAnimation(callback) {
+      const crank = document.getElementById('crank-handle');
+      const coin = document.getElementById('coin-anim');
+      const egg = document.getElementById('dropped-egg');
+
+      coin.className = "w-2 h-4 bg-accent rounded-sm animate-coin-drop";
+      setTimeout(() => {
+        crank.className = "w-10 h-10 rounded-full bg-surface border-2 border-accent flex items-center justify-center shadow-lg animate-crank-spin";
+      }, 200);
+
+      setTimeout(() => {
+        egg.className = "w-6 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border border-amber-200 shadow-md animate-egg-drop";
+      }, 600);
+
+      setTimeout(() => {
+        callback();
+        coin.className = "w-2 h-4 bg-accent rounded-sm opacity-0";
+        crank.className = "w-10 h-10 rounded-full bg-surface border-2 border-accent/60 flex items-center justify-center shadow-lg cursor-pointer";
+        egg.className = "w-6 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border border-amber-200 shadow-md opacity-0";
+      }, 1100);
+    }
+
+    function showRevealModal(items) {
+      const modal = document.getElementById('modal-reveal');
+      const container = document.getElementById('reveal-cards-container');
+      const explosion = document.getElementById('beam-explosion');
+      container.innerHTML = '';
+
+      const hasSSR = items.some(i => i.tier === 'SSR');
+      const hasSR = items.some(i => i.tier === 'SR');
+
+      explosion.className = hasSSR 
+        ? "absolute inset-0 pointer-events-none flex items-center justify-center animate-beam-burst"
+        : "absolute inset-0 pointer-events-none flex items-center justify-center opacity-0";
+
+      items.forEach((item, idx) => {
+        const card = document.createElement('div');
+        const tierColor = item.tier === 'SSR' ? 'border-amber-400 bg-amber-400/10 shadow-lg shadow-amber-400/20' : (item.tier === 'SR' ? 'border-purple-400 bg-purple-400/10' : 'border-border bg-surface2/60');
+        const badgeColor = item.tier === 'SSR' ? 'bg-amber-400 text-background' : (item.tier === 'SR' ? 'bg-purple-400 text-background' : 'bg-sky-400/20 text-sky-300');
+
+        card.className = `p-3 rounded-xl border ${tierColor} flex flex-col items-center justify-center text-center gap-1.5 animate-card-flip`;
+        card.style.animationDelay = `${idx * 80}ms`;
+
+        card.innerHTML = `
+          <span class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${badgeColor}">${item.tier}</span>
+          <div class="text-2xl my-1">${item.icon}</div>
+          <div class="font-bold text-xs text-primary line-clamp-1">${item.name}</div>
+        `;
+        container.appendChild(card);
+      });
+
+      modal.classList.remove('hidden');
+      updateStashBadge();
+    }
+
+    function closeRevealModal() {
+      document.getElementById('modal-reveal').classList.add('hidden');
+    }
+
+    function scrapJustPulled() {
+      let scrappedCount = 0;
+      lastPulledItems.forEach(item => {
+        if (item.tier === 'R') {
+          playerShards += 5;
+          stashItems = stashItems.filter(s => s.id !== item.id);
+          scrappedCount++;
+        }
+      });
+      updateBalances();
+      updateStashBadge();
+      alert(`Dismantled ${scrappedCount} R items into ${scrappedCount * 5} Gacha Shards 💎`);
+      closeRevealModal();
+    }
+
+    // Render Web Stash
+    function renderStash() {
+      const grid = document.getElementById('stash-items-grid');
+      grid.innerHTML = '';
+
+      if (stashItems.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-xs text-muted">Your Web Stash is empty. Pull on the Gacha Altar to collect items!</div>`;
+        return;
+      }
+
+      stashItems.forEach(item => {
+        const card = document.createElement('div');
+        const tierBadge = item.tier === 'SSR' ? 'bg-amber-400 text-background' : (item.tier === 'SR' ? 'bg-purple-400 text-background' : 'bg-sky-400/20 text-sky-300');
+        const borderColor = item.selected ? 'border-accent bg-accent/10' : 'border-border bg-surface2/60';
+
+        card.className = `p-3 rounded-xl border ${borderColor} flex items-center justify-between gap-2 cursor-pointer transition-all`;
+        card.onclick = () => {
+          item.selected = !item.selected;
+          renderStash();
+        };
+
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <input type="checkbox" ${item.selected ? 'checked' : ''} class="rounded bg-surface border-border text-accent focus:ring-0">
+            <div class="text-xl shrink-0">${item.icon}</div>
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-primary truncate">${item.name}</div>
+              <span class="text-[9px] font-mono font-bold px-1 py-0.2 rounded ${tierBadge}">${item.tier}</span>
+            </div>
+          </div>
+          <button onclick="event.stopPropagation(); scrapSingleItem(${item.id})" class="text-muted hover:text-purple-400 p-1 transition-colors" title="Scrap for Shards">
+            <i data-lucide="recycle" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function stashSelectAllR() {
+      stashItems.forEach(i => {
+        if (i.tier === 'R') i.selected = true;
+      });
+      renderStash();
+    }
+
+    function scrapSelectedStash() {
+      const selected = stashItems.filter(i => i.selected);
+      if (selected.length === 0) {
+        alert('Please select items in your stash to dismantle.');
+        return;
+      }
+      let gained = 0;
+      selected.forEach(i => {
+        gained += (i.tier === 'SSR' ? 100 : (i.tier === 'SR' ? 25 : 5));
+      });
+      playerShards += gained;
+      stashItems = stashItems.filter(i => !i.selected);
+      updateBalances();
+      renderStash();
+      updateStashBadge();
+      alert(`Dismantled ${selected.length} items for +${gained} Gacha Shards 💎!`);
+    }
+
+    function mailSelectedStash() {
+      const selected = stashItems.filter(i => i.selected);
+      if (selected.length === 0) {
+        alert('Please select items to send to your in-game mailbox.');
+        return;
+      }
+      stashItems = stashItems.filter(i => !i.selected);
+      renderStash();
+      updateStashBadge();
+      alert(`📬 Dispatched ${selected.length} parcels to in-game RO Mail! Open your character mailbox in-game to claim.`);
+    }
+
+    function scrapSingleItem(id) {
+      const item = stashItems.find(i => i.id === id);
+      if (!item) return;
+      const gain = item.tier === 'SSR' ? 100 : (item.tier === 'SR' ? 25 : 5);
+      playerShards += gain;
+      stashItems = stashItems.filter(i => i.id !== id);
+      updateBalances();
+      renderStash();
+      updateStashBadge();
+    }
+
+    // Render Exclusives Shop
+    function renderShop() {
+      const grid = document.getElementById('shop-catalog-grid');
+      document.getElementById('shop-shard-balance').innerText = playerShards;
+      grid.innerHTML = '';
+
+      shopItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "p-3.5 rounded-xl bg-surface2/50 border border-purple-500/20 hover:border-purple-500/50 flex flex-col justify-between space-y-3 transition-colors";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">${item.cat}</span>
+              <span class="font-mono text-xs font-bold text-purple-400">${item.price} 💎</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-xl shrink-0">${item.icon}</div>
+              <div class="font-bold text-xs text-primary leading-tight">${item.name}</div>
+            </div>
+          </div>
+          <button onclick="buyShopItem(${item.id}, ${item.price}, '${item.name}')" class="w-full bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-500/40 font-bold text-xs py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1">
+            <span>Exchange</span>
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function buyShopItem(id, price, name) {
+      if (playerShards < price) {
+        alert('Insufficient Gacha Shards! Dismantle more duplicate items from your Web Stash.');
+        return;
+      }
+      playerShards -= price;
+      updateBalances();
+      renderShop();
+      alert(`🎉 Exchanged for ${name}! The item has been dispatched directly to your in-game RO Mail.`);
+    }
+
+    // Render History Table
+    function renderHistory() {
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = '';
+      if (historyLog.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-muted">No pull history recorded yet.</td></tr>`;
+        return;
+      }
+      historyLog.forEach(h => {
+        const row = document.createElement('tr');
+        const tierColor = h.tier === 'SSR' ? 'text-amber-400 font-bold' : (h.tier === 'SR' ? 'text-purple-400 font-bold' : 'text-sky-400');
+        row.innerHTML = `
+          <td class="p-2.5 text-muted">${h.ts}</td>
+          <td class="p-2.5 text-primary">${h.banner}</td>
+          <td class="p-2.5 text-primary font-bold">${h.item}</td>
+          <td class="p-2.5 ${tierColor}">${h.tier}</td>
+          <td class="p-2.5 text-accent">${h.cost.toLocaleString()} Z</td>
+          <td class="p-2.5 text-success">${h.status}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateBalances() {
+      document.getElementById('player-zeny').innerText = `${playerZeny.toLocaleString()} Z`;
+      document.getElementById('player-shards').innerText = `${playerShards} 💎`;
+    }
+
+    function updateStashBadge() {
+      document.getElementById('stash-badge').innerText = stashItems.length;
+    }
+
+    // Rates & Admin Modals
+    function openRatesModal() { document.getElementById('modal-rates').classList.remove('hidden'); }
+    function closeRatesModal() { document.getElementById('modal-rates').classList.add('hidden'); }
+    function openAdminModal() { document.getElementById('modal-admin').classList.remove('hidden'); }
+    function closeAdminModal() { document.getElementById('modal-admin').classList.add('hidden'); }
+
+    function adminForceRotate() {
+      alert('⚡ Force rotated all 4 banners! New daily featured SSR and SR items have taken the spotlight.');
+      closeAdminModal();
+    }
+
+    function runSimulation(num) {
+      const bData = BANNERS_DATA[currentBanner];
+      let ssrCount = 0, srCount = 0, rCount = 0;
+      for (let i = 0; i < num; i++) {
+        let r = Math.random() * 100;
+        if (r < bData.rates.ssr) ssrCount++;
+        else if (r < (bData.rates.ssr + bData.rates.sr)) srCount++;
+        else rCount++;
+      }
+      document.getElementById('sim-results').innerHTML = `
+        <strong>Simulation of ${num} pulls on ${bData.name}:</strong><br>
+        • SSR: ${ssrCount} (${((ssrCount / num) * 100).toFixed(1)}%)<br>
+        • SR: ${srCount} (${((srCount / num) * 100).toFixed(1)}%)<br>
+        • R: ${rCount} (${((rCount / num) * 100).toFixed(1)}%)
+      `;
+    }
+
+    // Initial setup
+    selectBanner('supplies');
+    updateBalances();
+    updateStashBadge();
+  </script>
+</body>
+</html>

@@ -20,9 +20,11 @@ import {
   FileArchive,
   UserCheck,
   Activity,
+  Dices,
 } from "lucide-react";
 import { api } from "../../lib/api";
 import { formatZeny } from "../../lib/assets";
+import { AdminGachaManager } from "./AdminGachaManager";
 
 interface AdminVaultWindowProps {
   onClose: () => void;
@@ -36,12 +38,12 @@ interface SystemStats {
 }
 
 export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) => {
-  // Master Admin Key State (defaults to default solo key if unset)
+  // Master Admin Key State
   const [adminKey, setAdminKey] = useState<string>(
-    localStorage.getItem("rathena_admin_key") || "SoloCentricKey2026!"
+    localStorage.getItem("rathena_admin_key") || ""
   );
   const [isKeyUnlocked, setIsKeyUnlocked] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"backup" | "accounts" | "overview">("backup");
+  const [activeTab, setActiveTab] = useState<"backup" | "accounts" | "overview" | "gacha">("backup");
 
   // System Stats
   const [stats, setStats] = useState<SystemStats | null>(null);
@@ -94,10 +96,6 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
   };
 
   useEffect(() => {
-    // If not yet saved in localStorage, initialize default solo key
-    if (!localStorage.getItem("rathena_admin_key")) {
-      localStorage.setItem("rathena_admin_key", "SoloCentricKey2026!");
-    }
     fetchStatus();
   }, []);
 
@@ -379,6 +377,17 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
           >
             <Activity size={14} />
             <span>Server Overview</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("gacha")}
+            className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 ${
+              activeTab === "gacha"
+                ? "border-accent text-accent bg-surface2/40"
+                : "border-transparent text-muted hover:text-primary font-medium"
+            }`}
+          >
+            <Dices size={14} />
+            <span>Gacha Manager</span>
           </button>
         </div>
 
@@ -767,6 +776,11 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 4: GACHA MANAGER */}
+          {activeTab === "gacha" && (
+            <AdminGachaManager adminKey={adminKey} />
           )}
         </div>
 

@@ -8,6 +8,7 @@ interface LoginRow {
   user_pass: string;
   sex: "M" | "F";
   email: string;
+  group_id: number;
   lastlogin: string | null;
   logincount: number;
   state: number;
@@ -21,7 +22,7 @@ export class AuthService {
     }
 
     const row = await queryOne<LoginRow>(
-      "SELECT account_id, userid, user_pass, sex, email, lastlogin, logincount, state FROM `login` WHERE userid = ? LIMIT 1",
+      "SELECT account_id, userid, user_pass, sex, email, group_id, lastlogin, logincount, state FROM `login` WHERE userid = ? LIMIT 1",
       [userid]
     );
 
@@ -41,11 +42,16 @@ export class AuthService {
       return { error: "Invalid username or password" };
     }
 
+    const groupId = Number(row.group_id) || 0;
+    const role = groupId === 99 ? "ADMIN" : groupId >= 1 ? "GM" : "PLAYER";
+
     const user: AuthUser = {
       accountId: row.account_id,
       userid: row.userid,
       email: row.email || "",
       sex: row.sex || "M",
+      groupId,
+      role,
       lastLogin: row.lastlogin ? new Date(row.lastlogin).toISOString() : new Date().toISOString(),
       logincount: row.logincount || 0,
     };
@@ -55,17 +61,22 @@ export class AuthService {
 
   static async getAccountById(accountId: number): Promise<AuthUser | null> {
     const row = await queryOne<LoginRow>(
-      "SELECT account_id, userid, user_pass, sex, email, lastlogin, logincount, state FROM `login` WHERE account_id = ? LIMIT 1",
+      "SELECT account_id, userid, user_pass, sex, email, group_id, lastlogin, logincount, state FROM `login` WHERE account_id = ? LIMIT 1",
       [accountId]
     );
 
     if (!row) return null;
+
+    const groupId = Number(row.group_id) || 0;
+    const role = groupId === 99 ? "ADMIN" : groupId >= 1 ? "GM" : "PLAYER";
 
     return {
       accountId: row.account_id,
       userid: row.userid,
       email: row.email || "",
       sex: row.sex || "M",
+      groupId,
+      role,
       lastLogin: row.lastlogin ? new Date(row.lastlogin).toISOString() : new Date().toISOString(),
       logincount: row.logincount || 0,
     };

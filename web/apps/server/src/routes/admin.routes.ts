@@ -4,6 +4,8 @@ import zlib from "zlib";
 import { config } from "../config";
 import { query, queryOne, primaryExecute, getPrimaryDbPool } from "../db/pool";
 
+import { jwt } from "@elysiajs/jwt";
+
 // Header magic identifier for Zero-Knowledge rAthena Encrypted Backups
 export const BACKUP_MAGIC = Buffer.from("ROENC01"); // 7 bytes
 const PBKDF2_ITERATIONS = 100000;
@@ -179,19 +181,37 @@ async function importDatabaseSql(sqlBuffer: Buffer): Promise<void> {
 }
 
 export const adminRoutes = new Elysia({ prefix: "/api/admin" })
-  // Security & Admin Key Check
-  .derive(({ headers, query, set }) => {
-    const providedKey = headers["x-admin-key"] || (query as any)?.adminKey;
-    const isAuthorized =
+  .use(
+    jwt({
+      name: "jwt",
+      secret: config.server.jwtSecret,
+    })
+  )
+  // Security & Admin Key / GM JWT Check
+  .derive(async ({ headers, query: q, jwt, set }) => {
+    const providedKey = headers["x-admin-key"] || (q as any)?.adminKey;
+    const isMasterKeyValid =
       config.server.allowAnonymousAdmin ||
       (Boolean(providedKey) && providedKey === config.server.adminKey);
+
+    let isGmTokenValid = false;
+    const authHeader = headers["authorization"];
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const payload = await jwt.verify(token);
+      if (payload && typeof (payload as any).groupId === "number" && (payload as any).groupId >= 1) {
+        isGmTokenValid = true;
+      }
+    }
+
+    const isAuthorized = isMasterKeyValid || isGmTokenValid;
 
     return {
       isAuthorized,
       verifyAdmin: () => {
         if (!isAuthorized) {
           set.status = 401;
-          throw new Error("Unauthorized: Invalid or missing Master Admin Key");
+          throw new Error("Unauthorized: GM permissions or Master Admin Key required");
         }
       },
     };

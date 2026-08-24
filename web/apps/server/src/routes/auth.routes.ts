@@ -28,6 +28,8 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
         accountId: result.user.accountId,
         userid: result.user.userid,
         sex: result.user.sex,
+        groupId: result.user.groupId,
+        role: result.user.role,
       });
 
       return {

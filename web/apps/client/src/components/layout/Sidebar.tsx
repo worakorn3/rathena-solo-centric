@@ -5,13 +5,15 @@ import {
   UserCheck,
   Skull,
   Target,
+  Sparkles,
   RefreshCw,
   Search,
   User,
   LogOut,
 } from "lucide-react";
+import { AuthUser } from "@rathena/shared";
 
-export type NavTab = "FINANCE" | "CHARACTER" | "PROGRESSION" | "BOUNTIES";
+export type NavTab = "FINANCE" | "CHARACTER" | "PROGRESSION" | "BOUNTIES" | "GACHA";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -20,7 +22,7 @@ interface SidebarProps {
   isRefreshing?: boolean;
   onOpenSearch: () => void;
   onOpenAdmin?: () => void;
-  user: { userid: string; accountId: number } | null;
+  user: AuthUser | null;
   openLoginModal: () => void;
   logout: () => void;
 }
@@ -75,24 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Primary Navigation Tabs */}
           <nav className="flex flex-col items-center gap-3.5 w-full">
-            {/* Tab 1: Financial HQ */}
-            <button
-              onClick={() => onTabChange("FINANCE")}
-              className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
-                activeTab === "FINANCE"
-                  ? "bg-accent/15 text-accent border border-accent/30 shadow-sm"
-                  : "text-muted hover:text-primary hover:bg-surface2"
-              }`}
-              title="Financial HQ"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="text-[8px] font-bold mt-0.5 tracking-tight">Finance</span>
-              {activeTab === "FINANCE" && (
-                <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
-              )}
-            </button>
-
-            {/* Tab 2: Character / Hero */}
+            {/* Tab 1: Character / Hero */}
             <button
               onClick={() => onTabChange("CHARACTER")}
               className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
@@ -105,6 +90,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <UserCheck className="w-4 h-4" />
               <span className="text-[8px] font-medium mt-0.5 tracking-tight">Hero</span>
               {activeTab === "CHARACTER" && (
+                <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
+              )}
+            </button>
+
+            {/* Tab 2: Financial HQ */}
+            <button
+              onClick={() => onTabChange("FINANCE")}
+              className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
+                activeTab === "FINANCE"
+                  ? "bg-accent/15 text-accent border border-accent/30 shadow-sm"
+                  : "text-muted hover:text-primary hover:bg-surface2"
+              }`}
+              title="Financial HQ"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="text-[8px] font-bold mt-0.5 tracking-tight">Finance</span>
+              {activeTab === "FINANCE" && (
                 <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
               )}
             </button>
@@ -139,6 +141,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Target className="w-4 h-4" />
               <span className="text-[8px] font-medium mt-0.5 tracking-tight">Bounty</span>
               {activeTab === "BOUNTIES" && (
+                <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
+              )}
+            </button>
+
+            {/* Tab 5: Gacha Altar */}
+            <button
+              onClick={() => onTabChange("GACHA")}
+              className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
+                activeTab === "GACHA"
+                  ? "bg-accent/15 text-accent border border-accent/30 shadow-sm"
+                  : "text-muted hover:text-primary hover:bg-surface2"
+              }`}
+              title="Midgard Egg Spinner Altar"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="text-[8px] font-medium mt-0.5 tracking-tight">Gacha</span>
+              {activeTab === "GACHA" && (
                 <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
               )}
             </button>
@@ -309,20 +328,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* 3. MOBILE VIEWPORT: Fixed Bottom Navigation Tab Bar (md:hidden)           */}
       {/* ========================================================================= */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur border-t border-border px-2 py-1 flex items-center justify-around shadow-2xl select-none pb-safe">
-        {/* Tab 1: Finance */}
-        <button
-          onClick={() => onTabChange("FINANCE")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "FINANCE"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Finance</span>
-        </button>
-
-        {/* Tab 2: Character / Hero */}
+        {/* Tab 1: Character / Hero */}
         <button
           onClick={() => onTabChange("CHARACTER")}
           className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
@@ -333,6 +339,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <UserCheck className="w-4 h-4" />
           <span className="text-[10px] mt-0.5">Hero</span>
+        </button>
+
+        {/* Tab 2: Finance */}
+        <button
+          onClick={() => onTabChange("FINANCE")}
+          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+            activeTab === "FINANCE"
+              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+              : "text-muted hover:text-primary font-medium"
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span className="text-[10px] mt-0.5">Finance</span>
         </button>
 
         {/* Tab 3: Progression / Hunt */}
@@ -359,6 +378,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Target className="w-4 h-4" />
           <span className="text-[10px] mt-0.5">Bounty</span>
+        </button>
+
+        {/* Tab 5: Gacha Altar */}
+        <button
+          onClick={() => onTabChange("GACHA")}
+          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+            activeTab === "GACHA"
+              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+              : "text-muted hover:text-primary font-medium"
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span className="text-[10px] mt-0.5">Gacha</span>
         </button>
       </nav>
     </>

@@ -11,6 +11,8 @@ import { Paperdoll } from "./components/character/Paperdoll";
 import { KillTracker } from "./components/tracking/KillTracker";
 import { PublicSearch } from "./components/armory/PublicSearch";
 import { BountyBoard } from "./components/economy/BountyBoard";
+import { GachaAltar } from "./components/gacha/GachaAltar";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { LoginModal } from "./components/auth/LoginModal";
 import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { useAuth } from "./context/AuthContext";
@@ -22,19 +24,20 @@ import {
   ProgressionSummary,
   StockMarketQuote,
 } from "@rathena/shared";
-import { Coins, Shield, Skull, Target, User } from "lucide-react";
+import { Coins, Shield, Skull, Target, User, Sparkles } from "lucide-react";
 
 const VALID_TABS: Record<string, NavTab> = {
-  finance: "FINANCE",
   character: "CHARACTER",
+  finance: "FINANCE",
   progression: "PROGRESSION",
   bounties: "BOUNTIES",
+  gacha: "GACHA",
 };
 
 const getTabFromHash = (): NavTab => {
-  if (typeof window === "undefined") return "FINANCE";
+  if (typeof window === "undefined") return "CHARACTER";
   const hash = window.location.hash.replace("#", "").toLowerCase();
-  return VALID_TABS[hash] || "FINANCE";
+  return VALID_TABS[hash] || "CHARACTER";
 };
 
 export const App: React.FC = () => {
@@ -154,6 +157,8 @@ export const App: React.FC = () => {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  const isUserAdmin = Boolean(user && user.groupId >= 1);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:max-h-screen md:overflow-hidden bg-background text-primary font-sans antialiased select-none">
       {/* 1. LEFT VERTICAL COCKPIT RAIL (Desktop) & TOP/BOTTOM BARS (Mobile) */}
@@ -163,7 +168,7 @@ export const App: React.FC = () => {
         onRefresh={user ? loadUserData : loadPublicData}
         isRefreshing={isRefreshing}
         onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenAdmin={() => setIsAdminVaultOpen(true)}
+        onOpenAdmin={isUserAdmin ? () => setIsAdminVaultOpen(true) : undefined}
         user={user}
         openLoginModal={openLoginModal}
         logout={logout}
@@ -171,7 +176,84 @@ export const App: React.FC = () => {
 
       {/* 2. MAIN STAGE (Mobile: smooth vertical scroll; Desktop: zero body scrolling cockpit) */}
       <main className="flex-1 min-w-0 h-auto md:h-screen md:overflow-hidden p-3 md:p-4 pb-20 md:pb-4 relative flex flex-col">
-        {/* ==================== TAB 1: 💰 FINANCIAL HQ ==================== */}
+        {/* ==================== TAB 1: ⚔️ HERO / CHARACTER & GEAR ==================== */}
+        {activeTab === "CHARACTER" && (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            {user ? (
+              <>
+                {/* Top Character Selector & Location Strip */}
+                <CharSelector
+                  characters={characters}
+                  selectedCharId={selectedCharId}
+                  onSelect={setSelectedCharId}
+                />
+
+                {(() => {
+                  const activeChar =
+                    selectedCharDetail && selectedCharDetail.charId === selectedCharId
+                      ? selectedCharDetail
+                      : characters.find((c) => c.charId === selectedCharId) || selectedCharDetail;
+
+                  if (!activeChar) {
+                    return (
+                      <div className="bento-card flex-1 flex items-center justify-center text-xs text-muted font-medium">
+                        Select a character above to inspect equipment paperdoll and combat telemetry.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    /* 6:6 Balanced Split: Left Combat Sheet & Expedition, Right 10-Slot Paperdoll & Inspector */
+                    <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
+                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                        <StatusWindow key={activeChar.charId} char={activeChar} />
+                      </div>
+                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
+                        <Paperdoll
+                          paperdoll={
+                            selectedCharDetail?.charId === activeChar.charId
+                              ? selectedCharDetail.paperdoll
+                              : {}
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            ) : (
+              <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
+                <div className="w-14 h-14 rounded-full bg-info/10 border border-info/20 mx-auto flex items-center justify-center">
+                  <Shield className="text-info w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-primary mb-1">
+                    Character & Equipment Paperdoll
+                  </h2>
+                  <p className="text-xs font-medium text-muted max-w-md mx-auto">
+                    Log in to inspect your character status, equipped gear, refinement levels, and slotted cards. Or use Armory Search to inspect public players.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-3 pt-2">
+                  <button
+                    onClick={openLoginModal}
+                    className="bg-primary hover:bg-primary/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="bg-surface2 hover:bg-surface2/80 text-primary font-bold py-2 px-5 rounded-md border border-border text-xs transition-colors"
+                  >
+                    Search Public Armory
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==================== TAB 2: 💰 FINANCIAL HQ ==================== */}
         {activeTab === "FINANCE" && (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             {user && netWorth ? (
@@ -251,83 +333,6 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* ==================== TAB 2: ⚔️ HERO / CHARACTER & GEAR ==================== */}
-        {activeTab === "CHARACTER" && (
-          <div className="flex-1 min-h-0 flex flex-col gap-3">
-            {user ? (
-              <>
-                {/* Top Character Selector & Location Strip */}
-                <CharSelector
-                  characters={characters}
-                  selectedCharId={selectedCharId}
-                  onSelect={setSelectedCharId}
-                />
-
-                {(() => {
-                  const activeChar =
-                    selectedCharDetail && selectedCharDetail.charId === selectedCharId
-                      ? selectedCharDetail
-                      : characters.find((c) => c.charId === selectedCharId) || selectedCharDetail;
-
-                  if (!activeChar) {
-                    return (
-                      <div className="bento-card flex-1 flex items-center justify-center text-xs text-muted font-medium">
-                        Select a character above to inspect equipment paperdoll and combat telemetry.
-                      </div>
-                    );
-                  }
-
-                  return (
-                    /* 6:6 Balanced Split: Left Combat Sheet & Expedition, Right 10-Slot Paperdoll & Inspector */
-                    <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
-                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
-                        <StatusWindow key={activeChar.charId} char={activeChar} />
-                      </div>
-                      <div className="col-span-12 lg:col-span-6 min-h-0 h-full">
-                        <Paperdoll
-                          paperdoll={
-                            selectedCharDetail?.charId === activeChar.charId
-                              ? selectedCharDetail.paperdoll
-                              : {}
-                          }
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
-            ) : (
-              <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
-                <div className="w-14 h-14 rounded-full bg-info/10 border border-info/20 mx-auto flex items-center justify-center">
-                  <Shield className="text-info w-7 h-7" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-lg text-primary mb-1">
-                    Character & Equipment Paperdoll
-                  </h2>
-                  <p className="text-xs font-medium text-muted max-w-md mx-auto">
-                    Log in to inspect your character status, equipped gear, refinement levels, and slotted cards. Or use Armory Search to inspect public players.
-                  </p>
-                </div>
-                <div className="flex justify-center gap-3 pt-2">
-                  <button
-                    onClick={openLoginModal}
-                    className="bg-primary hover:bg-primary/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors"
-                  >
-                    Log In
-                  </button>
-                  <button
-                    onClick={() => setIsSearchOpen(true)}
-                    className="bg-surface2 hover:bg-surface2/80 text-primary font-bold py-2 px-5 rounded-md border border-border text-xs transition-colors"
-                  >
-                    Search Public Armory
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ==================== TAB 3: 📜 SOLO PROGRESSION & HUNT TRACKER ==================== */}
         {activeTab === "PROGRESSION" && (
           <div className="flex-1 min-h-0 flex flex-col">
@@ -361,6 +366,19 @@ export const App: React.FC = () => {
         {activeTab === "BOUNTIES" && (
           <div className="flex-1 min-h-0 flex flex-col">
             <BountyBoard />
+          </div>
+        )}
+
+        {/* ==================== TAB 5: 🎰 GACHA ALTAR ==================== */}
+        {activeTab === "GACHA" && (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <ErrorBoundary>
+              <GachaAltar
+                charId={selectedCharId}
+                charZeny={selectedCharDetail?.zeny || 0}
+                onRefreshBalances={loadUserData}
+              />
+            </ErrorBoundary>
           </div>
         )}
       </main>
