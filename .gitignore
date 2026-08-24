@@ -156,6 +156,7 @@ generated
 # Development & Scratch
 node_modules/
 scratch/
+saves/
 *.tsbuildinfo
 .turbo/
 dist/

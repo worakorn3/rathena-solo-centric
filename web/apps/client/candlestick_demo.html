@@ -110,6 +110,9 @@
           <div class="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-primary">
             <i data-lucide="candlestick-chart" class="w-3.5 h-3.5 text-accent"></i>
             <span>Price Action (OHLC)</span>
+            <span class="text-[10px] text-accent/80 font-normal px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20">
+              BKK UTC+7
+            </span>
           </div>
 
           <!-- Timeframe Selector Tabs -->
@@ -127,7 +130,7 @@
         <!-- Legend / Info Strip -->
         <div class="flex items-center justify-between text-[10px] font-mono text-muted/70 pt-0.5 px-1">
           <span id="chart-candle-info">Hover over candle to inspect Open / High / Low / Close</span>
-          <span class="text-accent/80 font-semibold">TradingView Core</span>
+          <span class="text-accent/80 font-semibold">TradingView Core • UTC+7</span>
         </div>
       </div>
 
@@ -221,10 +224,63 @@
       rightPriceScale: {
         borderColor: '#27272a',
       },
+      localization: {
+        locale: 'en-GB',
+        dateFormat: 'yyyy-MM-dd',
+        timeFormatter: (time) => {
+          let d;
+          if (typeof time === 'number') {
+            d = new Date(time * 1000);
+          } else if (typeof time === 'string') {
+            d = new Date(time);
+          } else if (typeof time === 'object' && time !== null && 'year' in time) {
+            d = new Date(Date.UTC(time.year, time.month - 1, time.day));
+          } else {
+            return String(time);
+          }
+          return d.toLocaleString('en-GB', {
+            timeZone: 'Asia/Bangkok',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+        },
+      },
       timeScale: {
         borderColor: '#27272a',
         timeVisible: true,
         secondsVisible: false,
+        tickMarkFormatter: (time, tickMarkType) => {
+          let d;
+          if (typeof time === 'number') {
+            d = new Date(time * 1000);
+          } else if (typeof time === 'string') {
+            d = new Date(time);
+          } else if (typeof time === 'object' && time !== null && 'year' in time) {
+            d = new Date(Date.UTC(time.year, time.month - 1, time.day));
+          } else {
+            return String(time);
+          }
+
+          const bkk = { timeZone: 'Asia/Bangkok' };
+          switch (tickMarkType) {
+            case 0: // Year
+              return d.toLocaleDateString('en-GB', { ...bkk, year: 'numeric' });
+            case 1: // Month
+              return d.toLocaleDateString('en-GB', { ...bkk, month: 'short' });
+            case 2: // DayOfMonth
+              return d.toLocaleDateString('en-GB', { ...bkk, day: 'numeric', month: 'short' });
+            case 3: // Time
+              return d.toLocaleTimeString('en-GB', { ...bkk, hour: '2-digit', minute: '2-digit', hour12: false });
+            case 4: // TimeWithSeconds
+              return d.toLocaleTimeString('en-GB', { ...bkk, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            default:
+              return d.toLocaleTimeString('en-GB', { ...bkk, hour: '2-digit', minute: '2-digit', hour12: false });
+          }
+        },
       },
     });
 

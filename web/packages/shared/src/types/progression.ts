@@ -1,3 +1,14 @@
+export type TrackingCategory =
+  | "KILL"
+  | "LOOT"
+  | "ECONOMY"
+  | "ACHIEVEMENT"
+  | "COLLECTION"
+  | "REPUTATION"
+  | "INSTANCE"
+  | "MASTERY"
+  | "DISCOVERY";
+
 export interface KillRecord {
   mobId: number;
   mobName: string;

@@ -9,9 +9,18 @@ Set-Content -Path "conf/map_test.conf" -Value "import: conf/map_athena.conf`nmap
 ```
 This validates all scripts. In buildbot mode (compiled with `--enable-buildbot=yes`), any syntax error or logic assertion failure using `errormes` will force the server to exit with a non-zero status (`EXIT_FAILURE`), failing the test run.
 
+### NPC Dialogue Pagination & Stacking Linting
+To prevent dialogue overflow and off-screen clipping in the Ragnarok Online client, NPC scripts must be verified with the dialogue linter:
+```powershell
+python tools/ci/lint_npc_dialogue.py --path npc/custom npc/test
+```
+- Verifies that no more than 4–5 consecutive `mes` statements are executed without a `next;` / `clear;` / `close;` page break.
+- Verifies that dynamic loops (`for`, `while`) emitting `mes` output are paginated with `next;`.
+
 ### CI & Upstream Tooling Boundary
 - **Upstream CI Immutability:** Never modify upstream rAthena CI workflow files (`.github/workflows/*`) or upstream CI helper scripts (`tools/ci/*`) unless explicitly directed by the user.
 - **Dedicated Solo Testing:** All custom mechanics (Stock Exchange, Junk Trader, EXP scaling, persistence logging) must be tested via:
   1. Standalone test scripts in `npc/test/` using `npc/test/ci/0000_funcs.txt` (`AssertEquals`, `AssertTrue`).
   2. The local Docker validation command (`rathena:local` with `--map-config conf/map_test.conf` on port 5122).
-  3. Web backend Bun test suites (`web/test/*.test.ts` or `web/apps/server/test/*.test.ts`).
+  3. Static NPC dialogue linting: `python tools/ci/lint_npc_dialogue.py --path npc/custom npc/test`.
+  4. Web backend Bun test suites (`web/test/*.test.ts` or `web/apps/server/test/*.test.ts`).

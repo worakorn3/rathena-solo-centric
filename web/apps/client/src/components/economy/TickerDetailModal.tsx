@@ -57,6 +57,15 @@ const getCategoryBadge = (category: string) => {
       icon: Swords,
     };
   }
+  if (cat.includes("CRYPTO") || cat.includes("PROTOCOL")) {
+    return {
+      label: "Crypto Protocol Event",
+      color: "text-amber-400",
+      bg: "bg-amber-400/15",
+      border: "border-amber-400/30",
+      icon: Zap,
+    };
+  }
   return {
     label: cat.replace(/_/g, " "),
     color: "text-info",
@@ -117,6 +126,11 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
   const activeEvents = newsData?.activeEvents || [];
   const historicalEvents = newsData?.historicalEvents || [];
   const hasLiveOrHistoricalNews = activeEvents.length > 0 || historicalEvents.length > 0;
+  const isCrypto =
+    quote.assetType === "CRYPTO" ||
+    ["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"].includes(quote.ticker) ||
+    (quote.sector?.toLowerCase().includes("protocol") ?? false) ||
+    (quote.sector?.toLowerCase().includes("defi") ?? false);
 
   return (
     <div
@@ -132,17 +146,32 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
         {/* Modal Title Bar */}
         <div className="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-              <Landmark className="w-4 h-4 text-accent" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+              isCrypto ? "bg-accent/10 border-accent/20" : "bg-info/10 border-info/20"
+            }`}>
+              {isCrypto ? (
+                <Zap className="w-4 h-4 text-accent" />
+              ) : (
+                <Landmark className="w-4 h-4 text-info" />
+              )}
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-sm text-primary truncate flex items-center gap-2">
+              <div className="font-bold text-sm text-primary truncate flex items-center gap-1.5 sm:gap-2">
                 <span className="font-mono text-accent">{quote.ticker}</span>
                 <span>·</span>
                 <span className="truncate">{quote.name}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                    isCrypto
+                      ? "bg-accent/15 text-accent border border-accent/30"
+                      : "bg-info/15 text-info border border-info/30"
+                  }`}
+                >
+                  {isCrypto ? "⚡ Crypto Protocol" : "🏛️ Municipal Equity"}
+                </span>
               </div>
               {profile?.cityName && (
-                <div className="text-[11px] text-muted flex items-center gap-1">
+                <div className="text-[11px] text-muted flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3 text-muted/80" /> {profile.cityName}{" "}
                   <span className="text-muted/60">({profile.region})</span>
                 </div>

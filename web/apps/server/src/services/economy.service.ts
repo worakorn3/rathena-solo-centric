@@ -142,15 +142,25 @@ export class EconomyService {
       marketRows = [];
     }
 
+    const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
+
+    const isCrypto = (ticker: string, sector?: string): boolean => {
+      if (CRYPTO_TICKERS.has(ticker.toUpperCase().trim())) return true;
+      if (sector && (sector.toLowerCase().includes("protocol") || sector.toLowerCase().includes("defi"))) return true;
+      return false;
+    };
+
     const quotes: StockMarketQuote[] = marketRows.map((m) => {
       const price = Number(m.price) || 0;
       const priceOld = Number(m.price_old) || price;
       const changeAmount = price - priceOld;
       const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
+      const cryptoAsset = isCrypto(m.ticker, m.sector);
 
       return {
         ticker: m.ticker,
         name: m.name || `${m.ticker} Enterprises`,
+        assetType: cryptoAsset ? "CRYPTO" : "EQUITY",
         sector: m.sector || undefined,
         archetype: m.archetype || undefined,
         lore: m.lore || undefined,
@@ -178,6 +188,8 @@ export class EconomyService {
     }
 
     let stockMarketValue = 0;
+    let municipalMarketValue = 0;
+    let cryptoMarketValue = 0;
     let stockTotalCost = 0;
 
     const holdings: StockHolding[] = playerStockRows.map((p) => {
@@ -196,13 +208,20 @@ export class EconomyService {
         totalCost > 0 ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2)) : 0;
 
       const pendingDividends = Number(p.pending_div) || 0;
+      const cryptoAsset = isCrypto(p.ticker, quote?.sector);
 
       stockMarketValue += marketValue;
+      if (cryptoAsset) {
+        cryptoMarketValue += marketValue;
+      } else {
+        municipalMarketValue += marketValue;
+      }
       stockTotalCost += totalCost;
 
       return {
         ticker: p.ticker,
         name: quote ? quote.name : `${p.ticker} Enterprises`,
+        assetType: cryptoAsset ? "CRYPTO" : "EQUITY",
         sector: quote?.sector,
         archetype: quote?.archetype,
         shares,
@@ -229,19 +248,23 @@ export class EconomyService {
     // 5. Active & Latest Events + Market Meta
     let activeEvents: StockActiveEvent[] = [];
     let latestEvent: StockEventLog | null = null;
-    let marketMood = 0;
-    let marketDrift = 0;
+    let equitiesMood = 0;
+    let equitiesDrift = 0;
+    let cryptoMood = 0;
+    let cryptoDrift = 0;
     try {
       activeEvents = await this.getActiveEvents();
       const history = await this.getEventHistory(1);
       latestEvent = history.length > 0 ? history[0] : null;
 
       const metaRows = await query<{ mkey: string; mval: number }>(
-        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')"
+        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift', 'CryptoMood', 'CryptoDrift')"
       );
       for (const row of metaRows) {
-        if (row.mkey === "MarketMood") marketMood = Number(row.mval);
-        if (row.mkey === "MarketDrift") marketDrift = Number(row.mval);
+        if (row.mkey === "MarketMood") equitiesMood = Number(row.mval);
+        if (row.mkey === "MarketDrift") equitiesDrift = Number(row.mval);
+        if (row.mkey === "CryptoMood") cryptoMood = Number(row.mval);
+        if (row.mkey === "CryptoDrift") cryptoDrift = Number(row.mval);
       }
     } catch {
       activeEvents = [];
@@ -255,6 +278,8 @@ export class EconomyService {
       bankPendingInterest: pendingInterest,
       bankTotal,
       stockMarketValue,
+      municipalMarketValue,
+      cryptoMarketValue,
       stockTotalCost,
       stockUnrealizedPnL,
       stockUnrealizedPnLPercent,
@@ -264,8 +289,12 @@ export class EconomyService {
       bank,
       activeEvents,
       latestEvent,
-      marketMood,
-      marketDrift,
+      marketMood: equitiesMood,
+      marketDrift: equitiesDrift,
+      equitiesMood,
+      equitiesDrift,
+      cryptoMood,
+      cryptoDrift,
     };
   }
 

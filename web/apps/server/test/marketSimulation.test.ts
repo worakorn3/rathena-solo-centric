@@ -20,7 +20,9 @@ describe("MarketSimulationService", () => {
   describe("processHourlyShift", () => {
     it("should apply global market mood to all tickers when there are no active ticker overrides", async () => {
       primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
-        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 1 }];
+        if (query.includes("solo_stock_meta") && query.includes("MarketMood")) {
+          return [{ mkey: "MarketMood", mval: 1 }, { mkey: "CryptoMood", mval: 0 }];
+        }
         if (query.includes("solo_stock_events_active") && query.includes("remaining_shifts > 0") && !query.includes("tax_rate_override")) return []; 
         if (query.includes("solo_stock_market")) {
           return [
@@ -54,7 +56,9 @@ describe("MarketSimulationService", () => {
 
     it("should apply specific ticker mood to a targeted city, bypassing the global mood", async () => {
       primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
-        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 2 }];
+        if (query.includes("solo_stock_meta") && query.includes("MarketMood")) {
+          return [{ mkey: "MarketMood", mval: 2 }, { mkey: "CryptoMood", mval: 0 }];
+        }
         if (query.includes("solo_stock_events_active") && query.includes("remaining_shifts > 0") && !query.includes("tax_rate_override")) {
           return [{ ticker: "GEF", mood_override: 1 }]; 
         }
@@ -96,7 +100,9 @@ describe("MarketSimulationService", () => {
 
     it("should apply macro 'ALL' mood override to all municipal tickers", async () => {
       primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
-        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 2 }]; // baseline Bearish
+        if (query.includes("solo_stock_meta") && query.includes("MarketMood")) {
+          return [{ mkey: "MarketMood", mval: 2 }, { mkey: "CryptoMood", mval: 0 }]; // baseline Bearish
+        }
         if (query.includes("solo_stock_events_active") && query.includes("remaining_shifts > 0") && !query.includes("tax_rate_override")) {
           return [{ ticker: "ALL", mood_override: 1 }]; // Macro Bullish override
         }
@@ -326,6 +332,146 @@ describe("MarketSimulationService", () => {
 
       const cycles = await MarketSimulationService.catchUpOfflineDividends();
       expect(cycles).toBe(42);
+    });
+  });
+
+  describe("catchUpOfflineShifts", () => {
+    it("should do nothing if elapsed time is less than 10 minutes", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string) => {
+        if (query.includes("mkey IN ('LastShiftTime'")) {
+          return [{ mkey: "LastShiftTime", mval: now - 300 }]; // 5 minutes ago
+        }
+        return [];
+      });
+
+      const shifts = await MarketSimulationService.catchUpOfflineShifts();
+      expect(shifts).toBe(0);
+      expect(primaryExecuteMock).not.toHaveBeenCalled();
+    });
+
+    it("should replay 3 missed shifts when offline for 30 minutes and batch insert candles", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string) => {
+        if (query.includes("mkey IN ('LastShiftTime'")) {
+          return [
+            { mkey: "LastShiftTime", mval: now - 1800 }, // 30 minutes ago (3 shifts)
+            { mkey: "MarketMood", mval: 1 },
+            { mkey: "MarketDrift", mval: 0 },
+          ];
+        }
+        if (query.includes("solo_stock_market") && query.includes("enabled = 1")) {
+          return [
+            { ticker: "PRT", price: 100, dividend: 5, split_count: 0, beta: 1.0 },
+            { ticker: "ALB", price: 100, dividend: 5, split_count: 0, beta: 1.0 },
+          ];
+        }
+        if (query.includes("solo_stock_events_active")) {
+          return [];
+        }
+        return [];
+      });
+
+      const originalRandom = Math.random;
+      Math.random = () => 0.5; // deterministic drift & f calculation
+
+      try {
+        const shifts = await MarketSimulationService.catchUpOfflineShifts();
+        expect(shifts).toBe(3);
+
+        // Verify batch history insert was called
+        const historyInserts = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("INSERT INTO `solo_stock_history`")
+        );
+        expect(historyInserts.length).toBe(1);
+
+        // 3 shifts * 2 tickers = 6 candle rows in the batch
+        const insertSql = historyInserts[0][0] as string;
+        expect((insertSql.match(/\(\?, \?, \?, \?, \?, \?, \?\)/g) || []).length).toBe(6);
+
+        // Verify final stock market price update
+        const stockUpdates = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?")
+        );
+        expect(stockUpdates.length).toBe(2);
+
+        // Verify meta update
+        const metaUpdates = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("LastShiftTime")
+        );
+        expect(metaUpdates.length).toBe(1);
+      } finally {
+        Math.random = originalRandom;
+      }
+    });
+
+    it("should handle stock split multiplier during offline replay", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string) => {
+        if (query.includes("mkey IN ('LastShiftTime'")) {
+          return [
+            { mkey: "LastShiftTime", mval: now - 600 }, // 1 shift
+            { mkey: "MarketMood", mval: 1 },
+            { mkey: "MarketDrift", mval: 0 },
+          ];
+        }
+        if (query.includes("solo_stock_market")) {
+          return [
+            { ticker: "SPLIT_CORP", price: 990, dividend: 10, split_count: 0, beta: 1.0 },
+          ];
+        }
+        if (query.includes("solo_stock_events_active")) {
+          return [];
+        }
+        return [];
+      });
+
+      const originalRandom = Math.random;
+      Math.random = () => 0.5; // f = 0 + 2 = +2% -> 990 * 1.02 = 1009 >= 1000 -> split to 100
+
+      try {
+        const shifts = await MarketSimulationService.catchUpOfflineShifts();
+        expect(shifts).toBe(1);
+
+        const splitStockUpdates = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?")
+        );
+        expect(splitStockUpdates.length).toBe(1);
+        expect(splitStockUpdates[0][1][0]).toBe(100); // 1009 / 10 = 100
+        expect(splitStockUpdates[0][1][1]).toBe(1); // split_count = 1
+
+        const playerShareMultipliers = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("UPDATE `solo_stock_player` SET shares = shares * ? WHERE ticker = ?")
+        );
+        expect(playerShareMultipliers.length).toBe(1);
+        expect(playerShareMultipliers[0][1][0]).toBe(10); // 10^1 = 10x
+        expect(playerShareMultipliers[0][1][1]).toBe("SPLIT_CORP");
+      } finally {
+        Math.random = originalRandom;
+      }
+    });
+
+    it("should cap missed shifts to 45 days (6480 shifts) maximum", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string) => {
+        if (query.includes("mkey IN ('LastShiftTime'")) {
+          return [
+            { mkey: "LastShiftTime", mval: now - 60 * 86400 }, // 60 days ago
+            { mkey: "MarketMood", mval: 1 },
+            { mkey: "MarketDrift", mval: 0 },
+          ];
+        }
+        if (query.includes("solo_stock_market")) {
+          return [{ ticker: "PRT", price: 100, dividend: 5, split_count: 0, beta: 1.0 }];
+        }
+        if (query.includes("solo_stock_events_active")) {
+          return [];
+        }
+        return [];
+      });
+
+      const shifts = await MarketSimulationService.catchUpOfflineShifts();
+      expect(shifts).toBe(6480);
     });
   });
 });

@@ -13,7 +13,9 @@
     "build:shared": "bun --filter @rathena/shared build",
     "build:client": "bun --filter @rathena/client build",
     "build": "bun run build:shared && bun run build:client",
-    "test": "bun test --filter server"
+    "test": "bun test --filter server",
+    "test:dialogue": "python ../tools/ci/lint_npc_dialogue.py --path ../npc/test",
+    "test:dialogue:unit": "python ../tools/ci/test_lint_npc_dialogue.py"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

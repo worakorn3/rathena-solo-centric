@@ -27,3 +27,5 @@ function	script	F_RecordEconomy	{
 	query_sql "INSERT INTO solo_persistence_log (account_id, category, target_id, `value`) VALUES (" + .@account_id + ", 'ECONOMY', " + .@type + ", " + .@val + ") ON DUPLICATE KEY UPDATE `value` = `value` + " + .@val;
 	return;
 }
+
+

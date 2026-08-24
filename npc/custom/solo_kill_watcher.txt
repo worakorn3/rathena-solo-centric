@@ -30,9 +30,10 @@ OnNPCKillEvent:
 
 	// 3. Boss Tracking
 	if (getmonsterinfo(.@mob_id, MOB_MVPEXP) > 0) {
-		$LastMvpKiller$ = strcharinfo(0);
-		$LastMvpName$ = getmonsterinfo(.@mob_id, MOB_NAME);
-		$LastMvpTime = gettimetick(2);
+		$@LastMvpKiller$ = strcharinfo(0);
+		$@LastMvpName$ = getmonsterinfo(.@mob_id, MOB_NAME);
+		$@LastMvpTime = gettimetick(2);
 	}
 	end;
 }
+

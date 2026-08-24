@@ -15,20 +15,43 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     const quotes = await EconomyService.getMarketQuotes();
     let marketMood = 0;
     let marketDrift = 0;
+    let equitiesMood = 0;
+    let equitiesDrift = 0;
+    let cryptoMood = 0;
+    let cryptoDrift = 0;
     try {
       const metaRows = await query<{ mkey: string; mval: number }>(
-        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')"
+        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift', 'CryptoMood', 'CryptoDrift')"
       );
       for (const row of metaRows) {
-        if (row.mkey === "MarketMood") marketMood = Number(row.mval);
-        if (row.mkey === "MarketDrift") marketDrift = Number(row.mval);
+        if (row.mkey === "MarketMood") {
+          marketMood = Number(row.mval);
+          equitiesMood = Number(row.mval);
+        }
+        if (row.mkey === "MarketDrift") {
+          marketDrift = Number(row.mval);
+          equitiesDrift = Number(row.mval);
+        }
+        if (row.mkey === "CryptoMood") cryptoMood = Number(row.mval);
+        if (row.mkey === "CryptoDrift") cryptoDrift = Number(row.mval);
       }
     } catch {}
     const activeEvents = await EconomyService.getActiveEvents();
     const history = await EconomyService.getEventHistory(1);
     const latestEvent = history.length > 0 ? history[0] : null;
 
-    return { success: true, quotes, marketMood, marketDrift, activeEvents, latestEvent };
+    return {
+      success: true,
+      quotes,
+      marketMood,
+      marketDrift,
+      equitiesMood,
+      equitiesDrift,
+      cryptoMood,
+      cryptoDrift,
+      activeEvents,
+      latestEvent,
+    };
   })
   .get("/events", async ({ query }) => {
     const limit = query && query.limit ? Number(query.limit) : 20;

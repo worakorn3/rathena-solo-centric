@@ -56,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* ========================================================================= */}
       {/* 1. DESKTOP VIEWPORT: Exact 16-width Left Cockpit Rail (md:flex)           */}
       {/* ========================================================================= */}
-      <aside className="hidden md:flex w-16 bg-surface border-r border-border flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-full select-none">
+      <aside className="hidden md:flex w-16 bg-surface border-r border-border flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-screen sticky top-0 select-none">
         {/* Top Section: Brand & Primary Navigation Tabs */}
         <div className="flex flex-col items-center gap-3 w-full">
           {/* Brand Logo with Integrated Live Pulse Indicator */}

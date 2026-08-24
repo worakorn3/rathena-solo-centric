@@ -78,6 +78,13 @@ prt_in,65,60,4	script	Refine Insurer	100,{
 		close;
 	}
 
+	if (!checkweight(6635, .@amount)) {
+		mes "[Refine Insurer]";
+		mes "You are carrying too much weight, or your inventory is full.";
+		mes "Please make room in your backpack first.";
+		close;
+	}
+
 	Zeny -= .@total;
 	getitem 6635, .@amount; // Blacksmith Blessing
 	

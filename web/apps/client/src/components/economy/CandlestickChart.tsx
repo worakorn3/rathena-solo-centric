@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi, CandlestickData, Time, TickMarkType } from "lightweight-charts";
 import { StockHistoryResponse } from "@rathena/shared";
 import { api } from "../../lib/api";
 import { Loader2, TrendingUp } from "lucide-react";
@@ -48,12 +48,65 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
         borderColor: "#27272a",
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
+      localization: {
+        locale: "en-GB",
+        dateFormat: "yyyy-MM-dd",
+        timeFormatter: (time: any) => {
+          let d: Date;
+          if (typeof time === "number") {
+            d = new Date(time * 1000);
+          } else if (typeof time === "string") {
+            d = new Date(time);
+          } else if (typeof time === "object" && time !== null && "year" in time) {
+            d = new Date(Date.UTC(time.year, time.month - 1, time.day));
+          } else {
+            return String(time);
+          }
+          return d.toLocaleString("en-GB", {
+            timeZone: "Asia/Bangkok",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        },
+      },
       timeScale: {
         borderColor: "#27272a",
         timeVisible: true,
         secondsVisible: false,
         barSpacing: 14,
         minBarSpacing: 6,
+        tickMarkFormatter: (time: any, tickMarkType: TickMarkType) => {
+          let d: Date;
+          if (typeof time === "number") {
+            d = new Date(time * 1000);
+          } else if (typeof time === "string") {
+            d = new Date(time);
+          } else if (typeof time === "object" && time !== null && "year" in time) {
+            d = new Date(Date.UTC(time.year, time.month - 1, time.day));
+          } else {
+            return String(time);
+          }
+
+          const bkk = { timeZone: "Asia/Bangkok" };
+          switch (tickMarkType) {
+            case TickMarkType.Year:
+              return d.toLocaleDateString("en-GB", { ...bkk, year: "numeric" });
+            case TickMarkType.Month:
+              return d.toLocaleDateString("en-GB", { ...bkk, month: "short" });
+            case TickMarkType.DayOfMonth:
+              return d.toLocaleDateString("en-GB", { ...bkk, day: "numeric", month: "short" });
+            case TickMarkType.Time:
+              return d.toLocaleTimeString("en-GB", { ...bkk, hour: "2-digit", minute: "2-digit", hour12: false });
+            case TickMarkType.TimeWithSeconds:
+              return d.toLocaleTimeString("en-GB", { ...bkk, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+            default:
+              return d.toLocaleTimeString("en-GB", { ...bkk, hour: "2-digit", minute: "2-digit", hour12: false });
+          }
+        },
       },
       height: 220,
     });
@@ -155,6 +208,9 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
         <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-primary">
           <TrendingUp className="w-3.5 h-3.5 text-accent" />
           <span>Price Action (OHLC)</span>
+          <span className="text-[10px] text-accent/80 font-normal px-1.5 py-0.2 rounded bg-accent/10 border border-accent/20">
+            BKK UTC+7
+          </span>
         </div>
 
         <div className="flex items-center gap-1 bg-surface p-0.5 rounded border border-border font-mono text-[10px]">
@@ -206,7 +262,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
         ) : (
           <span className="text-muted/60">Hover over candle to inspect OHLC values</span>
         )}
-        <span className="text-accent/80 font-semibold shrink-0">TradingView Core</span>
+        <span className="text-accent/80 font-semibold shrink-0">TradingView Core • UTC+7</span>
       </div>
     </div>
   );

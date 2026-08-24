@@ -1,47 +1,93 @@
 import { primaryQuery, primaryExecute } from "../db/pool";
 
+export const MARKET_SHIFT_INTERVAL_SEC = 600;
+
 export class MarketSimulationService {
   /**
    * Process Hourly Price Shifts
    */
   static async processHourlyShift() {
     console.log("[MarketSimulation] Running hourly shift...");
-    let marketMood = 0;
-    let marketDrift = 0;
+    let equitiesMood = 0;
+    let equitiesDrift = 0;
+    let cryptoMood = 0;
+    let cryptoDrift = 0;
 
-    const moodRows = await primaryQuery("SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'");
-    if (moodRows.length > 0) marketMood = moodRows[0].mval;
+    const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
+    const isCrypto = (ticker: string, sector?: string): boolean => {
+      if (CRYPTO_TICKERS.has(ticker.toUpperCase().trim())) return true;
+      if (sector && (sector.toLowerCase().includes("protocol") || sector.toLowerCase().includes("defi"))) return true;
+      return false;
+    };
 
-    // Random drift between -4 and 4
-    marketDrift = Math.floor(Math.random() * 9) - 4;
-    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketDrift'", [marketDrift]);
+    const moodRows = await primaryQuery(
+      "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'CryptoMood')"
+    );
+    for (const r of moodRows) {
+      if (r.mkey === "MarketMood") equitiesMood = Number(r.mval) || 0;
+      if (r.mkey === "CryptoMood") cryptoMood = Number(r.mval) || 0;
+    }
 
-    // Fetch active event overrides mapped by ticker (Ponytail: YAGNI on new tables, reuse existing schema)
+    // Decoupled Random Drifts:
+    // Municipal Equities: Drift between -4 and 4
+    equitiesDrift = Math.floor(Math.random() * 9) - 4;
+    // Crypto Protocols: High-volatility drift between -7 and 7
+    cryptoDrift = Math.floor(Math.random() * 15) - 7;
+
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketDrift'", [equitiesDrift]);
+    await primaryExecute(
+      "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES ('CryptoDrift', ?) ON DUPLICATE KEY UPDATE mval = ?",
+      [cryptoDrift, cryptoDrift]
+    );
+
+    // Fetch active event overrides mapped by ticker
     const activeMoodRows = await primaryQuery(
       "SELECT ticker, mood_override FROM `solo_stock_events_active` WHERE mood_override > 0 AND remaining_shifts > 0"
     );
     const tickerMoods = new Map(activeMoodRows.map((r: any) => [r.ticker, r.mood_override]));
 
-    // Ponytail: Query all active stock tickers dynamically from DB
+    // Query all active stock tickers dynamically from DB
     const stockRows = await primaryQuery(
-      "SELECT ticker, price, dividend, split_count, beta FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+      "SELECT ticker, sector, price, dividend, split_count, beta FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
     );
 
-    let upCount = 0;
+    let equitiesUpCount = 0;
+    let equitiesTotalCount = 0;
+    let cryptoUpCount = 0;
+    let cryptoTotalCount = 0;
     const candlesToInsert: { ticker: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
 
     for (const stock of stockRows) {
       const city = stock.ticker;
       const price = Number(stock.price) || 0;
       const beta = Number(stock.beta) || 1.0;
+      const cryptoAsset = isCrypto(city, stock.sector);
 
-      // Ponytail: Use specific ticker mood if lore event active, otherwise global 'ALL' override or marketMood
-      let localMood = tickerMoods.get(city) || tickerMoods.get("ALL") || marketMood;
+      // Decoupled Local Mood & Drift
+      let localMood = tickerMoods.get(city);
+      let f = 0;
 
-      let f = marketDrift + (Math.floor(Math.random() * 13) - 6); // rand(-6, 6)
-      if (localMood === 1) f += 2;
-      else if (localMood === 2) f -= 2;
-      else if (localMood === 3) f += (Math.floor(Math.random() * 36) - 15); // rand(-15, 20)
+      if (cryptoAsset) {
+        cryptoTotalCount++;
+        if (!localMood) {
+          localMood = tickerMoods.get("CRYPTO") || tickerMoods.get("ALL") || cryptoMood;
+        }
+
+        f = cryptoDrift + (Math.floor(Math.random() * 17) - 8); // rand(-8, 8)
+        if (localMood === 1) f += 3; // Bullish
+        else if (localMood === 2) f -= 3; // Bearish
+        else if (localMood === 3) f += (Math.floor(Math.random() * 61) - 25); // Euphoria/Chaos: rand(-25, 35)
+      } else {
+        equitiesTotalCount++;
+        if (!localMood) {
+          localMood = tickerMoods.get("EQUITIES") || tickerMoods.get("ALL") || equitiesMood;
+        }
+
+        f = equitiesDrift + (Math.floor(Math.random() * 13) - 6); // rand(-6, 6)
+        if (localMood === 1) f += 2; // Bullish
+        else if (localMood === 2) f -= 2; // Bearish
+        else if (localMood === 3) f += (Math.floor(Math.random() * 36) - 15); // Chaos: rand(-15, 20)
+      }
 
       // Apply beta volatility multiplier
       f = Math.round(f * beta);
@@ -61,7 +107,10 @@ export class MarketSimulationService {
         await primaryExecute("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?", [newPrice, city]);
       }
 
-      if (newPrice > price) upCount++;
+      if (newPrice > price) {
+        if (cryptoAsset) cryptoUpCount++;
+        else equitiesUpCount++;
+      }
 
       // Compute OHLC candle wicks
       const wickSpread = Math.max(1, Math.round(newPrice * 0.008));
@@ -73,7 +122,7 @@ export class MarketSimulationService {
       candlesToInsert.push({ ticker: city, open, high, low, close, volume });
     }
 
-    // Ponytail: Atomic multi-row batch insert of 10-minute snapshot in 1 single SQL query
+    // Atomic multi-row batch insert of 10-minute snapshot in 1 single SQL query
     if (candlesToInsert.length > 0) {
       const placeholders = candlesToInsert.map(() => "(?, ?, ?, ?, ?, ?, NOW())").join(", ");
       const params = candlesToInsert.flatMap((c) => [c.ticker, c.open, c.high, c.low, c.close, c.volume]);
@@ -83,11 +132,21 @@ export class MarketSimulationService {
       );
     }
 
-    if (tickerMoods.size === 0) {
-      const rand = Math.floor(Math.random() * 100) + 1;
-      if (rand <= 8) marketMood = 3;
-      else if (upCount >= Math.ceil(stockRows.length / 2)) marketMood = 1;
-      else marketMood = 2;
+    // Independent next-shift mood calculations:
+    // 1. Municipal Equities Mood
+    if (!tickerMoods.has("EQUITIES") && !tickerMoods.has("ALL")) {
+      const randEquities = Math.floor(Math.random() * 100) + 1;
+      if (randEquities <= 8) equitiesMood = 3; // 8% Chaos
+      else if (equitiesUpCount >= Math.ceil(equitiesTotalCount / 2)) equitiesMood = 1; // Bullish
+      else equitiesMood = 2; // Bearish
+    }
+
+    // 2. Crypto Protocols Mood
+    if (!tickerMoods.has("CRYPTO") && !tickerMoods.has("ALL")) {
+      const randCrypto = Math.floor(Math.random() * 100) + 1;
+      if (randCrypto <= 20) cryptoMood = 3; // 20% Euphoric Mania / High Chaos
+      else if (cryptoUpCount >= Math.ceil(cryptoTotalCount / 2)) cryptoMood = 1; // Bullish
+      else cryptoMood = 2; // Bearish
     }
 
     await primaryExecute("UPDATE `solo_stock_events_active` SET remaining_shifts = remaining_shifts - 1 WHERE remaining_shifts > 0");
@@ -98,8 +157,16 @@ export class MarketSimulationService {
       await primaryExecute("UPDATE `solo_stock_meta` SET mval = 10 WHERE mkey = 'DivTaxRate' AND mval = 0");
     }
 
-    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [marketMood]);
-    console.log("[MarketSimulation] Hourly shift complete.");
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [equitiesMood]);
+    await primaryExecute(
+      "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES ('CryptoMood', ?) ON DUPLICATE KEY UPDATE mval = ?",
+      [cryptoMood, cryptoMood]
+    );
+    await primaryExecute(
+      "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES ('LastShiftTime', ?) ON DUPLICATE KEY UPDATE mval = ?",
+      [Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)]
+    );
+    console.log(`[MarketSimulation] Hourly shift complete. Equities Mood: ${equitiesMood}, Crypto Mood: ${cryptoMood}`);
   }
 
   /**
@@ -202,6 +269,178 @@ export class MarketSimulationService {
     
     await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LastUpdate'", [Math.floor(Date.now() / 1000)]);
     console.log("[MarketSimulation] Midnight processing complete.");
+  }
+
+  /**
+   * Catches up missed 10-minute price shifts organically while preserving trends.
+   */
+  static async catchUpOfflineShifts(): Promise<number> {
+    const metaRows = await primaryQuery(
+      "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('LastShiftTime', 'MarketMood', 'MarketDrift')"
+    );
+    const metaMap = new Map(metaRows.map((r: any) => [r.mkey, Number(r.mval)]));
+
+    let lastShiftTime = metaMap.get("LastShiftTime") || 0;
+
+    // Fallback: If LastShiftTime key doesn't exist yet, derive from latest history candle
+    if (lastShiftTime === 0) {
+      const latestCandle = await primaryQuery(
+        "SELECT UNIX_TIMESTAMP(MAX(timestamp)) as last_ts FROM `solo_stock_history`"
+      );
+      lastShiftTime = Number(latestCandle[0]?.last_ts) || Math.floor(Date.now() / 1000);
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const elapsed = now - lastShiftTime;
+    if (elapsed < MARKET_SHIFT_INTERVAL_SEC) return 0;
+
+    // Cap at 45 days (retention window = 6480 shifts) to prevent runaway memory
+    const missedShifts = Math.min(Math.floor(elapsed / MARKET_SHIFT_INTERVAL_SEC), 6480);
+    console.log(
+      `[MarketSimulation] Server was offline for ${Math.floor(elapsed / 60)}m. Simulating ${missedShifts} missed shift(s)...`
+    );
+
+    // 1. Fetch live market state into memory
+    let marketMood = metaMap.get("MarketMood") || 0;
+    let marketDrift = metaMap.get("MarketDrift") || 0;
+
+    const stockRows = await primaryQuery(
+      "SELECT ticker, price, dividend, split_count, beta FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+    );
+    if (stockRows.length === 0) return 0;
+
+    const activeEvents = await primaryQuery(
+      "SELECT event_id, ticker, mood_override, remaining_shifts FROM `solo_stock_events_active` WHERE remaining_shifts > 0"
+    );
+
+    // In-memory ticker tracking
+    const state = stockRows.map((s: any) => ({
+      ticker: s.ticker,
+      price: Number(s.price) || 50,
+      beta: Number(s.beta) || 1.0,
+      splitCount: Number(s.split_count) || 0,
+      totalSplitsDuringOffline: 0,
+    }));
+
+    const candlesToInsert: { ticker: string; open: number; high: number; low: number; close: number; volume: number; ts: string }[] = [];
+
+    // 2. Pure In-Memory Stepwise Replay
+    for (let step = 1; step <= missedShifts; step++) {
+      const stepTimestamp = new Date((lastShiftTime + step * MARKET_SHIFT_INTERVAL_SEC) * 1000)
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+
+      // Decrement active lore events in memory
+      const currentTickerMoods = new Map<string, number>();
+      for (const ev of activeEvents) {
+        if (ev.remaining_shifts > 0) {
+          currentTickerMoods.set(ev.ticker, ev.mood_override);
+          ev.remaining_shifts--;
+        }
+      }
+
+      // Step drift transition
+      marketDrift = Math.floor(Math.random() * 9) - 4;
+      let upCount = 0;
+
+      for (const stock of state) {
+        const localMood = currentTickerMoods.get(stock.ticker) || currentTickerMoods.get("ALL") || marketMood;
+
+        let f = marketDrift + (Math.floor(Math.random() * 13) - 6);
+        if (localMood === 1) f += 2;
+        else if (localMood === 2) f -= 2;
+        else if (localMood === 3) f += Math.floor(Math.random() * 36) - 15;
+
+        f = Math.round(f * stock.beta);
+
+        const oldPrice = stock.price;
+        let newPrice = oldPrice + Math.floor((oldPrice * f) / 100);
+        if (newPrice < 50) newPrice = 50;
+
+        // Handle stock split
+        if (newPrice >= 1000) {
+          newPrice = Math.floor(newPrice / 10);
+          stock.splitCount++;
+          stock.totalSplitsDuringOffline++;
+        }
+
+        if (newPrice > oldPrice) upCount++;
+        stock.price = newPrice;
+
+        // Synthetic OHLC candle matching the live formula
+        const wickSpread = Math.max(1, Math.round(newPrice * 0.008));
+        const high = Math.max(oldPrice, newPrice) + Math.floor(Math.random() * wickSpread);
+        const low = Math.max(1, Math.min(oldPrice, newPrice) - Math.floor(Math.random() * wickSpread));
+        const volume = Math.floor(Math.random() * 120) + 10;
+
+        candlesToInsert.push({
+          ticker: stock.ticker,
+          open: oldPrice,
+          high,
+          low,
+          close: newPrice,
+          volume,
+          ts: stepTimestamp,
+        });
+      }
+
+      // Organic mood evolution if no lore event is active
+      if (currentTickerMoods.size === 0) {
+        const rand = Math.floor(Math.random() * 100) + 1;
+        if (rand <= 8) marketMood = 3;
+        else if (upCount >= Math.ceil(state.length / 2)) marketMood = 1;
+        else marketMood = 2;
+      }
+    }
+
+    // 3. Batch DB Persistence (Chunked multi-row inserts)
+    const CHUNK_SIZE = 500;
+    for (let i = 0; i < candlesToInsert.length; i += CHUNK_SIZE) {
+      const chunk = candlesToInsert.slice(i, i + CHUNK_SIZE);
+      const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+      const params = chunk.flatMap((c) => [c.ticker, c.open, c.high, c.low, c.close, c.volume, c.ts]);
+      await primaryExecute(
+        `INSERT INTO \`solo_stock_history\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`timestamp\`) VALUES ${placeholders}`,
+        params
+      );
+    }
+
+    // 4. Update final state in solo_stock_market
+    for (const stock of state) {
+      if (stock.totalSplitsDuringOffline > 0) {
+        const multiplier = Math.pow(10, stock.totalSplitsDuringOffline);
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?",
+          [stock.price, stock.splitCount, stock.ticker]
+        );
+        await primaryExecute(
+          "UPDATE `solo_stock_player` SET shares = shares * ? WHERE ticker = ?",
+          [multiplier, stock.ticker]
+        );
+      } else {
+        await primaryExecute("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?", [
+          stock.price,
+          stock.ticker,
+        ]);
+      }
+    }
+
+    // 5. Cleanup expired events & sync meta
+    await primaryExecute("DELETE FROM `solo_stock_events_active` WHERE remaining_shifts <= ?", [missedShifts]);
+    await primaryExecute(
+      "UPDATE `solo_stock_events_active` SET remaining_shifts = remaining_shifts - ? WHERE remaining_shifts > 0",
+      [missedShifts]
+    );
+    await primaryExecute(
+      "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES ('LastShiftTime', ?) ON DUPLICATE KEY UPDATE mval = ?",
+      [now, now]
+    );
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [marketMood]);
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketDrift'", [marketDrift]);
+
+    console.log(`[MarketSimulation] Offline gap filled with ${candlesToInsert.length} candles.`);
+    return missedShifts;
   }
 
   static async catchUpOfflineDividends(): Promise<number> {

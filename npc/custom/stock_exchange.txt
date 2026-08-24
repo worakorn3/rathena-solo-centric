@@ -26,25 +26,59 @@ function	script	F_StockExchangeMain	{
 L_MenuMain:
 	.@account_id = getcharid(3);
 
-	// Ponytail: Query stock tickers and metadata dynamically from solo_stock_market (active enabled only)
+	mes "[Midgard Stock Exchange]";
+	mes "Welcome to the Central Financial Terminal.";
+	mes "Please select a market sector or manage your portfolio:";
+	next;
+
+	if (getgmlevel() >= 99) {
+		switch(select("🏛️ Municipal Equities Index:⚡ Decentralized Rune Protocols:💼 My Investment Portfolio:💰 Claim Dividends & Staking:⚙️ DRIP Settings:^FF0000[Admin Tools]^000000:Exit")) {
+			case 1: goto L_IndexEquities;
+			case 2: goto L_IndexCrypto;
+			case 3: goto L_MenuPort;
+			case 4: goto L_ClaimDiv;
+			case 5: goto L_MenuDrip;
+			case 6: goto L_Admin;
+			default: return;
+		}
+	} else {
+		switch(select("🏛️ Municipal Equities Index:⚡ Decentralized Rune Protocols:💼 My Investment Portfolio:💰 Claim Dividends & Staking:⚙️ DRIP Settings:Exit")) {
+			case 1: goto L_IndexEquities;
+			case 2: goto L_IndexCrypto;
+			case 3: goto L_MenuPort;
+			case 4: goto L_ClaimDiv;
+			case 5: goto L_MenuDrip;
+			default: return;
+		}
+	}
+
+L_IndexEquities:
+	.@eq_mood = 0;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", .@eq_mood;
+	if (.@eq_mood == 1) .@eq_mood$ = "^00FF00Bullish^000000";
+	else if (.@eq_mood == 2) .@eq_mood$ = "^FF0000Bearish^000000";
+	else if (.@eq_mood == 3) .@eq_mood$ = "^FF8800Chaos^000000";
+	else .@eq_mood$ = "^777777Neutral^000000";
+
 	deletearray .@tickers$[0], getarraysize(.@tickers$);
 	deletearray .@names$[0], getarraysize(.@names$);
 	deletearray .@prices[0], getarraysize(.@prices);
 	deletearray .@price_olds[0], getarraysize(.@price_olds);
 	deletearray .@divs[0], getarraysize(.@divs);
 
-	.@stock_count = query_sql("SELECT ticker, name, price, price_old, dividend FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@tickers$, .@names$, .@prices, .@price_olds, .@divs);
+	.@stock_count = query_sql("SELECT ticker, name, price, price_old, dividend FROM `solo_stock_market` WHERE enabled = 1 AND sector NOT LIKE '%Protocol%' AND sector NOT LIKE '%DeFi%' ORDER BY ticker ASC", .@tickers$, .@names$, .@prices, .@price_olds, .@divs);
 
-	mes "[Midgard Stock Exchange]";
 	if (.@stock_count <= 0) {
-		mes "The stock market is currently closed for maintenance.";
-		close;
+		mes "[Municipal Equities]";
+		mes "No municipal stocks currently listed.";
+		next; goto L_MenuMain;
 	}
 
 	.@total_pages = (.@stock_count + 4) / 5;
 	for (.@page = 0; .@page < .@total_pages; .@page++) {
 		clear;
-		mes "Standard Index [Page " + (.@page + 1) + "/" + .@total_pages + "]:";
+		mes "[🏛️ Municipal Index - Page " + (.@page + 1) + "/" + .@total_pages + "]:";
+		mes "Sentiment: " + .@eq_mood$;
 		mes "---------------------------";
 		.@start_idx = .@page * 5;
 		.@end_idx = .@start_idx + 5;
@@ -61,14 +95,59 @@ L_MenuMain:
 		next;
 	}
 
-	if (getgmlevel() >= 99) {
-		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:DRIP Settings:^FF0000[Admin Tools]^000000:Exit")) {
-			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_MenuDrip; case 6: goto L_Admin; default: return;
+	switch(select("Buy Municipal Shares:Liquidate Municipal Shares:Back to Main Hub")) {
+		case 1: .@filter_mode$ = "EQUITY"; goto L_MenuBuy;
+		case 2: .@filter_mode$ = "EQUITY"; goto L_MenuSell;
+		default: goto L_MenuMain;
+	}
+
+L_IndexCrypto:
+	.@cr_mood = 0;
+	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'CryptoMood'", .@cr_mood;
+	if (.@cr_mood == 1) .@cr_mood$ = "^00FF00Bullish^000000";
+	else if (.@cr_mood == 2) .@cr_mood$ = "^FF0000Bearish^000000";
+	else if (.@cr_mood == 3) .@cr_mood$ = "^FF8800Euphoric Mania^000000";
+	else .@cr_mood$ = "^777777Neutral^000000";
+
+	deletearray .@tickers$[0], getarraysize(.@tickers$);
+	deletearray .@names$[0], getarraysize(.@names$);
+	deletearray .@prices[0], getarraysize(.@prices);
+	deletearray .@price_olds[0], getarraysize(.@price_olds);
+	deletearray .@divs[0], getarraysize(.@divs);
+
+	.@stock_count = query_sql("SELECT ticker, name, price, price_old, dividend FROM `solo_stock_market` WHERE enabled = 1 AND (sector LIKE '%Protocol%' OR sector LIKE '%DeFi%') ORDER BY ticker ASC", .@tickers$, .@names$, .@prices, .@price_olds, .@divs);
+
+	if (.@stock_count <= 0) {
+		mes "[Crypto Protocols]";
+		mes "No decentralized protocols currently listed.";
+		next; goto L_MenuMain;
+	}
+
+	.@total_pages = (.@stock_count + 4) / 5;
+	for (.@page = 0; .@page < .@total_pages; .@page++) {
+		clear;
+		mes "[⚡ Decentralized Ledger - Page " + (.@page + 1) + "/" + .@total_pages + "]:";
+		mes "Sentiment: " + .@cr_mood$;
+		mes "---------------------------";
+		.@start_idx = .@page * 5;
+		.@end_idx = .@start_idx + 5;
+		if (.@end_idx > .@stock_count) .@end_idx = .@stock_count;
+		for (.@i = .@start_idx; .@i < .@end_idx; .@i++) {
+			.@p = .@prices[.@i];
+			.@po = .@price_olds[.@i];
+			.@diff = .@p - .@po;
+			if (.@diff > 0) { .@clr$ = "^00FF00"; .@d$ = "(+" + .@diff + "z)"; }
+			else if (.@diff < 0) { .@clr$ = "^FF0000"; .@d$ = "(" + .@diff + "z)"; }
+			else { .@clr$ = "^000000"; .@d$ = "(0z)"; }
+			mes "- " + .@tickers$[.@i] + " (" + .@names$[.@i] + "): " + .@clr$ + .@p + "z^000000 " + .@d$ + " [Yield: " + .@divs[.@i] + "z]";
 		}
-	} else {
-		switch(select("Trade Buy:Trade Sell:My Portfolio:Claim Dividends:DRIP Settings:Exit")) {
-			case 1: goto L_MenuBuy; case 2: goto L_MenuSell; case 3: goto L_MenuPort; case 4: goto L_ClaimDiv; case 5: goto L_MenuDrip; default: return;
-		}
+		next;
+	}
+
+	switch(select("Buy Crypto Tokens:Liquidate Crypto Tokens:Back to Main Hub")) {
+		case 1: .@filter_mode$ = "CRYPTO"; goto L_MenuBuy;
+		case 2: .@filter_mode$ = "CRYPTO"; goto L_MenuSell;
+		default: goto L_MenuMain;
 	}
 
 L_ClaimDiv:
@@ -77,7 +156,7 @@ L_ClaimDiv:
 	query_sql "SELECT COALESCE(SUM(pending_div), 0) FROM `solo_stock_player` WHERE account_id = " + .@account_id, .@total;
 	if (.@total <= 0) {
 		mes "[Midgard Stock Exchange]";
-		mes "No dividends to collect.";
+		mes "No dividends or staking yields to collect.";
 		next; goto L_MenuMain;
 	}
 
@@ -106,8 +185,8 @@ L_ClaimDiv:
 		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
 	}
 	
-	mes "[Dividend Distribution]";
-	mes "Gross Dividends: ^00FF00" + .@total + "z^000000";
+	mes "[Dividend & Staking Distribution]";
+	mes "Gross Accruals: ^00FF00" + .@total + "z^000000";
 	mes "Tax (" + .@tax_rate + "%): ^FF0000-" + .@tax_amt + "z^000000";
 	mes "---------------------------";
 	mes "Net Collected: ^0000FF" + .@net + "z^000000";
@@ -139,9 +218,21 @@ L_Admin:
 	}
 
 L_MenuBuy:
-	mes "[Buy Stocks]";
+	mes "[Buy Asset]";
+	deletearray .@tickers$[0], getarraysize(.@tickers$);
+	deletearray .@names$[0], getarraysize(.@names$);
+	deletearray .@prices[0], getarraysize(.@prices);
+
+	if (.@filter_mode$ == "EQUITY") {
+		.@stock_count = query_sql("SELECT ticker, name, price FROM `solo_stock_market` WHERE enabled = 1 AND sector NOT LIKE '%Protocol%' AND sector NOT LIKE '%DeFi%' ORDER BY ticker ASC", .@tickers$, .@names$, .@prices);
+	} else if (.@filter_mode$ == "CRYPTO") {
+		.@stock_count = query_sql("SELECT ticker, name, price FROM `solo_stock_market` WHERE enabled = 1 AND (sector LIKE '%Protocol%' OR sector LIKE '%DeFi%') ORDER BY ticker ASC", .@tickers$, .@names$, .@prices);
+	} else {
+		.@stock_count = query_sql("SELECT ticker, name, price FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@tickers$, .@names$, .@prices);
+	}
+
 	if (.@stock_count <= 0) {
-		mes "No stock listings available.";
+		mes "No listings available in this sector.";
 		next; goto L_MenuMain;
 	}
 
@@ -199,10 +290,12 @@ L_MenuBuy:
 	Zeny = Zeny - .@total; 
 	
 	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + .@subtotal + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + .@subtotal;
-	goto L_MenuMain;
+	mes "[Order Executed]";
+	mes "Purchased " + .@qty + " units of " + .@cn$ + " for " + .@total + "z.";
+	next; goto L_MenuMain;
 
 L_MenuSell:
-	mes "[Sell Stocks]";
+	mes "[Liquidate Asset]";
 	.@account_id = getcharid(3);
 	
 	deletearray .@held_tickers$[0], getarraysize(.@held_tickers$);
@@ -210,16 +303,23 @@ L_MenuSell:
 	deletearray .@held_costs[0], getarraysize(.@held_costs);
 	deletearray .@held_divs[0], getarraysize(.@held_divs);
 
-	.@held_count = query_sql("SELECT ticker, shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND shares > 0 ORDER BY ticker ASC", .@held_tickers$, .@held_shares, .@held_costs, .@held_divs);
+	if (.@filter_mode$ == "EQUITY") {
+		.@held_count = query_sql("SELECT p.ticker, p.shares, p.total_cost, p.pending_div FROM `solo_stock_player` p JOIN `solo_stock_market` m ON p.ticker = m.ticker WHERE p.account_id = " + .@account_id + " AND p.shares > 0 AND m.sector NOT LIKE '%Protocol%' AND m.sector NOT LIKE '%DeFi%' ORDER BY p.ticker ASC", .@held_tickers$, .@held_shares, .@held_costs, .@held_divs);
+	} else if (.@filter_mode$ == "CRYPTO") {
+		.@held_count = query_sql("SELECT p.ticker, p.shares, p.total_cost, p.pending_div FROM `solo_stock_player` p JOIN `solo_stock_market` m ON p.ticker = m.ticker WHERE p.account_id = " + .@account_id + " AND p.shares > 0 AND (m.sector LIKE '%Protocol%' OR m.sector LIKE '%DeFi%') ORDER BY p.ticker ASC", .@held_tickers$, .@held_shares, .@held_costs, .@held_divs);
+	} else {
+		.@held_count = query_sql("SELECT ticker, shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = " + .@account_id + " AND shares > 0 ORDER BY ticker ASC", .@held_tickers$, .@held_shares, .@held_costs, .@held_divs);
+	}
+
 	if (.@held_count <= 0) {
-		mes "You do not currently own any shares.";
+		mes "You do not currently own any positions in this sector.";
 		next; goto L_MenuMain;
 	}
 
 	.@sell_menu$ = "";
 	for (.@i = 0; .@i < .@held_count; .@i++) {
 		if (.@i > 0) .@sell_menu$ = .@sell_menu$ + ":";
-		.@sell_menu$ = .@sell_menu$ + .@held_tickers$[.@i] + " (" + .@held_shares[.@i] + " shares)";
+		.@sell_menu$ = .@sell_menu$ + .@held_tickers$[.@i] + " (" + .@held_shares[.@i] + " units)";
 	}
 	.@sell_menu$ = .@sell_menu$ + ":Cancel";
 
@@ -260,11 +360,11 @@ L_MenuSell:
 	.@payout_tax = (.@payout_gross * .@tax_rate) / 100;
 	.@payout_net = .@payout_gross - .@payout_tax;
 	
-	mes "Subtotal (" + .@qty + " shares @ " + .@p + "z): " + .@subtotal + "z";
+	mes "Subtotal (" + .@qty + " units @ " + .@p + "z): " + .@subtotal + "z";
 	mes "Broker Fee (1%): -" + .@fee + "z";
-	mes "Net Stock Proceeds: ^00FF00" + .@net + "z^000000";
+	mes "Net Proceeds: ^00FF00" + .@net + "z^000000";
 	if (.@payout_gross > 0) {
-		mes "Pro-rated Dividends (Net): ^0000FF+" + .@payout_net + "z^000000 (Gross " + .@payout_gross + "z | Tax -" + .@payout_tax + "z)";
+		mes "Accrued Yields (Net): ^0000FF+" + .@payout_net + "z^000000 (Gross " + .@payout_gross + "z | Tax -" + .@payout_tax + "z)";
 	}
 	mes "---------------------------";
 	.@total_payout = .@net + .@payout_net;

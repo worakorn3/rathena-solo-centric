@@ -4,11 +4,12 @@ import { MarketSimulationService } from "../services/marketSimulation.service";
 export async function initMarketCron() {
   console.log("[MarketCron] Initializing market cron jobs...");
 
-  // Catch up any missed dividend/DRIP cycles while server was offline
+  // Catch up any missed price shifts and dividend/DRIP cycles while server was offline
   try {
+    await MarketSimulationService.catchUpOfflineShifts();
     await MarketSimulationService.catchUpOfflineDividends();
   } catch (err) {
-    console.error("[MarketCron] Error catching up offline dividends:", err);
+    console.error("[MarketCron] Error catching up offline market cycles:", err);
   }
 
   // 10-Minute Price Shift: runs every 10 minutes (0, 10, 20, 30, 40, 50)

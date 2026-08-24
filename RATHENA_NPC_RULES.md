@@ -110,9 +110,11 @@ Inside event labels that are triggered asynchronously by the system (such as `On
 
 ---
 
-### D. Dialogue Box Pagination Mandate (Dynamic Lists & SQL Queries)
-Standard Ragnarok Online game clients render approximately 6–8 lines of text per dialogue box before lines clip off-screen.
-* **Rule:** When displaying dynamic SQL query results, long item catalogs, stock tickers, or portfolio lists, you **must paginate** the output (maximum 4–5 items per page) with `[Page X/Y]` headers and `next;` transitions.
+### D. Dialogue Box Pagination & Stacking Mandate
+Standard Ragnarok Online game clients render approximately 4–5 lines of text per dialogue box before lines stack, clip off-screen, or force unwanted scrollbars.
+* **Safe Line Limit:** No dialogue box may output more than **4–5 lines of text** consecutively without a page-break command (`next;`, `clear;`, `close;`, `close2;`, `select(...)`, `menu(...)`, `input(...)`, `prompt(...)`, or `end;`).
+* **The `next;` Requirement:** When delivering multi-paragraph or long dialogue, you **must insert `next;`** after every 4 lines to paginate the conversation smoothly for the player.
+* **Dynamic Loop Pagination Rule:** When rendering dynamic lists (e.g. SQL query results, inventory items, stock tickers, or portfolio lists), you **must paginate** the loop into chunks of 4–5 items per page with `[Page X/Y]` headers and `next;` transitions.
 * **Pattern:**
   ```rAthena
   .@total_pages = (.@item_count + 4) / 5;
@@ -129,7 +131,11 @@ Standard Ragnarok Online game clients render approximately 6–8 lines of text p
       next;
   }
   ```
-* **Anti-Pattern:** Never dump 8+ items in a single unpaginated `mes` loop or terminate a multi-item dump directly with `close;` without `next;`.
+* **Anti-Pattern:** Never dump 6+ lines in a single unpaginated block or dynamic `mes` loop without `next;`.
+* **Automated Static Analysis:** Always run the project linter before submitting NPC changes:
+  ```powershell
+  python tools/ci/lint_npc_dialogue.py --path npc/custom npc/test
+  ```
 
 ---
 
@@ -164,6 +170,9 @@ Standard Ragnarok Online game clients render approximately 6–8 lines of text p
    }
    freeloop(0);
    ```
+6. **Dead Legacy Logic Pruning:**
+   When an NPC script fails due to a missing `callfunc` or `callsub`, verify whether the underlying subsystem was migrated or refactored before creating new function wrappers. If the subsystem was moved to an external service (e.g., Elysia backend) or deprecated, **delete the dead script code** instead of adding unused function surface area back to shared script libraries.
+
 
 ---
 
@@ -216,3 +225,4 @@ Before submitting any NPC script modifications, you **must** verify the followin
 4. [ ] **Termination Checks:** Ensure all code paths hit a `close;`, `close2;`, or `end;` and that no fall-through occurs.
 5. [ ] **No Magic Numbers:** Make sure item IDs, maps, and sprites are commented or use standard system constants.
 6. [ ] **Automated Parser Run:** Run `./map-server --run-once` with your scripts registered to verify no syntax warnings/errors are thrown.
+7. [ ] **Dialogue Pagination:** Run `python tools/ci/lint_npc_dialogue.py --path npc/custom npc/test` to verify no dialogue stacking (>5 consecutive `mes`) or unpaginated loops exist.

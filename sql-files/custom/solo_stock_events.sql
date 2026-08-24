@@ -946,6 +946,47 @@ INSERT IGNORE INTO `solo_stock_events_def`
  'Central Investment Bank issues high-yield municipal development bonds, expanding bank and utility reserves!',
  'Strong sovereign balance sheets and expanding deposit reserves boost financial dividends in Prontera and Aldebaran.', 10);
 
+-- ======================================================================
+-- Category 18: Phase 13 Decentralized Rune & Crypto-Asset Protocols (10 Events)
+-- ======================================================================
+INSERT IGNORE INTO `solo_stock_events_def` 
+(`event_id`, `category`, `event_name`, `ticker_target`, `price_pct_change`, `ticker_secondary`, `price_secondary_pct_change`, `headline`, `description`, `weight`) VALUES
+('CRYPTO_EMP_HALVING', 'CRYPTO_PROTOCOL', 'The Great Emperium Halving', 'EMP', 65, 'PRT', 10,
+ 'Emperium mining difficulty doubles across all dungeon veins as guild vaults accumulate reserves!',
+ 'Strict hard-cap supply and castle siege demand drive massive flight-to-safety into sovereign Emperium protocol shards.', 8),
 
+('CRYPTO_POR_FOMO_PUMP', 'CRYPTO_PROTOCOL', 'King Poring Euphoria Frenzy', 'POR', 180, '', 0,
+ 'South Field novices chant "Poring to the Moon!" as retail FOMO triggers parabolic buying frenzy!',
+ 'Viral town crier hype and social hysteria push unbacked meme standard into dizzying triple-digit gains.', 8),
 
+('CRYPTO_POR_RUG_PULL', 'CRYPTO_PROTOCOL', 'Ghostring Liquidity Collapse', 'POR', -85, '', 0,
+ 'Ghostring syndicate unloads 50 million Poring Coins in sudden coordinated liquidity dump!',
+ 'Devastated Novices flood Prontera South Field with tearful cries as meme standard plummets to earth.', 8),
 
+('CRYPTO_YMI_GAS_CRISIS', 'CRYPTO_PROTOCOL', 'Alchemical Transmutation Bottleneck', 'YMI', 45, 'ALM', 25,
+ 'Homunculus synthesis craze congests Yuno Arcane Matrix, sending mana gas fees soaring!',
+ 'Transmutation energy demand surges, generating record fee revenues for decentralized alchemy cauldrons.', 8),
+
+('CRYPTO_WRP_OUTAGE', 'CRYPTO_PROTOCOL', 'Spatial Leyline Fracture', 'WRP', -55, '', 0,
+ 'Blue Gemstone dimensional leylines overload, halting high-speed Warp Portal ledger transit!',
+ 'Protocol network halt and node desynchronization trigger sudden panic liquidation across teleport rails.', 8),
+
+('CRYPTO_SHD_CROWN_RAID', 'CRYPTO_PROTOCOL', 'Prontera Crown Anti-Smuggling Blitz', 'SHD', -40, 'MOR', 15,
+ 'Royal Knights raid underground Morroc vaults, targeting anonymous zero-knowledge stealth rings!',
+ 'Regulatory crackdown temporarily depresses shadow protocol liquidity while physical black market premiums rise.', 8),
+
+('CRYPTO_NZN_DEPEG_SCARE', 'CRYPTO_PROTOCOL', 'Kafra Vault Solvency Rumors', 'NZN', -5, 'EMP', 20,
+ 'Unsubstantiated rumors of Kafra vault bullion shortages trigger brief algorithmic peg wobble!',
+ 'Capital rapidly rotates into sovereign Emperium shards before Kafra publishes certified proof-of-reserve audits.', 8),
+
+('CRYPTO_ORA_ORACLE_DESYNC', 'CRYPTO_PROTOCOL', 'Odin Raven Leyline Disruption', 'ORA', -40, 'ALM', -20,
+ 'Severe geomagnetic mana storm confounds Odin ravens, delaying decentralized price and drop feeds!',
+ 'Temporary oracle latency slows alchemical automated liquidity execution across decentralized bazaars.', 8),
+
+('CRYPTO_ZEX_QUARTERLY_BURN', 'CRYPTO_PROTOCOL', 'Merchant Guild Furnace Burn', 'ZEX', 50, '', 0,
+ 'Alberta Merchant Consortium burns 25% of quarterly trade commissions in public Alberta town square furnace!',
+ 'Deflationary supply burn and reduced brokerage commissions attract strong merchant buying support.', 8),
+
+('CRYPTO_KFX_BANKING_TREATY', 'CRYPTO_PROTOCOL', 'Tri-Kingdom Inter-Realm Settlement Pact', 'KFX', 45, 'RAC', 15,
+ 'Prontera, Juno, and Rachel Central Banks ratify instant cross-border Kafra wire protocol!',
+ 'Standardized inter-kingdom settlement volumes surge, boosting institutional protocol throughput and yield.', 8);

@@ -1,6 +1,7 @@
 export interface StockHolding {
   ticker: string;
   name: string;
+  assetType?: "EQUITY" | "CRYPTO";
   sector?: string;
   archetype?: string;
   shares: number;
@@ -20,6 +21,7 @@ export interface StockHolding {
 export interface StockMarketQuote {
   ticker: string;
   name: string;
+  assetType?: "EQUITY" | "CRYPTO";
   sector?: string;
   archetype?: string;
   lore?: string;
@@ -50,6 +52,8 @@ export interface NetWorthSummary {
   bankPendingInterest: number;
   bankTotal: number;
   stockMarketValue: number;
+  municipalMarketValue: number;
+  cryptoMarketValue: number;
   stockTotalCost: number;
   stockUnrealizedPnL: number;
   stockUnrealizedPnLPercent: number;
@@ -67,6 +71,10 @@ export interface NetWorthSummary {
   latestEvent?: StockEventLog | null;
   marketMood?: number;
   marketDrift?: number;
+  equitiesMood?: number;
+  equitiesDrift?: number;
+  cryptoMood?: number;
+  cryptoDrift?: number;
 }
 
 export interface StockEventLog {

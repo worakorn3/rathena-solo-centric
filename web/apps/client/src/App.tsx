@@ -51,6 +51,7 @@ export const App: React.FC = () => {
   const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
   const [selectedCharDetail, setSelectedCharDetail] = useState<CharacterDetail | null>(null);
   const [progression, setProgression] = useState<ProgressionSummary | null>(null);
+  const [portfolioAssetFilter, setPortfolioAssetFilter] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
 
   // Public Market Data
   const [quotes, setQuotes] = useState<StockMarketQuote[]>([]);
@@ -154,7 +155,7 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-background text-primary font-sans antialiased select-none">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:max-h-screen md:overflow-hidden bg-background text-primary font-sans antialiased select-none">
       {/* 1. LEFT VERTICAL COCKPIT RAIL (Desktop) & TOP/BOTTOM BARS (Mobile) */}
       <Sidebar
         activeTab={activeTab}
@@ -169,7 +170,7 @@ export const App: React.FC = () => {
       />
 
       {/* 2. MAIN STAGE (Mobile: smooth vertical scroll; Desktop: zero body scrolling cockpit) */}
-      <main className="flex-1 min-w-0 h-auto md:h-screen overflow-y-auto md:overflow-hidden p-3 md:p-4 pb-20 md:pb-4 relative flex flex-col">
+      <main className="flex-1 min-w-0 h-auto md:h-screen md:overflow-hidden p-3 md:p-4 pb-20 md:pb-4 relative flex flex-col">
         {/* ==================== TAB 1: 💰 FINANCIAL HQ ==================== */}
         {activeTab === "FINANCE" && (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
@@ -187,13 +188,19 @@ export const App: React.FC = () => {
                         liquidZeny={netWorth.liquidZeny}
                         bankTotal={netWorth.bankTotal}
                         stockMarketValue={netWorth.stockMarketValue}
+                        municipalMarketValue={netWorth.municipalMarketValue}
+                        cryptoMarketValue={netWorth.cryptoMarketValue}
                         totalNetWorth={netWorth.totalNetWorth}
+                        selectedAssetCategory={portfolioAssetFilter}
+                        onSelectAssetCategory={setPortfolioAssetFilter}
                       />
                       <BankWidget bank={netWorth.bank} />
                     </div>
                     <StockPortfolio
                       holdings={netWorth.holdings}
                       totalNetWorth={netWorth.totalNetWorth}
+                      assetClassTab={portfolioAssetFilter}
+                      onAssetClassChange={setPortfolioAssetFilter}
                     />
                   </div>
 

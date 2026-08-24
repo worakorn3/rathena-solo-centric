@@ -79,6 +79,13 @@ prontera,155,185,4	script	Collection Manager	100,{
                 close;
             }
             
+            if (!checkweight(617, 5)) {
+                mes "[Collection Manager]";
+                mes "You are carrying too much weight, or your inventory is full.";
+                mes "Please make room in your backpack first.";
+                close;
+            }
+
             // Mark as claimed
             #REWARD_PRT_FIELD = 1;
             // Reward them with a nice hat (e.g. Costume: Prontera Hat, ID 2285 is typical custom headgear, or just a known premium like an Old Purple Box 617)
@@ -101,6 +108,11 @@ prontera,157,185,4	script	Collection Tester	100,{
     
     switch(select("Give Me Prontera Items:Clear My Collection Log:Cancel")) {
         case 1:
+            if (!checkweight(909, 1) || !checkweight(914, 1) || !checkweight(706, 1) || !checkweight(949, 1) || !checkweight(938, 1)) {
+                mes "[Collection Tester]";
+                mes "You don't have enough inventory space.";
+                close;
+            }
             getitem 909, 1; // Jellopy
             getitem 914, 1; // Fluff
             getitem 706, 1; // Clover

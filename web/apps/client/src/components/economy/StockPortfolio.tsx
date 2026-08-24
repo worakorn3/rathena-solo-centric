@@ -15,20 +15,37 @@ import { formatZeny } from "../../lib/assets";
 import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
 
+export type AssetClassFilter = "ALL" | "EQUITY" | "CRYPTO";
+type FilterTab = "ALL" | "GAINERS" | "LOSERS";
+type SortOption = "VALUE" | "WEIGHT" | "PNL";
+
 interface StockPortfolioProps {
   holdings: StockHolding[];
   totalNetWorth?: number;
   onSelectTicker?: (ticker: string) => void;
+  assetClassTab?: AssetClassFilter;
+  onAssetClassChange?: (tab: AssetClassFilter) => void;
 }
 
-type FilterTab = "ALL" | "GAINERS" | "LOSERS";
-type SortOption = "VALUE" | "WEIGHT" | "PNL";
+const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
 
 export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   holdings,
   totalNetWorth,
   onSelectTicker,
+  assetClassTab: controlledAssetClassTab,
+  onAssetClassChange,
 }) => {
+  const [internalAssetClassTab, setInternalAssetClassTab] = useState<AssetClassFilter>("ALL");
+  const assetClassTab = controlledAssetClassTab !== undefined ? controlledAssetClassTab : internalAssetClassTab;
+  const setAssetClassTab = (tab: AssetClassFilter) => {
+    if (onAssetClassChange) {
+      onAssetClassChange(tab);
+    } else {
+      setInternalAssetClassTab(tab);
+    }
+  };
+
   const [filterTab, setFilterTab] = useState<FilterTab>("ALL");
   const [sortBy, setSortBy] = useState<SortOption>("VALUE");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
@@ -40,9 +57,20 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     [holdings]
   );
 
+  const municipalValue = useMemo(
+    () =>
+      holdings
+        .filter((h) => !CRYPTO_TICKERS.has(h.ticker) && h.assetType !== "CRYPTO")
+        .reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+    [holdings]
+  );
+
+  const cryptoValue = totalStockValue - municipalValue;
+
   // Calculate ratios and enrich holdings
   const enrichedHoldings = useMemo(() => {
     return holdings.map((h) => {
+      const isCrypto = CRYPTO_TICKERS.has(h.ticker) || h.assetType === "CRYPTO";
       const marketVal = h.currentPrice * h.shares;
       const stockRatio =
         totalStockValue > 0 ? (marketVal / totalStockValue) * 100 : 0;
@@ -53,6 +81,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
 
       return {
         ...h,
+        isCrypto,
         marketVal,
         stockRatio,
         netWorthRatio,
@@ -61,14 +90,17 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     });
   }, [holdings, totalStockValue, totalNetWorth]);
 
-  // Filter holdings
+  // Filter holdings by Asset Class and PnL
   const filteredHoldings = useMemo(() => {
     return enrichedHoldings.filter((h) => {
+      if (assetClassTab === "EQUITY" && h.isCrypto) return false;
+      if (assetClassTab === "CRYPTO" && !h.isCrypto) return false;
+
       if (filterTab === "GAINERS") return h.unrealizedPnL > 0;
       if (filterTab === "LOSERS") return h.unrealizedPnL < 0;
       return true;
     });
-  }, [enrichedHoldings, filterTab]);
+  }, [enrichedHoldings, assetClassTab, filterTab]);
 
   // Sort holdings
   const sortedHoldings = useMemo(() => {
@@ -84,21 +116,25 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     setExpandedTicker((prev) => (prev === ticker ? null : ticker));
   };
 
+  const municipalHoldingsCount = holdings.filter((h) => !CRYPTO_TICKERS.has(h.ticker) && h.assetType !== "CRYPTO").length;
+  const cryptoHoldingsCount = holdings.length - municipalHoldingsCount;
+
   return (
     <div className="bento-card p-3 sm:p-3.5 flex-1 min-h-0 flex flex-col">
-      {/* Header: Title + Total Portfolio Value */}
-      <div className="flex items-center justify-between border-b border-border pb-2 mb-2 shrink-0">
+      {/* Header: Title + Total Portfolio Value & Sub-totals */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 mb-2 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-info" /> Municipal Portfolio
+            <Briefcase className="w-4 h-4 text-info" /> Investment Portfolio
           </h3>
           <span className="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
-            {holdings.length} {holdings.length === 1 ? "Asset" : "Assets"}
+            {holdings.length} {holdings.length === 1 ? "Position" : "Positions"}
           </span>
         </div>
+
         {holdings.length > 0 && (
-          <div className="text-[11px] font-mono font-bold flex items-center gap-1.5">
-            <span className="text-muted text-[10px]">Total Value:</span>
+          <div className="text-[11px] font-mono font-bold flex items-center gap-2">
+            <span className="text-muted text-[10px] hidden sm:inline">Total Value:</span>
             <span className="text-primary">{formatZeny(totalStockValue)} Z</span>
           </div>
         )}
@@ -106,7 +142,23 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
 
       {holdings.length > 0 && (
         <>
-          {/* Dime!-style Top Proportion Distribution Bar */}
+          {/* Subtotal Allocation Chips */}
+          <div className="grid grid-cols-2 gap-2 mb-2 shrink-0 text-[10px] font-mono">
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-info/10 border border-info/20 text-info">
+              <span className="flex items-center gap-1 font-sans font-medium text-[9px]">
+                🏛️ Municipal Equities
+              </span>
+              <span className="font-bold">{formatZeny(municipalValue)} Z</span>
+            </div>
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-accent/10 border border-accent/20 text-accent">
+              <span className="flex items-center gap-1 font-sans font-medium text-[9px]">
+                ⚡ Crypto Protocols
+              </span>
+              <span className="font-bold">{formatZeny(cryptoValue)} Z</span>
+            </div>
+          </div>
+
+          {/* Top Proportion Distribution Bar */}
           <div className="mb-2 shrink-0">
             <div className="w-full h-1.5 bg-surface2 rounded-full overflow-hidden flex">
               {enrichedHoldings.map((h) => {
@@ -123,59 +175,82 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             </div>
           </div>
 
-          {/* Dime!-style Filter Tabs & Sort Controls */}
-          <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-border/40 shrink-0 text-[10px]">
-            {/* Category Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+          {/* Asset Class Tabs & Sort Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-border/40 shrink-0 text-[10px]">
+            {/* Primary Asset Class Selector */}
+            <div className="flex items-center gap-1 bg-surface2/80 p-0.5 rounded-lg border border-border text-[10px] font-mono">
               <button
                 type="button"
-                onClick={() => setFilterTab("ALL")}
-                className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
-                  filterTab === "ALL"
-                    ? "bg-primary text-background font-bold shadow-sm"
-                    : "bg-surface2/60 text-muted hover:text-primary hover:bg-surface2"
+                onClick={() => setAssetClassTab("ALL")}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  assetClassTab === "ALL"
+                    ? "bg-surface text-primary font-bold shadow-sm"
+                    : "text-muted hover:text-primary"
                 }`}
               >
                 All ({holdings.length})
               </button>
               <button
                 type="button"
-                onClick={() => setFilterTab("GAINERS")}
-                className={`px-2 py-0.5 rounded-full font-medium transition-colors flex items-center gap-1 ${
-                  filterTab === "GAINERS"
-                    ? "bg-success/20 text-success border border-success/40 font-bold"
-                    : "bg-surface2/60 text-muted hover:text-success hover:bg-surface2"
+                onClick={() => setAssetClassTab("EQUITY")}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  assetClassTab === "EQUITY"
+                    ? "bg-surface text-info font-bold shadow-sm"
+                    : "text-muted hover:text-primary"
                 }`}
               >
-                <TrendingUp className="w-2.5 h-2.5" />
-                Gainers (
-                {holdings.filter((h) => h.unrealizedPnL > 0).length})
+                🏛️ Equities ({municipalHoldingsCount})
               </button>
               <button
                 type="button"
-                onClick={() => setFilterTab("LOSERS")}
-                className={`px-2 py-0.5 rounded-full font-medium transition-colors flex items-center gap-1 ${
-                  filterTab === "LOSERS"
-                    ? "bg-danger/20 text-danger border border-danger/40 font-bold"
-                    : "bg-surface2/60 text-muted hover:text-danger hover:bg-surface2"
+                onClick={() => setAssetClassTab("CRYPTO")}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  assetClassTab === "CRYPTO"
+                    ? "bg-surface text-accent font-bold shadow-sm"
+                    : "text-muted hover:text-primary"
                 }`}
               >
-                <TrendingDown className="w-2.5 h-2.5" />
-                Losers (
-                {holdings.filter((h) => h.unrealizedPnL < 0).length})
+                ⚡ Crypto ({cryptoHoldingsCount})
               </button>
             </div>
 
-            {/* Sort Toggle */}
-            <div className="flex items-center gap-1 shrink-0 font-mono">
-              <span className="text-[9px] text-muted hidden sm:inline flex items-center gap-0.5">
-                <SlidersHorizontal className="w-2.5 h-2.5 inline" /> Sort:
-              </span>
+            {/* PnL Filter + Sort */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-0.5 bg-surface2/60 p-0.5 rounded border border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setFilterTab("ALL")}
+                  className={`px-1.5 py-0.5 rounded text-[9px] ${
+                    filterTab === "ALL" ? "bg-surface font-bold text-primary" : "text-muted hover:text-primary"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab("GAINERS")}
+                  className={`px-1.5 py-0.5 rounded text-[9px] ${
+                    filterTab === "GAINERS" ? "bg-success/20 text-success font-bold" : "text-muted hover:text-success"
+                  }`}
+                >
+                  Gainers
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTab("LOSERS")}
+                  className={`px-1.5 py-0.5 rounded text-[9px] ${
+                    filterTab === "LOSERS" ? "bg-danger/20 text-danger font-bold" : "text-muted hover:text-danger"
+                  }`}
+                >
+                  Losers
+                </button>
+              </div>
+
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label="Sort portfolio assets by"
-                className="bg-surface2 border border-border text-primary text-[10px] rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-accent"
+                className="bg-surface2 border border-border text-primary text-[10px] font-mono rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-accent"
               >
                 <option value="VALUE">Value ▾</option>
                 <option value="WEIGHT">Weight % ▾</option>

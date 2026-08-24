@@ -128,3 +128,32 @@ Instead of overloading players with all Ragnarok Online cities at once, 27 munic
   - Updates `LastUpdate` to current timestamp upon catch-up completion.
 - **Automated Unit Tests:**
   - Unit tests in `web/apps/server/test/marketSimulation.test.ts` verifying elapsed calculations, 0-cycle no-ops, multi-cycle payouts, and max cycle clamping.
+
+---
+
+## 8. Phase 13: Decentralized Rune & Crypto-Asset Market Expansion (10 Protocol Tickers)
+
+> [!NOTE]
+> Alongside the 27 regional and municipal city stocks, Phase 13 introduces a new asset class: **Decentralized Rune & Crypto-Asset Protocols (10 Lore-Compliant Tokens)**.
+> Each token mirrors real-world cryptocurrency archetypes (Bitcoin, Ethereum, Solana, Monero, BNB, Chainlink, Dogecoin, USDT, Uniswap, XRP) in characteristics, market dynamics, and extreme volatilities, while maintaining authentic **Ragnarok Online** lore.
+
+### 8.1 Protocol Ticker Catalog
+
+| Ticker | Token Name & Broker Title | Real-World Mirror | Sector | Archetype | Volatility (Beta) | Staking / Div Yield | RO Lore Background & Growth Drivers |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| **`EMP`** | **Emperium Shard Protocol**<br>*(Sovereign Guild Vaults)* | **Bitcoin (BTC)**<br>*Digital Gold / PoW Reserve* | Sovereign Ore & Protocol | Deflationary Hard Cap Store of Value | **Extreme (Beta 2.8)** | **0.0%** | Fractionalized digitized shards of ancient Emperium ore mined from deep castle dungeons. Strict fixed supply, non-inflationary. Boosted by Castle siege seasons and guild vault reserve inflows. |
+| **`YMI`** | **Heart of Ymir Alchemax**<br>*(Juperos Arcane Matrix)* | **Ethereum (ETH)**<br>*Smart Contracts / Gas Layer* | Arcane Computation & Gas | Decentralized Alchemical Matrix | **High (Beta 2.4)** | **1.0%** *(Mana Staking)* | Primordial computational mana units powering synthetic homunculi and alchemical transmutations across Geffen and Yuno. Earns transmutative gas fees; driven by alchemical breakthroughs. |
+| **`WRP`** | **Warp Light Protocol**<br>*(Acolyte High-Speed Rail)* | **Solana (SOL)**<br>*High-Throughput PoH / Fast DEX* | Spatial Teleportation Rail | Ultra-High-Speed Ledger | **Extreme (Beta 3.2)** | **0.0%** | High-frequency blue gemstone spatial folding ledger developed by rogue Acolyte speed-runners. Fast transaction velocity with occasional "Spatial Leyline Desync / Warp Portal Outages". |
+| **`SHD`** | **Shadow Guild Stealth Ring**<br>*(Morroc Black Syndicate)* | **Monero (XMR)**<br>*Privacy Coin / Zero-Knowledge* | Stealth & Underground Trade | Zero-Knowledge Anonymous Ring | **High (Beta 2.6)** | **0.0%** | Cryptographically cloaked transaction ring run by the Assassin Guild in Morroc's underground. Zero KYC; immune to royal taxation, but targeted by Prontera Crown Anti-Smuggling raids. |
+| **`ZEX`** | **Midgard Exchange Coin**<br>*(Alberta Merchant Consortium)* | **Binance Coin (BNB)**<br>*Exchange Utility & Buyback* | Market Infrastructure | Utility Token & Fee Rebate | **Medium-High (Beta 1.7)** | **0.5%** *(Exchange Rebate)* | Native Alberta Merchant Guild trading utility token providing transaction fee discounts, backed by quarterly Zeny furnace buyback burns. |
+| **`ORA`** | **Eye of Odin Oracle**<br>*(Hugin & Munin Feeds)* | **Chainlink (LINK)**<br>*Decentralized Oracles* | Arcane Data Infrastructure | Decentralized Oracle Feeds | **Medium-High (Beta 1.8)** | **1.5%** *(Node Staking)* | Magical ravens aggregating cross-realm monster spawn timers, drop rates, and weather trends into deterministic arcane data feeds for smart alchemical transmutations. |
+| **`POR`** | **King Poring Meme Standard**<br>*(Novice South-Field Syndicate)* | **Dogecoin (DOGE)**<br>*Retail Hype Memecoin* | Meme & Social Frenzy | Pure Community Speculation | **Ultra-Extreme (Beta 4.5)** | **0.0%** | Minted by enthusiastic Novices in Prontera South Field with zero intrinsic utility. Driven purely by town crier shouting matches, viral hype pumps (+150%), and catastrophic ghostring dumps. |
+| **`NZN`** | **Neo-Zeny Kafra Dollar**<br>*(Kafra Reserve Trust)* | **Tether / USDC (USDT)**<br>*Pegged Stablecoin* | Settlement & Arbitrage | 1:1 Reserve-Pegged Dollar | **Zero-Low (Beta 0.05)** | **2.0%** *(Vault Yield)* | Algorithmic stable-token 100% collateralized by Kafra vault gold bullion. Maintains strict 100z parity with minute \(\pm 1\%\) arbitrage fluctuations and vault staking interest. |
+| **`ALM`** | **Alchemax AMM Pool**<br>*(Morroc Bazaar Cauldron)* | **Uniswap (UNI)**<br>*Automated Market Maker* | Decentralized Finance (DeFi) | Automated Liquidity Cauldron | **High (Beta 2.1)** | **3.5%** *(Slippage Yield)* | Open alchemical cauldron where adventurers supply white herbs and empty bottles, collecting automated trade slippage fees from potion buyers. |
+| **`KFX`** | **Kafra Fast-eXchange**<br>*(Inter-Realm Remittance)* | **Ripple (XRP)**<br>*Cross-Border Settlement* | Sovereign Banking Rail | Institutional Remittance Ledger | **Medium (Beta 1.5)** | **2.5%** *(Remittance Yield)* | Enterprise cross-realm settlement wire between Prontera, Yuno, and Rachel Central Banks. Subject to Royal regulatory treaties and cross-kingdom tariff accords. |
+
+### 8.2 Architectural Principles (Ponytail Review & Zero Bloat)
+1. **Unified Table Storage:** All crypto tickers reside within the standard `solo_stock_market` database table, fully utilizing `beta` multipliers and dynamic simulation cron loops.
+2. **Deterministic Volatility Scaling:** The simulation engine applies `f = Math.round(f * beta)` directly. A `POR` ticker with Beta 4.5 experiences swings \(\pm 25\%\) to \(\pm 80\%\) during volatile shifts, perfectly capturing memecoin euphoria and despair without needing bespoke algorithmic forks.
+3. **Black Swan Integration:** High-volatility crypto shocks (halvings, rug pulls, gas surges, de-pegs) trigger through `solo_stock_events_def` and are gated by active ticker status.
+

@@ -1,0 +1,56 @@
+// rAthena NPC Dialogue Pagination Test Fixture
+// Tests compliant pagination patterns vs non-compliant dialogue overflow
+
+// COMPLIANT: 4 lines of mes followed by close;
+-	script	test_dialogue_short	-1,{
+OnInit:
+	end;
+
+OnTalk:
+	mes "[Guide]";
+	mes "Welcome to the test area.";
+	mes "Here is line 3.";
+	mes "Here is line 4.";
+	close;
+}
+
+// COMPLIANT: 8 lines cleanly paginated in 2 pages using next;
+-	script	test_dialogue_paginated	-1,{
+OnInit:
+	end;
+
+OnTalk:
+	mes "[Instructor]";
+	mes "Page 1 - Line 1";
+	mes "Page 1 - Line 2";
+	mes "Page 1 - Line 3";
+	mes "Page 1 - Line 4";
+	next;
+	mes "[Instructor]";
+	mes "Page 2 - Line 1";
+	mes "Page 2 - Line 2";
+	mes "Page 2 - Line 3";
+	close;
+}
+
+// COMPLIANT: Paginated dynamic loop (5 items per page with next;)
+-	script	test_dialogue_loop_paginated	-1,{
+OnInit:
+	end;
+
+OnTalk:
+	.@total_items = 12;
+	.@pages = (.@total_items + 4) / 5;
+	for (.@p = 0; .@p < .@pages; .@p++) {
+		clear;
+		mes "[Inventory - Page " + (.@p + 1) + "/" + .@pages + "]";
+		.@start = .@p * 5;
+		.@end = .@start + 5;
+		if (.@end > .@total_items) .@end = .@total_items;
+		for (.@i = .@start; .@i < .@end; .@i++) {
+			mes "- Item #" + (.@i + 1);
+		}
+		next;
+	}
+	close;
+}

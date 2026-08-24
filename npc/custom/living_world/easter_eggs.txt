@@ -21,6 +21,11 @@
 		mes "Is that an Apple? Could I have it?";
 		next;
 		if (select("Give Apple:Sorry, no.") == 1) {
+			if (!checkweight(6075, 1)) {
+				mes "[Lost Child]";
+				mes "Your backpack looks too heavy! Please make some room first.";
+				close;
+			}
 			delitem 512, 1;
 			#LostChildDone = gettime(DT_DAYOFYEAR);
 			getitem 6075, 1; // Lucky Charm (Premium reward)
@@ -50,6 +55,11 @@ pay_arche,85,125,4	script	Old Sage#egg	73,{
 	set .@ans, select("To crush one's enemies.:To protect others.:To gain wealth.:To be feared.");
 	if (.@ans == 2) {
 		if (#OldSageDone == 0) {
+			if (!checkweight(2285, 1)) {
+				mes "[Old Sage]";
+				mes "You carry too heavy a burden. Lighten your load and return.";
+				close;
+			}
 			#OldSageDone = 1;
 			getitem 2285, 1; // Costume reward
 			mes "[Old Sage]";

@@ -80,7 +80,19 @@ VALUES
 
   -- 💀 Phase 5: Outliers & Interdimensional Markets (DISABLED)
   ('NIF', 'Nifflheim Occult Relics', 'Underworld Distressed Debt', 'Occult & Distressed Assets', 'Junk Bond Speculation', 100, 100, 0, 2.50, 0, 0),
-  ('DIC', 'Ash Vacuum Mining Alliance', 'El Dicastes Bradium Exploration', 'Extraplanar Minerals & Energy', 'Interdimensional Venture', 100, 100, 0, 2.20, 5, 0)
+  ('DIC', 'Ash Vacuum Mining Alliance', 'El Dicastes Bradium Exploration', 'Extraplanar Minerals & Energy', 'Interdimensional Venture', 100, 100, 0, 2.20, 5, 0),
+
+  -- ⚡ Phase 13: Decentralized Rune & Crypto-Asset Protocols (ENABLED)
+  ('EMP', 'Emperium Shard Protocol', 'Sovereign Guild Vaults', 'Sovereign Ore & Protocol', 'Deflationary Store of Value', 100, 100, 0, 2.80, 0, 1),
+  ('YMI', 'Heart of Ymir Alchemax', 'Juperos Arcane Matrix', 'Arcane Computation & Gas', 'Decentralized Alchemical Matrix', 100, 100, 1, 2.40, 10, 1),
+  ('WRP', 'Warp Light Protocol', 'Acolyte High-Speed Rail', 'Spatial Teleportation Rail', 'Ultra-High-Speed Ledger', 100, 100, 0, 3.20, 0, 1),
+  ('SHD', 'Shadow Guild Stealth Ring', 'Morroc Black Syndicate', 'Stealth & Underground Trade', 'Zero-Knowledge Anonymous Ring', 100, 100, 0, 2.60, 0, 1),
+  ('ZEX', 'Midgard Exchange Coin', 'Alberta Merchant Consortium', 'Market Infrastructure', 'Utility Token & Fee Rebate', 100, 100, 1, 1.70, 5, 1),
+  ('ORA', 'Eye of Odin Oracle', 'Hugin & Munin Feeds', 'Arcane Data Infrastructure', 'Decentralized Oracle Feeds', 100, 100, 2, 1.80, 15, 1),
+  ('POR', 'King Poring Meme Standard', 'Novice South-Field Syndicate', 'Meme & Social Frenzy', 'Pure Community Speculation', 100, 100, 0, 4.50, 0, 1),
+  ('NZN', 'Neo-Zeny Kafra Dollar', 'Kafra Reserve Trust', 'Settlement & Arbitrage', '1:1 Reserve-Pegged Dollar', 100, 100, 2, 0.05, 20, 1),
+  ('ALM', 'Alchemax AMM Pool', 'Morroc Bazaar Cauldron', 'Decentralized Finance (DeFi)', 'Automated Liquidity Cauldron', 100, 100, 4, 2.10, 35, 1),
+  ('KFX', 'Kafra Fast-eXchange', 'Inter-Realm Remittance', 'Sovereign Banking Rail', 'Institutional Remittance Ledger', 100, 100, 3, 1.50, 25, 1)
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `broker_title` = VALUES(`broker_title`),
@@ -197,3 +209,43 @@ CREATE TABLE IF NOT EXISTS `solo_stock_history_daily` (
   UNIQUE KEY `uk_history_ticker_date` (`ticker`, `date`),
   INDEX `idx_history_daily_ticker_date` (`ticker`, `date` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- Table structure & migration for `solo_persistence_log` (Grand Category ENUM)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `solo_persistence_log` (
+  `account_id` INT(11) UNSIGNED NOT NULL,
+  `category` ENUM(
+    'KILL',
+    'LOOT',
+    'ECONOMY',
+    'ACHIEVEMENT',
+    'COLLECTION',
+    'REPUTATION',
+    'INSTANCE',
+    'MASTERY',
+    'DISCOVERY'
+  ) NOT NULL,
+  `target_id` INT(11) UNSIGNED NOT NULL,
+  `value` INT(11) UNSIGNED DEFAULT 0,
+  `tstamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`account_id`, `category`, `target_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Idempotent column modification for existing live databases
+ALTER TABLE `solo_persistence_log`
+  MODIFY COLUMN `category` ENUM(
+    'KILL',
+    'LOOT',
+    'ECONOMY',
+    'ACHIEVEMENT',
+    'COLLECTION',
+    'REPUTATION',
+    'INSTANCE',
+    'MASTERY',
+    'DISCOVERY'
+  ) NOT NULL,
+  MODIFY COLUMN `target_id` INT(11) UNSIGNED NOT NULL,
+  MODIFY COLUMN `value` INT(11) UNSIGNED DEFAULT 0,
+  CONVERT TO CHARACTER SET ascii;
+

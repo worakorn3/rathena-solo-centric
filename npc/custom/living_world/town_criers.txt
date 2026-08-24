@@ -6,12 +6,13 @@ function	script	Town_Crier_News	{
 	.@news = rand(1, 5);
 	switch(.@news) {
 		case 1:
-			if ($LastMvpName$ != "") {
-				npctalk "Hear ye! The adventurer " + $LastMvpKiller$ + " recently defeated the mighty " + $LastMvpName$ + "!";
+			if ($@LastMvpName$ != "") {
+				npctalk "Hear ye! The adventurer " + $@LastMvpKiller$ + " recently defeated the mighty " + $@LastMvpName$ + "!";
 			} else {
 				npctalk "Hear ye! The roads are relatively safe today. No major MvP sightings recently.";
 			}
 			break;
+
 		case 2:
 			npctalk "Hear ye! A traveling merchant named Marcus was spotted on the roads between towns!";
 			break;

@@ -19,8 +19,9 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Economy & Finance** | Daily junk sinks, investment bank, momentum, bill notes, gacha | [Economy & Finance](plans/economy_and_finance.md) |
 | **Immersion & Encyclopedia** | No-@commands policy, monster intel NPC, pocket watch, encyclopedia | [Immersion & Encyclopedia](plans/immersion_and_encyclopedia.md) |
 | **Endgame & Mastery** | Horizontal progression beyond Lv185, mastery points, collections | [Endgame & Mastery](plans/endgame_and_mastery.md) |
-| **Stock Market & Municipal Roadmap** | Phases 6–12 stock engine, 27 regional cities, black swans, 17C diamonds | [Stock Exchange Roadmap](plans/stock_exchange_expansion.md) |
+| **Stock Market & Municipal Roadmap** | Phases 6–13 stock engine, 27 regional cities + 10 crypto protocols, black swans, 17C diamonds | [Stock Exchange Roadmap](plans/stock_exchange_expansion.md) |
 | **Web Portal & Infrastructure** | Player portal architecture, Bun/Elysia backend, MariaDB replica | [Web Portal Architecture](plans/web_portal_plan.md) |
+| **Web Gacha & Altar System** | Midgard Egg Spinner Altar, Web Stash, Gacha Shards, Exclusives Shop & Admin Customizer | [Web Gacha System](plans/web_gacha_system.md) |
 | **Shadow Tracking Persistence** | Core persistence DB schema for kills, loot, and economy tracking | [Shadow Tracking Plan](shadow_tracking_plan.md) |
 | **Technical Reference & Audits** | Script-only verification matrix, config parameters, script appendices | [Technical Reference](plans/technical_reference.md) |
 
@@ -43,7 +44,7 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Starter Kit** | ✅ [DONE] | Potions, wings, food, pocket watch, 5k Zeny on first login · [Details](plans/solo_mechanics_and_qol.md#7-early-game-bootstrap-starter-kit-system) |
 | **Kill Recovery** | ✅ [DONE] | Flat HP/SP heal on kill based on mob level · [Details](plans/solo_mechanics_and_qol.md#4-resource-sustainability-rebalanced) |
 | **Support Class Viability** | ⏳ [PENDING] | Solo damage buffs & free daily mercs for Priests/Bards · [Details](plans/solo_mechanics_and_qol.md#3-support-class-solo-viability) |
-| **Refine Safety Nets** | ⏳ [PENDING] | Custom Refiner NPC insurance & Blacksmith Blessing · [Details](plans/phase_1_and_4_breakdown.md#3-refine-safety-nets) |
+| **Refine Safety Nets** | ✅ [DONE] | Custom Refiner NPC insurance & Blacksmith Blessing (`npc/custom/refine_safety.txt`) · [Details](plans/phase_1_and_4_breakdown.md#3-refine-safety-nets) |
 | **Boss/Mob Tuning** | ⏳ [PENDING] | Density (+30-50%) and respawn tuning in `solo_mob_spawns.txt` · [Details](plans/solo_mechanics_and_qol.md#5-monster-spawn-rates--tuning-solo-centric) |
 | **Dual-Client Policy** | ⏳ [PENDING] | Config change to allow 2 connections per IP · [Details](plans/solo_mechanics_and_qol.md#2-support-follower-system-dual-client--mercenaries) |
 
@@ -66,7 +67,7 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **System Tablet (Deep)** | ✅ [DONE] | Added monster drops/rates to Intel App · [Details](plans/immersion_and_encyclopedia.md#2-monster-intel-system-librarian-npc) |
 | **Investment Bank** | ✅ [DONE] | 1% daily interest, 2% deposit fee, 10% cap · [Details](plans/economy_and_finance.md#2-investment-bank-separate-from-kafra) |
 | **Bill Notes** | ⏳ [POSTPONED] | Replaced by 17-Carat Diamond trades (500M store of value) · [Details](plans/stock_exchange_expansion.md#6-phase-11-stock-market-hardening-arithmetic-protection--17-carat-diamond-store-of-value) |
-| **Item Gacha** | ⏳ [PENDING] | Token-based gambling for cosmetics/consumables · [Details](plans/economy_and_finance.md#5-item-gacha-system-drop-currency) |
+| **Item Gacha** | ✅ [DESIGNED] | Web Gacha Altar, Web Stash, Gacha Shards & Exclusives Shop · [Details](plans/web_gacha_system.md) |
 | **Stock Momentum** | ⏳ [PENDING] | Advanced trend logic for the Stock Exchange · [Details](plans/economy_and_finance.md#3-stock-momentum--market-dynamics) |
 
 ### Phase 4: Mastery & Endgame
@@ -111,6 +112,29 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Phase 10: Black Swan Engine** | ✅ [DONE] | 27-city black swans, active-ticker gating, dividend math fix · [Details](plans/stock_exchange_expansion.md#5-phase-10-complete-municipal-black-swan-seeding--rolling-unlock-event-engine) |
 | **Phase 11: Hardening & 17C Diamonds** | ✅ [DONE] | 32-bit overflow guards, macro `'ALL'`, 17C Diamonds (500M store of value) · [Details](plans/stock_exchange_expansion.md#6-phase-11-stock-market-hardening-arithmetic-protection--17-carat-diamond-store-of-value) |
 | **Phase 12: Offline Dividend Catch-Up**| ✅ [DONE] | Startup elapsed-time detection, missed 4h DRIP catch-up · [Details](plans/stock_exchange_expansion.md#7-phase-12-offline-dividend-catch-up--drip-compounding-on-server-boot) |
+
+### Phase 13: Decentralized Rune & Crypto-Asset Protocols (10 Lore Tickers)
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Crypto Protocols Seeding** | ✅ [DONE] | `EMP`, `YMI`, `WRP`, `SHD`, `ZEX`, `ORA`, `POR`, `NZN`, `ALM`, `KFX` · [Details](plans/stock_exchange_expansion.md#8-phase-13-decentralized-rune--crypto-asset-market-expansion-10-protocol-tickers) |
+| **Crypto Black Swan Catalog** | ✅ [DONE] | Halvings, meme frenzies, rug pulls, gas spikes, oracle outages · [Details](plans/stock_exchange_expansion.md#8-phase-13-decentralized-rune--crypto-asset-market-expansion-10-protocol-tickers) |
+| **Frontend Tabbed Segregation**| ✅ [DONE] | `MarketWatch.tsx` category filters (All / Municipal / Crypto Protocols) · [Details](plans/stock_exchange_expansion.md#8-phase-13-decentralized-rune--crypto-asset-market-expansion-10-protocol-tickers) |
+
+### Phases 14–16: Frontend Analytics, UI Hardening & Automated CI Linting
+| Phase | Status | Details & Specification |
+|:---|:---|:---|
+| **Phase 14: Candlestick & Downsampling Engine** | ✅ [DONE] | Lightweight Charts candlestick integration with automated midnight daily OHLCV downsampling and integer Zeny formatting · [`CandlestickChart.tsx`](../web/apps/client/src/components/economy/CandlestickChart.tsx) |
+| **Phase 15: Stock Modal & UI Hardening** | ✅ [DONE] | Bento token standardization, Esc/backdrop dismiss, `<ErrorBoundary>` fault isolation, and responsive layout polish · [`TickerDetailModal.tsx`](../web/apps/client/src/components/economy/TickerDetailModal.tsx) |
+| **Phase 16: NPC Dialogue Linting CI Suite** | ✅ [DONE] | Automated pre-commit Python linting script ensuring dynamic NPC query lists never exceed 4–5 lines per page · [`lint_npc_dialogue.py`](../tools/ci/lint_npc_dialogue.py) |
+
+### Phase 17: Web Gacha & Altar System (Egg Spinner, Stash, Scrap Exchange, Admin Customizer)
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Egg Spinner Capsule Altar** | ⏳ [PENDING] | 3D-styled animated egg spinner machine with 4 granular banners, dynamic stock economy pricing, and live countdown timer · [Details](plans/web_gacha_system.md) |
+| **Dedicated Web Stash & RO Mail** | ⏳ [PENDING] | Won items accumulate safely in Web Stash (`solo_gacha_stash`) with selective/bulk in-game RO Mail dispatch · [Details](plans/web_gacha_system.md) |
+| **Gacha Scrap & Dismantling** | ⏳ [PENDING] | Convert duplicate/unwanted items into Gacha Shards (SSR: 100, SR: 25, R: 5) to prevent vanity clutter · [Details](plans/web_gacha_system.md) |
+| **Exclusives-Only Exchange Shop** | ⏳ [PENDING] | Spend Gacha Shards on non-gacha prestige items (Golden Wings, Sovereign Crown, Safe +11 Certs) · [Details](plans/web_gacha_system.md) |
+| **Live Admin Roster Customizer** | ⏳ [PENDING] | Full real-time management of banners, master item pools, exchange shop, and pull simulator sandbox in `AdminVaultWindow.tsx` · [Details](plans/web_gacha_system.md) |
 
 ---
 

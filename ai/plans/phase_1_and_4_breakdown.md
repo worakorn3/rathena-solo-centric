@@ -20,11 +20,10 @@ This plan details the specific actionable tasks required to implement the remain
 * **Task 2.1: Update Login Config:** Modify `conf/login_athena.conf` (or `subnet_athena.conf` depending on rAthena version) to ensure `client_limit` or `allow_multiple_logins` is set to allow 2 connections per IP.
 * **Task 2.2: Update Char Config (Optional):** Verify `conf/char_athena.conf` doesn't restrict multiple IPs if applicable.
 
-### 3. Refine Safety Nets
+### 3. Refine Safety Nets - ✅ [DONE]
 *Goal: Keep the thrill of refining but prevent catastrophic regression/breaking for solo players who can't rely on a massive economy to replace gear.*
-* **Task 3.1: Custom Refiner NPC:** Create `npc/custom/solo_refiner.txt`.
-* **Task 3.2: Implement Insurance Logic:** Add an option in the NPC menu to "Insure Refine" which costs 2x or 3x the standard Zeny/materials. If the refine fails under insurance, the item level stays the same (no break, no downgrade).
-* **Task 3.3: Blacksmith Blessing (Alternative):** Alternatively, implement a quest/daily reward that drops a custom "Blacksmith Blessing" item that the NPC checks for before refining +8 to +12.
+* **Task 3.1: Custom Refiner NPC:** ✅ Implemented in `npc/custom/refine_safety.txt` as "Refine Insurer" (`prt_in,65,60`).
+* **Task 3.2: Blacksmith Blessing Service:** ✅ Implemented sale of Blacksmith Blessings (`item_id: 6635`) at 500,000 Zeny each with `checkweight` safety to enable safe refinement up to +12.
 
 ---
 
@@ -42,9 +41,9 @@ This plan details the specific actionable tasks required to implement the remain
 
 ### 3. Collection Log & Global Enhancements
 *Goal: Give completionists a reason to hunt every item in a zone.*
-* **Task 3.1: Define Zone Pools:** Map out item arrays for specific zones (e.g., "Prontera Region Drops").
-* **Task 3.2: Tracking Script:** Create an `OnPCGetItemEvent` hook or a periodic check to register newly found items into a SQL table (`solo_collection_log`) tied to the account ID.
-* **Task 3.3: Web-Assignable Pools:** Migrate the hardcoded Junk Trader/Collector item arrays to SQL tables (`solo_junk_pools`, `solo_rewards`) so they can be modified on the fly via a future Web Admin panel without reloading scripts.
+* **Task 3.1: Define Zone Pools:** ✅ Implemented for Prontera Region in `npc/custom/collection_log.txt` (Jellopy, Fluff, Clover, Feather, Sticky Mucus).
+* **Task 3.2: Tracking Script:** ✅ Implemented bitmask registration (`#COLLECT_PRT_FIELD`), reward claiming (`#REWARD_PRT_FIELD`), and test NPC in `npc/custom/collection_log.txt`.
+* **Task 3.3: Web-Assignable Pools:** ⏳ [PENDING] Migrate hardcoded Junk Trader/Collector item arrays to dynamic SQL tables (`solo_junk_pools`, `solo_rewards`) for future Web Admin panel curation.
 
 ### 4. Stock Exchange SQL Migration
 *Goal: Move the existing economic tracking to a persistent database.*
