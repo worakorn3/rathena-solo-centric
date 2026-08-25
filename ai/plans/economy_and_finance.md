@@ -36,51 +36,149 @@
 
 ---
 
-## 2. Investment Bank (Separate from Kafra)
+## 2. Investment Bank & Unified Brokerage Account (Ponytail Model)
 
 > [!NOTE]  
-> **Kafra Bank** = 100% safe storage (0% fee, 0% interest).  
-> **Investment Bank** = Risk/growth vehicle (2% deposit fee, 1%/day simple interest, 10% hard cap).
+> **Kafra Bank** = 100% safe storage (0% fee, 0% interest, in-game accessible).  
+> **Unified Brokerage / Investment Bank** = Zero-risk capital preservation & downtime reward vehicle (0.1% deposit fee, continuous on-the-fly interest accrual with tiered diminishing curve, accessible via Prontera NPC and Web Terminal).
 
-### Breakeven Analysis
-| Day | Deposit (100k) | Post-Fee Balance | Daily Interest (1%) | Total Accessible Balance |
-|:---|:---|:---|:---|:---|
-| **0** | 100,000z | 98,000z | 0z | 98,000z |
-| **1** | — | — | +980z | 98,980z |
-| **2** | — | — | +990z | 99,970z |
-| **3** | — | — | +1,000z | **100,970z** ✅ (Breakeven) |
-| **10** | — | — | +9,800z | **107,800z** (Max 10% Cap) |
+### Core Mental Model & Risk Spectrum
+The Solo-Centric economy features a 3-tier liquidity and risk triangle:
+1. **Cash in Pocket / Kafra Bank:** 100% liquid, 0% yield, immediate utility for daily supplies.
+2. **Investment Bank (Fixed Income / Sovereign Treasury):** Zero principal risk, continuous time-based accrual, baseline inflation hedge for idle cash during downtime/breaks.
+3. **Midgard Stock Exchange (Equities / Risk Assets):** 10-minute shift cycles, market volatility, capital appreciation, and compounding dividend yields (DRIP).
 
-### Script Implementation
+---
+
+### Yield & Diminishing Return Pacing (Continuous Accrual)
+Interest is calculated **continuously on-the-fly** based on elapsed seconds (`now - deposit_time`) without arbitrary 24-hour cliff freezes or background cron mutations:
+
+$$\text{Interest} = \frac{\text{Principal} \times \text{Elapsed Seconds} \times \text{Rate}}{86400}$$
+
+#### Tiered Diminishing Return Curve:
+- **Deposit Fee:** **0.1%** (Breakeven on Day 1).
+- **Tier 1 (Days 1–14):** **0.25% / day** *(Early boost for active/weekly check-ins; +3.5% in 2 weeks)*
+- **Tier 2 (Days 15–60):** **0.08% / day** *(Smooth sustained return for 1–2 month breaks; +7.08% total at Day 60)*
+- **Tier 3 (Days 61–180):** **0.03% / day** *(Stable mid-term capital preservation; +10.68% total at 6 months)*
+- **Tier 4 (Days 181+):** **0.01% / day** *(Long-term anti-inflation baseline; +12.53% total at 1 Year)*
+
+---
+
+### Dual-Access Brokerage Architecture (In-Game & Web Terminal)
+Like the Stock Market (`solo_stock_player`), the Bank operates with full parity across game and web:
+
+```
+                       ┌──────────────────────────────────────────────────┐
+                       │           Unified Brokerage Architecture         │
+                       └────────────────────────┬─────────────────────────┘
+                                                │
+                 ┌──────────────────────────────┴──────────────────────────────┐
+                 ▼                                                             ▼
+   ┌───────────────────────────┐                                 ┌───────────────────────────┐
+   │        IN-GAME NPC        │                                 │     WEB PORTAL TERMINAL   │
+   │ (Prontera Banker/Broker)  │                                 │   (Browser / Mobile View) │
+   └─────────────┬─────────────┘                                 └─────────────┬─────────────┘
+                 │                                                             │
+                 │ 1. Uses query_sql                                           │ 1. Uses primaryExecute (3306)
+                 │ 2. Transfers Zeny directly                                  │ 2. Guards with char.online === 0
+                 │    to/from inventory                                        │ 3. Instant buy/sell/deposit
+                 │                                                             │
+                 └──────────────────────────────┬──────────────────────────────┘
+                                                ▼
+                               ┌─────────────────────────────────┐
+                               │       MariaDB Primary (3306)    │
+                               │  - solo_stock_player (Stocks)   │
+                               │  - solo_bank_account (Cash)     │
+                               └─────────────────────────────────┘
+```
+
+#### SQL Schema (`sql-files/custom/solo_bank_account.sql`):
+```sql
+CREATE TABLE IF NOT EXISTS `solo_bank_account` (
+    `account_id` INT UNSIGNED NOT NULL PRIMARY KEY,
+    `principal` BIGINT NOT NULL DEFAULT 0,
+    `deposit_time` INT UNSIGNED NOT NULL DEFAULT 0,
+    `interest_paid_total` BIGINT NOT NULL DEFAULT 0,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_account_id` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+#### Script Implementation (Integer-Safe On-The-Fly Math)
 ```c
 prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
     mes "[Investment Bank]";
-    mes "Deposit fee: 2%";
-    mes "Interest: 1% per day (max 10% after 10 days)";
-    mes "Current principal: " + #INVEST_BALANCE + "z";
+    mes "Welcome to the Midgard Sovereign Bank.";
+    mes "Deposit fee: ^FF00000.1%^000000";
+    mes "Interest: Continuous tiered yield (Up to 3.5% / 2 weeks).";
     next;
-    
-    switch(select("Deposit:Withdraw:Cancel")) {
+
+    // Load account balance from solo_bank_account
+    .@account_id = getcharid(3);
+    .@balance = 0;
+    .@deposit_time = 0;
+    query_sql("SELECT `principal`, `deposit_time` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@balance, .@deposit_time);
+
+    // Calculate elapsed time and continuous tiered interest
+    .@interest = 0;
+    .@elapsed_sec = 0;
+    .@days = 0;
+
+    if (.@balance > 0 && .@deposit_time > 0) {
+        .@elapsed_sec = gettimetick(2) - .@deposit_time;
+        if (.@elapsed_sec > 0) {
+            .@days = .@elapsed_sec / 86400;
+            .@bps = 0; // Basis points (10000 bps = 100%)
+
+            if (.@days <= 14) {
+                .@bps = .@days * 25; // 0.25%/day
+            } else if (.@days <= 60) {
+                .@bps = (14 * 25) + ((.@days - 14) * 8); // 0.08%/day
+            } else if (.@days <= 180) {
+                .@bps = (14 * 25) + (46 * 8) + ((.@days - 60) * 3); // 0.03%/day
+            } else {
+                .@bps = (14 * 25) + (46 * 8) + (120 * 3) + ((.@days - 180) * 1); // 0.01%/day
+            }
+
+            .@interest = (.@balance * .@bps) / 10000;
+        }
+    }
+
+    mes "[Investment Bank]";
+    mes "Current Principal: ^0000FF" + F_InsertComma(.@balance) + " Zeny^000000";
+    mes "Accrued Interest: ^00FF00" + F_InsertComma(.@interest) + " Zeny^000000";
+    mes "Total Accessible: ^0000FF" + F_InsertComma(.@balance + .@interest) + " Zeny^000000";
+    next;
+
+    switch(select("Deposit Zeny:Withdraw All:Cancel")) {
     case 1:  // Deposit
-        mes "Enter amount to deposit:";
+        mes "Enter amount to deposit (Fee: 0.1%):";
         input .@amount;
-        if (.@amount <= 0 || Zeny < .@amount) { mes "Invalid amount or insufficient Zeny."; close; }
-        .@fee = .@amount * 2 / 100;
+        if (.@amount < 1000 || Zeny < .@amount) { mes "Invalid amount or insufficient Zeny."; close; }
+        if (.@balance + .@interest + .@amount > 1900000000) { mes "Exceeds 1.9B Zeny bank ceiling."; close; }
+
+        .@fee = max(1, .@amount / 1000); // 0.1% fee
+        .@net_deposit = .@amount - .@fee;
+
         Zeny -= .@amount;
-        #INVEST_BALANCE += (.@amount - .@fee);
-        #INVEST_TIME = gettimetick(2);
-        mes "Deposited " + (.@amount - .@fee) + "z after 2% fee.";
+        .@new_principal = .@balance + .@interest + .@net_deposit;
+        .@now = gettimetick(2);
+
+        query_sql("INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ") ON DUPLICATE KEY UPDATE `principal` = " + .@new_principal + ", `deposit_time` = " + .@now);
+
+        mes "Deposited " + F_InsertComma(.@amount) + "z (Fee: " + F_InsertComma(.@fee) + "z).";
+        mes "New Principal: ^0000FF" + F_InsertComma(.@new_principal) + "z^000000.";
         break;
-        
-    case 2:  // Withdraw
-        if (#INVEST_BALANCE <= 0) { mes "No active investment balance."; close; }
-        .@days = min(10, (gettimetick(2) - #INVEST_TIME) / 86400);
-        .@interest = #INVEST_BALANCE * .@days / 100;
-        .@total = #INVEST_BALANCE + .@interest;
-        #INVEST_BALANCE = 0;
-        #INVEST_TIME = 0;
-        Zeny += .@total;
-        mes "Withdrew " + .@total + "z (including " + .@interest + "z interest).";
+
+    case 2:  // Withdraw All
+        if (.@balance <= 0) { mes "No active investment balance."; close; }
+        .@payout = .@balance + .@interest;
+        if (2100000000 - Zeny < .@payout) { mes "Cannot hold that much Zeny in inventory."; close; }
+
+        Zeny += .@payout;
+        query_sql("UPDATE `solo_bank_account` SET `principal` = 0, `deposit_time` = 0, `interest_paid_total` = `interest_paid_total` + " + .@interest + " WHERE `account_id` = " + .@account_id);
+
+        mes "Withdrew " + F_InsertComma(.@payout) + "z (including " + F_InsertComma(.@interest) + "z interest).";
         break;
     }
     close;

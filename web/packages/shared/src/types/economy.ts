@@ -205,4 +205,25 @@ export interface TradeStockResponse {
   updatedHolding?: StockHolding;
 }
 
+export interface BankDepositPayload {
+  charId: number;
+  amount: number;
+}
+
+export interface BankWithdrawPayload {
+  charId: number;
+  amount?: number;
+}
+
+export interface BankTransactionResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  newPrincipal?: number;
+  feePaid?: number;
+  interestPaid?: number;
+  totalPayout?: number;
+  remainingZeny?: number;
+}
+
 

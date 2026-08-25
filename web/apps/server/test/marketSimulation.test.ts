@@ -437,7 +437,7 @@ describe("MarketSimulationService", () => {
           (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?")
         );
         expect(splitStockUpdates.length).toBe(1);
-        expect(splitStockUpdates[0][1][0]).toBe(100); // 1009 / 10 = 100
+        expect(splitStockUpdates[0][1][0]).toBe(101); // 1010 / 10 = 101
         expect(splitStockUpdates[0][1][1]).toBe(1); // split_count = 1
 
         const playerShareMultipliers = primaryExecuteMock.mock.calls.filter((call) =>

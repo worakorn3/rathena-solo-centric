@@ -52,8 +52,10 @@ export class MarketSimulationService {
     );
 
     let equitiesUpCount = 0;
+    let equitiesDownCount = 0;
     let equitiesTotalCount = 0;
     let cryptoUpCount = 0;
+    let cryptoDownCount = 0;
     let cryptoTotalCount = 0;
     const candlesToInsert: { ticker: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
 
@@ -92,7 +94,11 @@ export class MarketSimulationService {
       // Apply beta volatility multiplier
       f = Math.round(f * beta);
 
-      let newPrice = price + Math.floor(price * f / 100);
+      let delta = Math.round((price * f) / 100);
+      if (delta === 0 && f !== 0) {
+        delta = f > 0 ? 1 : -1;
+      }
+      let newPrice = price + delta;
       if (newPrice < 50) newPrice = 50;
 
       if (newPrice >= 1000) {
@@ -112,6 +118,9 @@ export class MarketSimulationService {
       if (newPrice > price) {
         if (cryptoAsset) cryptoUpCount++;
         else equitiesUpCount++;
+      } else if (newPrice < price) {
+        if (cryptoAsset) cryptoDownCount++;
+        else equitiesDownCount++;
       }
 
       // Compute OHLC candle wicks
@@ -139,16 +148,18 @@ export class MarketSimulationService {
     if (!tickerMoods.has("EQUITIES") && !tickerMoods.has("ALL")) {
       const randEquities = Math.floor(Math.random() * 100) + 1;
       if (randEquities <= 8) equitiesMood = 3; // 8% Chaos
-      else if (equitiesUpCount >= Math.ceil(equitiesTotalCount / 2)) equitiesMood = 1; // Bullish
-      else equitiesMood = 2; // Bearish
+      else if (equitiesUpCount > equitiesDownCount) equitiesMood = 1; // Bullish
+      else if (equitiesDownCount > equitiesUpCount) equitiesMood = 2; // Bearish
+      else equitiesMood = Math.random() < 0.5 ? 1 : 2;
     }
 
     // 2. Crypto Protocols Mood
     if (!tickerMoods.has("CRYPTO") && !tickerMoods.has("ALL")) {
       const randCrypto = Math.floor(Math.random() * 100) + 1;
       if (randCrypto <= 20) cryptoMood = 3; // 20% Euphoric Mania / High Chaos
-      else if (cryptoUpCount >= Math.ceil(cryptoTotalCount / 2)) cryptoMood = 1; // Bullish
-      else cryptoMood = 2; // Bearish
+      else if (cryptoUpCount > cryptoDownCount) cryptoMood = 1; // Bullish
+      else if (cryptoDownCount > cryptoUpCount) cryptoMood = 2; // Bearish
+      else cryptoMood = Math.random() < 0.5 ? 1 : 2;
     }
 
     await primaryExecute("UPDATE `solo_stock_events_active` SET remaining_shifts = remaining_shifts - 1 WHERE remaining_shifts > 0");
@@ -356,6 +367,7 @@ export class MarketSimulationService {
       // Step drift transition
       marketDrift = Math.floor(Math.random() * 9) - 4;
       let upCount = 0;
+      let downCount = 0;
 
       for (const stock of state) {
         const localMood = currentTickerMoods.get(stock.ticker) || currentTickerMoods.get("ALL") || marketMood;
@@ -368,7 +380,11 @@ export class MarketSimulationService {
         f = Math.round(f * stock.beta);
 
         const oldPrice = stock.price;
-        let newPrice = oldPrice + Math.floor((oldPrice * f) / 100);
+        let delta = Math.round((oldPrice * f) / 100);
+        if (delta === 0 && f !== 0) {
+          delta = f > 0 ? 1 : -1;
+        }
+        let newPrice = oldPrice + delta;
         if (newPrice < 50) newPrice = 50;
 
         // Handle stock split
@@ -379,6 +395,7 @@ export class MarketSimulationService {
         }
 
         if (newPrice > oldPrice) upCount++;
+        else if (newPrice < oldPrice) downCount++;
         stock.price = newPrice;
 
         // Synthetic OHLC candle matching the live formula
@@ -402,8 +419,9 @@ export class MarketSimulationService {
       if (currentTickerMoods.size === 0) {
         const rand = Math.floor(Math.random() * 100) + 1;
         if (rand <= 8) marketMood = 3;
-        else if (upCount >= Math.ceil(state.length / 2)) marketMood = 1;
-        else marketMood = 2;
+        else if (upCount > downCount) marketMood = 1;
+        else if (downCount > upCount) marketMood = 2;
+        else marketMood = Math.random() < 0.5 ? 1 : 2;
       }
     }
 

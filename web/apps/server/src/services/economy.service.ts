@@ -95,17 +95,20 @@ export class EconomyService {
     const liquidZeny = characterZenyBreakdown.reduce((sum, c) => sum + c.zeny, 0);
 
     // 2. Investment Bank Data
-    const regRows = await query<AccRegRow>(
-      "SELECT `key`, `value` FROM `acc_reg_num` WHERE account_id = ? AND `key` IN ('#INVEST_BALANCE', '#INVEST_TIME')",
-      [accountId]
-    );
-
     let investBalance = 0;
     let investTime = 0;
 
-    for (const reg of regRows) {
-      if (reg.key === "#INVEST_BALANCE") investBalance = Number(reg.value) || 0;
-      if (reg.key === "#INVEST_TIME") investTime = Number(reg.value) || 0;
+    try {
+      const bankRow = await query<any>(
+        "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+        [accountId]
+      );
+      if (bankRow && bankRow.length > 0) {
+        investBalance = Number(bankRow[0].principal) || 0;
+        investTime = Number(bankRow[0].deposit_time) || 0;
+      }
+    } catch {
+      // Table might not exist yet if migration is pending
     }
 
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -713,6 +716,188 @@ export class EconomyService {
       executedShares: shares,
       pricePerShare: price,
       totalAmount: proceeds,
+      remainingZeny,
+    };
+  }
+
+  /**
+   * Deposit Zeny into Investment Bank
+   * Atomic deduction on Primary DB (3306) with char.online === 0 guard
+   */
+  static async depositBank(
+    accountId: number,
+    charId: number,
+    amount: number
+  ): Promise<BankTransactionResponse> {
+    const safeAmount = Math.floor(Number(amount));
+    if (!safeAmount || safeAmount < 100) {
+      return { success: false, error: "Minimum deposit is 100 Zeny." };
+    }
+
+    // 1. Verify character ownership & OFFLINE status on Primary DB
+    const char = await primaryQueryOne<{
+      char_id: number;
+      name: string;
+      zeny: number;
+      online: number;
+    }>(
+      "SELECT char_id, name, zeny, online FROM `char` WHERE char_id = ? AND account_id = ?",
+      [charId, accountId]
+    );
+
+    if (!char) return { success: false, error: "Character not found or does not belong to this account." };
+    if (char.online === 1) return { success: false, error: "Character is currently logged into the game. Please log out first." };
+    if (Number(char.zeny) < safeAmount) {
+      return {
+        success: false,
+        error: `Insufficient Zeny. Available: ${Number(char.zeny).toLocaleString()} Z, Requested: ${safeAmount.toLocaleString()} Z.`,
+      };
+    }
+
+    // 2. Fetch existing bank balance from Primary DB
+    const bank = await primaryQueryOne<{ principal: number; deposit_time: number }>(
+      "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+      [accountId]
+    );
+
+    const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
+    const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
+
+    // 3. Calculate pending interest accrued so far
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    let pendingInterest = 0;
+    if (currentPrincipal > 0 && depositTime > 0) {
+      const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
+      const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
+      pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+    }
+
+    // 4. Calculate 2% deposit fee (matching script's amount / 50)
+    const fee = Math.floor(safeAmount / 50);
+    const netDeposit = safeAmount - fee;
+    const newPrincipal = currentPrincipal + pendingInterest + netDeposit;
+
+    if (newPrincipal > 1900000000) {
+      return {
+        success: false,
+        error: "Cannot accept deposit: New principal would exceed the 1,900,000,000 Zeny bank limit.",
+      };
+    }
+
+    // 5. Execute atomic mutations on Primary DB
+    await primaryExecute(
+      "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND zeny >= ?",
+      [safeAmount, charId, safeAmount]
+    );
+
+    await primaryExecute(
+      "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time)",
+      [accountId, newPrincipal, currentTimestamp]
+    );
+
+    const remainingZeny = Number(char.zeny) - safeAmount;
+
+    return {
+      success: true,
+      message: `Successfully deposited ${safeAmount.toLocaleString()} Z. Fee paid: ${fee.toLocaleString()} Z. New principal: ${newPrincipal.toLocaleString()} Z.`,
+      newPrincipal,
+      feePaid: fee,
+      interestPaid: pendingInterest,
+      remainingZeny,
+    };
+  }
+
+  /**
+   * Withdraw Zeny from Investment Bank (supports partial and full withdrawal)
+   * Atomic credit on Primary DB (3306) with char.online === 0 guard
+   */
+  static async withdrawBank(
+    accountId: number,
+    charId: number,
+    requestedAmount?: number
+  ): Promise<BankTransactionResponse> {
+    // 1. Verify character ownership & OFFLINE status on Primary DB
+    const char = await primaryQueryOne<{
+      char_id: number;
+      name: string;
+      zeny: number;
+      online: number;
+    }>(
+      "SELECT char_id, name, zeny, online FROM `char` WHERE char_id = ? AND account_id = ?",
+      [charId, accountId]
+    );
+
+    if (!char) return { success: false, error: "Character not found or does not belong to this account." };
+    if (char.online === 1) return { success: false, error: "Character is currently logged into the game. Please log out first." };
+
+    // 2. Fetch existing bank balance from Primary DB
+    const bank = await primaryQueryOne<{ principal: number; deposit_time: number }>(
+      "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+      [accountId]
+    );
+
+    const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
+    const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
+
+    if (currentPrincipal <= 0) {
+      return { success: false, error: "You have no active funds to withdraw." };
+    }
+
+    // 3. Calculate pending interest
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
+    const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
+    const pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+    const totalAvailable = currentPrincipal + pendingInterest;
+
+    // Determine withdrawal amount (partial vs full)
+    const amountToWithdraw = requestedAmount && requestedAmount > 0
+      ? Math.min(Math.floor(requestedAmount), totalAvailable)
+      : totalAvailable;
+
+    if (amountToWithdraw <= 0) {
+      return { success: false, error: "Invalid withdrawal amount." };
+    }
+
+    // Check inventory 2.1B ceiling
+    if (2100000000 - Number(char.zeny) < amountToWithdraw) {
+      return {
+        success: false,
+        error: "Cannot withdraw: Resulting character inventory would exceed the 2,100,000,000 Zeny ceiling.",
+      };
+    }
+
+    // 4. Execute atomic mutations on Primary DB
+    await primaryExecute(
+      "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+      [amountToWithdraw, charId]
+    );
+
+    const isFullWithdrawal = amountToWithdraw >= totalAvailable;
+    let newPrincipal = 0;
+
+    if (isFullWithdrawal) {
+      await primaryExecute(
+        "UPDATE `solo_bank_account` SET principal = 0, deposit_time = 0, interest_paid_total = interest_paid_total + ? WHERE account_id = ?",
+        [pendingInterest, accountId]
+      );
+    } else {
+      // Partial withdrawal: roll accrued interest into principal, deduct withdrawn amount, reset timer
+      newPrincipal = totalAvailable - amountToWithdraw;
+      await primaryExecute(
+        "UPDATE `solo_bank_account` SET principal = ?, deposit_time = ?, interest_paid_total = interest_paid_total + ? WHERE account_id = ?",
+        [newPrincipal, currentTimestamp, pendingInterest, accountId]
+      );
+    }
+
+    const remainingZeny = Number(char.zeny) + amountToWithdraw;
+
+    return {
+      success: true,
+      message: `Successfully withdrew ${amountToWithdraw.toLocaleString()} Z (Interest credited: ${pendingInterest.toLocaleString()} Z).`,
+      newPrincipal,
+      interestPaid: pendingInterest,
+      totalPayout: amountToWithdraw,
       remainingZeny,
     };
   }

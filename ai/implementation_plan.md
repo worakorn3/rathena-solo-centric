@@ -65,7 +65,7 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Daily Junk Sink** | ✅ [DONE] | Merchant selling overpriced account-bound utility · [Details](plans/economy_and_finance.md#1-account-bound-daily-junk-sink-system) |
 | **System Tablet (Basic)** | ✅ [DONE] | Progression Guide, Market Pulse, Monster Intel · [Details](plans/immersion_and_encyclopedia.md#4-system-encyclopedia-npc) |
 | **System Tablet (Deep)** | ✅ [DONE] | Added monster drops/rates to Intel App · [Details](plans/immersion_and_encyclopedia.md#2-monster-intel-system-librarian-npc) |
-| **Investment Bank** | ✅ [DONE] | 1% daily interest, 2% deposit fee, 10% cap · [Details](plans/economy_and_finance.md#2-investment-bank-separate-from-kafra) |
+| **Investment Bank (Unified Brokerage)** | ✅ [DONE] | Continuous on-the-fly tiered yield (0.25%→0.08%→0.03%→0.01%), 0.1% deposit fee, dual in-game NPC & web brokerage support · [Details](plans/economy_and_finance.md#2-investment-bank--unified-brokerage-account-ponytail-model) |
 | **Bill Notes** | ⏳ [POSTPONED] | Replaced by 17-Carat Diamond trades (500M store of value) · [Details](plans/stock_exchange_expansion.md#6-phase-11-stock-market-hardening-arithmetic-protection--17-carat-diamond-store-of-value) |
 | **Item Gacha** | ✅ [DESIGNED] | Web Gacha Altar, Web Stash, Gacha Shards & Exclusives Shop · [Details](plans/web_gacha_system.md) |
 | **Stock Momentum** | ⏳ [PENDING] | Advanced trend logic for the Stock Exchange · [Details](plans/economy_and_finance.md#3-stock-momentum--market-dynamics) |

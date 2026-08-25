@@ -34,9 +34,9 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 bg-surface/95 border border-border/80 backdrop-blur-md rounded-full shadow-2xl px-3.5 py-2 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
+    <div className="fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-auto sm:right-4 sm:w-auto md:bottom-4 md:right-4 md:left-auto z-40 bg-surface/95 border border-border/80 backdrop-blur-md rounded-full shadow-2xl px-3 py-1.5 sm:px-3.5 sm:py-2 flex items-center justify-between sm:justify-start gap-2 sm:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 select-none">
       {/* Equalizer Waveform Indicator */}
-      <div className="flex items-center gap-0.5 h-3.5 px-1">
+      <div className="flex items-center gap-0.5 h-3.5 px-0.5 sm:px-1 shrink-0">
         <span
           className={`w-1 h-3 rounded-full transition-all ${
             isPlaying ? "bg-accent animate-pulse" : "bg-muted/40"
@@ -55,7 +55,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
       </div>
 
       {/* Track Info */}
-      <div className="flex flex-col min-w-0 max-w-[110px] sm:max-w-[160px]">
+      <div className="flex flex-col min-w-0 flex-1 sm:flex-initial sm:max-w-[160px]">
         <span className="text-xs font-bold text-primary truncate leading-tight flex items-center gap-1">
           <span className="truncate">{title}</span>
           {!isPlaying && (
@@ -70,10 +70,10 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
       </div>
 
       {/* Controls: Shuffle, Loop, Prev, Play/Pause, Next, Return to Lounge, and Dismiss */}
-      <div className="flex items-center gap-1 pl-1 border-l border-border">
+      <div className="flex items-center gap-0.5 sm:gap-1 pl-1 sm:pl-1.5 border-l border-border shrink-0">
         <button
           onClick={toggleShuffle}
-          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+          className={`hidden sm:inline-flex p-1.5 rounded-full transition-colors cursor-pointer ${
             isShuffled ? "text-accent bg-accent/15" : "text-muted hover:text-primary hover:bg-surface2"
           }`}
           title={isShuffled ? "Shuffle Active" : "Shuffle Disabled"}
@@ -84,7 +84,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
 
         <button
           onClick={toggleLoop}
-          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+          className={`hidden sm:inline-flex p-1.5 rounded-full transition-colors cursor-pointer ${
             isLooped ? "text-accent bg-accent/15" : "text-muted hover:text-primary hover:bg-surface2"
           }`}
           title={isLooped ? "Loop Active" : "Loop Disabled"}
@@ -99,7 +99,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
           title="Previous Track"
           aria-label="Previous Track"
         >
-          <SkipBack className="w-3 h-3" />
+          <SkipBack className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
         </button>
 
         <button
@@ -117,7 +117,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
           title="Next Track"
           aria-label="Next Track"
         >
-          <SkipForward className="w-3 h-3" />
+          <SkipForward className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
         </button>
 
         <button
@@ -135,7 +135,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
           title="Dismiss Radio Dock"
           aria-label="Dismiss Radio Dock"
         >
-          <X className="w-3 h-3" />
+          <X className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
         </button>
       </div>
     </div>

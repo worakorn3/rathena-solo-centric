@@ -72,13 +72,20 @@
 
 ## 🔢 Financial Formulas & Database Schema Mappings
 
-### 1. Investment Bank (`npc/custom/investment_bank.txt`)
-- **Table:** `acc_reg_num`
-- **Keys:** `#INVEST_BALANCE` (Principal), `#INVEST_TIME` (Unix timestamp of last deposit)
-- **Formulas:**
-  $$\text{Days Accrued} = \min\left(10, \left\lfloor \frac{\text{CurrentTime} - \text{\#INVEST\_TIME}}{86400} \right\rfloor\right)$$
-  $$\text{Accrued Interest} = \left\lfloor \frac{\text{\#INVEST\_BALANCE}}{100} \times \text{Days Accrued} \right\rfloor \quad (1\% \text{ per day, capped at } 10\%)$$
-  $$\text{Total Payout} = \text{\#INVEST\_BALANCE} + \text{Accrued Interest}$$
+### 1. Investment Bank & Unified Brokerage Account (`npc/custom/investment_bank.txt`)
+- **Tables:** `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) [Legacy fallback: `acc_reg_num` `#INVEST_BALANCE`, `#INVEST_TIME`]
+- **Continuous Accrual & Tiered Basis Points Formula:**
+  $$\text{Elapsed Days} = \frac{\text{CurrentTime} - \text{deposit\_time}}{86400}$$
+  $$\text{Basis Points (bps)} = \begin{cases} 
+  \text{Days} \times 25 & \text{if Days} \le 14 \quad (0.25\%/\text{day}) \\
+  350 + (\text{Days} - 14) \times 8 & \text{if } 14 < \text{Days} \le 60 \quad (0.08\%/\text{day}) \\
+  718 + (\text{Days} - 60) \times 3 & \text{if } 60 < \text{Days} \le 180 \quad (0.03\%/\text{day}) \\
+  1078 + (\text{Days} - 180) \times 1 & \text{if Days} > 180 \quad (0.01\%/\text{day})
+  \end{cases}$$
+  $$\text{Accrued Interest} = \left\lfloor \frac{\text{principal} \times \text{Basis Points}}{10000} \right\rfloor$$
+  $$\text{Total Payout} = \text{principal} + \text{Accrued Interest}$$
+- **Deposit Fee:** 0.1% upfront friction fee.
+- **Web Terminal Execution:** Allows deposit/withdraw directly from web portal for offline characters (`char.online === 0`), writing to Primary DB (3306).
 
 ### 2. Midgard Stock Exchange (`npc/custom/stock_exchange.txt`)
 - **Tables:** `solo_stock_market` (Market Tickers), `solo_stock_player` (Player Holdings)

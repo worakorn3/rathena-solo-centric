@@ -131,4 +131,72 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     }
 
     return result;
+  })
+  .post("/bank/deposit", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { charId, amount } = (body as any) || {};
+
+    if (!charId || !amount) {
+      set.status = 400;
+      return { success: false, error: "Missing required deposit parameters: charId, amount." };
+    }
+
+    const result = await EconomyService.depositBank(
+      Number(payload.accountId),
+      Number(charId),
+      Number(amount)
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
+  })
+  .post("/bank/withdraw", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { charId, amount } = (body as any) || {};
+
+    if (!charId) {
+      set.status = 400;
+      return { success: false, error: "Missing required withdraw parameters: charId." };
+    }
+
+    const result = await EconomyService.withdrawBank(
+      Number(payload.accountId),
+      Number(charId),
+      amount ? Number(amount) : undefined
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
   });
