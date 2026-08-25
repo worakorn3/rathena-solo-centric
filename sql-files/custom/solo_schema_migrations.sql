@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `solo_stock_market` (
   `sector` VARCHAR(64) NOT NULL DEFAULT '',
   `archetype` VARCHAR(64) NOT NULL DEFAULT '',
   `lore` TEXT NULL,
+  `asset_type` ENUM('EQUITY', 'CRYPTO') NOT NULL DEFAULT 'EQUITY',
   `price` INT DEFAULT 100,
   `price_old` INT DEFAULT 100,
   `dividend` INT DEFAULT 3,
@@ -34,70 +35,72 @@ ALTER TABLE `solo_stock_market`
   ADD COLUMN IF NOT EXISTS `sector` VARCHAR(64) NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS `archetype` VARCHAR(64) NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS `lore` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `asset_type` ENUM('EQUITY', 'CRYPTO') NOT NULL DEFAULT 'EQUITY',
   ADD COLUMN IF NOT EXISTS `beta` DECIMAL(3,2) NOT NULL DEFAULT 1.00,
   ADD COLUMN IF NOT EXISTS `target_yield_bps` INT NOT NULL DEFAULT 50,
   ADD COLUMN IF NOT EXISTS `enabled` TINYINT NOT NULL DEFAULT 1,
   MODIFY COLUMN `sector` VARCHAR(64) NOT NULL DEFAULT '',
   MODIFY COLUMN `archetype` VARCHAR(64) NOT NULL DEFAULT '';
 
--- Complete Municipal City Catalog: Base 5 (Live) + Phase 1 (Schwarzwald Enabled) + Future Phases (Disabled)
-INSERT INTO `solo_stock_market` (`ticker`, `name`, `broker_title`, `sector`, `archetype`, `price`, `price_old`, `dividend`, `beta`, `target_yield_bps`, `enabled`)
+-- Complete Municipal City Catalog: Base 5 (Live) + Phase 1 (Schwarzwald Enabled) + Future Phases (Disabled) + Crypto (Enabled)
+INSERT INTO `solo_stock_market` (`ticker`, `name`, `broker_title`, `sector`, `archetype`, `asset_type`, `price`, `price_old`, `dividend`, `beta`, `target_yield_bps`, `enabled`)
 VALUES
   -- 📍 Phase 0: Baseline Midgard Core (ENABLED)
-  ('PRT', 'Prontera Capital Inc.', 'Midgard Stock Index', 'Sovereign Core', 'Blue-Chip Balanced', 100, 100, 3, 1.00, 50, 1),
-  ('GEF', 'Geffen Arcanetech', 'Geffen Magical Equities', 'Arcane Supplies', 'Moderate Growth', 100, 100, 3, 1.20, 30, 1),
-  ('MOR', 'Morroc Oasis Trading', 'Morroc Expansion Bonds', 'Desert Commerce', 'Trading Volatility', 100, 100, 3, 1.30, 35, 1),
-  ('PAY', 'Payon Timber & Craft', 'Payon Forest Interests', 'Forestry & Crafts', 'Commodities Value', 100, 100, 3, 0.80, 55, 1),
-  ('ALB', 'Alberta Maritime Logistics', 'Alberta Shipping Corp', 'Harbor & Shipping', 'High Dividend Income', 100, 100, 3, 0.75, 60, 1),
+  ('PRT', 'Prontera Capital Inc.', 'Midgard Stock Index', 'Sovereign Core', 'Blue-Chip Balanced', 'EQUITY', 100, 100, 3, 1.00, 50, 1),
+  ('GEF', 'Geffen Arcanetech', 'Geffen Magical Equities', 'Arcane Supplies', 'Moderate Growth', 'EQUITY', 100, 100, 3, 1.20, 30, 1),
+  ('MOR', 'Morroc Oasis Trading', 'Morroc Expansion Bonds', 'Desert Commerce', 'Trading Volatility', 'EQUITY', 100, 100, 3, 1.30, 35, 1),
+  ('PAY', 'Payon Timber & Craft', 'Payon Forest Interests', 'Forestry & Crafts', 'Commodities Value', 'EQUITY', 100, 100, 3, 0.80, 55, 1),
+  ('ALB', 'Alberta Maritime Logistics', 'Alberta Shipping Corp', 'Harbor & Shipping', 'High Dividend Income', 'EQUITY', 100, 100, 3, 0.75, 60, 1),
 
   -- 🚀 Phase 1: Schwarzwald Republic & Frontier High-Tech (ENABLED)
-  ('LHZ', 'Rekenber Frontier Biotech', 'Rekenber Securities', 'Biotech & Robotics', 'Pure Growth Tech', 100, 100, 0, 1.80, 0, 1),
-  ('EIN', 'Einbroch Heavy Industries', 'Schwarzwald Iron & Steam', 'Heavy Manufacturing', 'Industrial CapEx Growth', 100, 100, 1, 1.40, 10, 1),
-  ('YUN', 'Yuno Arcane Institute', 'Juperos Deep-Tech Trust', 'Ancient Physics & Tech', 'Speculative Venture', 100, 100, 0, 1.50, 0, 1),
-  ('HUG', 'Hugel Leisure & Coastal', 'Hugel Racing Syndicate', 'Regional Leisure', 'Gaming Micro-Cap', 100, 100, 3, 0.90, 30, 1),
+  ('LHZ', 'Rekenber Frontier Biotech', 'Rekenber Securities', 'Biotech & Robotics', 'Pure Growth Tech', 'EQUITY', 100, 100, 0, 1.80, 0, 1),
+  ('EIN', 'Einbroch Heavy Industries', 'Schwarzwald Iron & Steam', 'Heavy Manufacturing', 'Industrial CapEx Growth', 'EQUITY', 100, 100, 1, 1.40, 10, 1),
+  ('YUN', 'Yuno Arcane Institute', 'Juperos Deep-Tech Trust', 'Ancient Physics & Tech', 'Speculative Venture', 'EQUITY', 100, 100, 0, 1.50, 0, 1),
+  ('HUG', 'Hugel Leisure & Coastal', 'Hugel Racing Syndicate', 'Regional Leisure', 'Gaming Micro-Cap', 'EQUITY', 100, 100, 3, 0.90, 30, 1),
 
   -- 🏛️ Phase 2: Rune-Midgarts Domestic Expansion (DISABLED)
-  ('ADB', 'Kafra Global Corporation', 'Aldebaran Kafra Index', 'Teleport & Utilities', 'Blue-Chip Dividend Aristocrat', 100, 100, 5, 0.50, 60, 0),
-  ('CMD', 'Comodo Entertainment Syndicate', 'Comodo Leisure Equities', 'Casino & Leisure', 'High-Beta Discretionary', 100, 100, 4, 1.90, 50, 0),
-  ('IZL', 'Izlude Maritime Transport', 'Izlude Naval Bonds', 'Ferry & Maritime Defense', 'Small-Cap Defense', 100, 100, 3, 0.70, 35, 0),
-  ('LUT', 'Santa Toy Factory Robotics', 'Lutie Automated Assembly', 'Consumer Manufacturing', 'Seasonal Robotics', 100, 100, 2, 1.10, 20, 0),
+  ('ADB', 'Kafra Global Corporation', 'Aldebaran Kafra Index', 'Teleport & Utilities', 'Blue-Chip Dividend Aristocrat', 'EQUITY', 100, 100, 5, 0.50, 60, 0),
+  ('CMD', 'Comodo Entertainment Syndicate', 'Comodo Leisure Equities', 'Casino & Leisure', 'High-Beta Discretionary', 'EQUITY', 100, 100, 4, 1.90, 50, 0),
+  ('IZL', 'Izlude Maritime Transport', 'Izlude Naval Bonds', 'Ferry & Maritime Defense', 'Small-Cap Defense', 'EQUITY', 100, 100, 3, 0.70, 35, 0),
+  ('LUT', 'Santa Toy Factory Robotics', 'Lutie Automated Assembly', 'Consumer Manufacturing', 'Seasonal Robotics', 'EQUITY', 100, 100, 2, 1.10, 20, 0),
 
   -- ☀️ Phase 3: Theocratic Sovereign & Commodities (DISABLED)
-  ('RAC', 'Cheshrumnir Sacred Trust', 'Temple of Freya Sovereign Trust', 'Theocratic Sovereign Fund', 'Gold & Tithe Haven', 100, 100, 4, 0.30, 40, 0),
-  ('VEI', 'Veins Volcanic Minerals', 'Thor Geothermal Energy', 'Energy & Minerals', 'Commodity Exploration', 100, 100, 3, 1.60, 35, 0),
-  ('JAW', 'Jawaii Luxury Resorts', 'Jawaii Island Monopoly', 'Ultra-Luxury Hospitality', 'Monopoly Cash Flow', 100, 100, 6, 0.40, 65, 0),
-  ('UMB', 'Utan Ecotourism & Relics', 'Umbala Primitive Ventures', 'Exotic Commodities', 'Micro-Cap Speculation', 100, 100, 0, 1.50, 5, 0),
+  ('RAC', 'Cheshrumnir Sacred Trust', 'Temple of Freya Sovereign Trust', 'Theocratic Sovereign Fund', 'Gold & Tithe Haven', 'EQUITY', 100, 100, 4, 0.30, 40, 0),
+  ('VEI', 'Veins Volcanic Minerals', 'Thor Geothermal Energy', 'Energy & Minerals', 'Commodity Exploration', 'EQUITY', 100, 100, 3, 1.60, 35, 0),
+  ('JAW', 'Jawaii Luxury Resorts', 'Jawaii Island Monopoly', 'Ultra-Luxury Hospitality', 'Monopoly Cash Flow', 'EQUITY', 100, 100, 6, 0.40, 65, 0),
+  ('UMB', 'Utan Ecotourism & Relics', 'Umbala Primitive Ventures', 'Exotic Commodities', 'Micro-Cap Speculation', 'EQUITY', 100, 100, 0, 1.50, 5, 0),
 
   -- 🌏 Phase 4: Global Cultural & Agrarian Markets (DISABLED)
-  ('LOU', 'Louyang Herbal Medicine', 'Dragon Herbal Pharmaceuticals', 'Traditional Healthcare', 'Defensive Healthcare', 100, 100, 4, 0.60, 40, 0),
-  ('MOS', 'Moscovia Prime Forestry', 'Czar Forest & Fur Resources', 'Natural Resources & Timber', 'Soft Commodity Value', 100, 100, 5, 0.80, 50, 0),
-  ('AMA', 'Amatsu Artisan Guild', 'Amatsu Blade & Silk Corp', 'Artisanal Crafts & Tourism', 'Boutique Heritage', 100, 100, 3, 0.70, 35, 0),
-  ('AYO', 'Ayothaya River Trading', 'Ayothaya Agrarian Logistics', 'Agricultural Commodities', 'Agrarian Steady Value', 100, 100, 4, 0.60, 45, 0),
-  ('GON', 'Kunlun Taoist Realm', 'Gonryun Floating Estates', 'Mystical Consumables & Air-Rights', 'Cultivation Luxury', 100, 100, 2, 1.00, 25, 0),
-  ('BRA', 'Brasilis Carnival & Flora', 'Brasilis Bio-Prospecting', 'Eco-Energy & Festivals', 'Event & Bio Growth', 100, 100, 3, 1.20, 30, 0),
-  ('DEW', 'Dewata Karakatau Mines', 'Dewata Gold & Spice Corp', 'Precious Metals & Spices', 'Volcanic Metal Resource', 100, 100, 4, 1.40, 40, 0),
-  ('MAL', 'Port Malaya Maritime', 'Malaya Regional Logistics', 'Port Cargo & Healthcare', 'Emerging Market Logistics', 100, 100, 3, 1.00, 35, 0),
+  ('LOU', 'Louyang Herbal Medicine', 'Dragon Herbal Pharmaceuticals', 'Traditional Healthcare', 'Defensive Healthcare', 'EQUITY', 100, 100, 4, 0.60, 40, 0),
+  ('MOS', 'Moscovia Prime Forestry', 'Czar Forest & Fur Resources', 'Natural Resources & Timber', 'Soft Commodity Value', 'EQUITY', 100, 100, 5, 0.80, 50, 0),
+  ('AMA', 'Amatsu Artisan Guild', 'Amatsu Blade & Silk Corp', 'Artisanal Crafts & Tourism', 'Boutique Heritage', 'EQUITY', 100, 100, 3, 0.70, 35, 0),
+  ('AYO', 'Ayothaya River Trading', 'Ayothaya Agrarian Logistics', 'Agricultural Commodities', 'Agrarian Steady Value', 'EQUITY', 100, 100, 4, 0.60, 45, 0),
+  ('GON', 'Kunlun Taoist Realm', 'Gonryun Floating Estates', 'Mystical Consumables & Air-Rights', 'Cultivation Luxury', 'EQUITY', 100, 100, 2, 1.00, 25, 0),
+  ('BRA', 'Brasilis Carnival & Flora', 'Brasilis Bio-Prospecting', 'Eco-Energy & Festivals', 'Event & Bio Growth', 'EQUITY', 100, 100, 3, 1.20, 30, 0),
+  ('DEW', 'Dewata Karakatau Mines', 'Dewata Gold & Spice Corp', 'Precious Metals & Spices', 'Volcanic Metal Resource', 'EQUITY', 100, 100, 4, 1.40, 40, 0),
+  ('MAL', 'Port Malaya Maritime', 'Malaya Regional Logistics', 'Port Cargo & Healthcare', 'Emerging Market Logistics', 'EQUITY', 100, 100, 3, 1.00, 35, 0),
 
   -- 💀 Phase 5: Outliers & Interdimensional Markets (DISABLED)
-  ('NIF', 'Nifflheim Occult Relics', 'Underworld Distressed Debt', 'Occult & Distressed Assets', 'Junk Bond Speculation', 100, 100, 0, 2.50, 0, 0),
-  ('DIC', 'Ash Vacuum Mining Alliance', 'El Dicastes Bradium Exploration', 'Extraplanar Minerals & Energy', 'Interdimensional Venture', 100, 100, 0, 2.20, 5, 0),
+  ('NIF', 'Nifflheim Occult Relics', 'Underworld Distressed Debt', 'Occult & Distressed Assets', 'Junk Bond Speculation', 'EQUITY', 100, 100, 0, 2.50, 0, 0),
+  ('DIC', 'Ash Vacuum Mining Alliance', 'El Dicastes Bradium Exploration', 'Extraplanar Minerals & Energy', 'Interdimensional Venture', 'EQUITY', 100, 100, 0, 2.20, 5, 0),
 
   -- ⚡ Phase 13: Decentralized Rune & Crypto-Asset Protocols (ENABLED)
-  ('EMP', 'Emperium Shard Protocol', 'Sovereign Guild Vaults', 'Sovereign Ore & Protocol', 'Deflationary Store of Value', 100, 100, 0, 2.80, 0, 1),
-  ('YMI', 'Heart of Ymir Alchemax', 'Juperos Arcane Matrix', 'Arcane Computation & Gas', 'Decentralized Alchemical Matrix', 100, 100, 1, 2.40, 10, 1),
-  ('WRP', 'Warp Light Protocol', 'Acolyte High-Speed Rail', 'Spatial Teleportation Rail', 'Ultra-High-Speed Ledger', 100, 100, 0, 3.20, 0, 1),
-  ('SHD', 'Shadow Guild Stealth Ring', 'Morroc Black Syndicate', 'Stealth & Underground Trade', 'Zero-Knowledge Anonymous Ring', 100, 100, 0, 2.60, 0, 1),
-  ('ZEX', 'Midgard Exchange Coin', 'Alberta Merchant Consortium', 'Market Infrastructure', 'Utility Token & Fee Rebate', 100, 100, 1, 1.70, 5, 1),
-  ('ORA', 'Eye of Odin Oracle', 'Hugin & Munin Feeds', 'Arcane Data Infrastructure', 'Decentralized Oracle Feeds', 100, 100, 2, 1.80, 15, 1),
-  ('POR', 'King Poring Meme Standard', 'Novice South-Field Syndicate', 'Meme & Social Frenzy', 'Pure Community Speculation', 100, 100, 0, 4.50, 0, 1),
-  ('NZN', 'Neo-Zeny Kafra Dollar', 'Kafra Reserve Trust', 'Settlement & Arbitrage', '1:1 Reserve-Pegged Dollar', 100, 100, 2, 0.05, 20, 1),
-  ('ALM', 'Alchemax AMM Pool', 'Morroc Bazaar Cauldron', 'Decentralized Finance (DeFi)', 'Automated Liquidity Cauldron', 100, 100, 4, 2.10, 35, 1),
-  ('KFX', 'Kafra Fast-eXchange', 'Inter-Realm Remittance', 'Sovereign Banking Rail', 'Institutional Remittance Ledger', 100, 100, 3, 1.50, 25, 1)
+  ('EMP', 'Emperium Shard Protocol', 'Sovereign Guild Vaults', 'Sovereign Ore & Protocol', 'Deflationary Store of Value', 'CRYPTO', 100, 100, 0, 2.80, 0, 1),
+  ('YMI', 'Heart of Ymir Alchemax', 'Juperos Arcane Matrix', 'Arcane Computation & Gas', 'Decentralized Alchemical Matrix', 'CRYPTO', 100, 100, 1, 2.40, 10, 1),
+  ('WRP', 'Warp Light Protocol', 'Acolyte High-Speed Rail', 'Spatial Teleportation Rail', 'Ultra-High-Speed Ledger', 'CRYPTO', 100, 100, 0, 3.20, 0, 1),
+  ('SHD', 'Shadow Guild Stealth Ring', 'Morroc Black Syndicate', 'Stealth & Underground Trade', 'Zero-Knowledge Anonymous Ring', 'CRYPTO', 100, 100, 0, 2.60, 0, 1),
+  ('ZEX', 'Midgard Exchange Coin', 'Alberta Merchant Consortium', 'Market Infrastructure', 'Utility Token & Fee Rebate', 'CRYPTO', 100, 100, 1, 1.70, 5, 1),
+  ('ORA', 'Eye of Odin Oracle', 'Hugin & Munin Feeds', 'Arcane Data Infrastructure', 'Decentralized Oracle Feeds', 'CRYPTO', 100, 100, 2, 1.80, 15, 1),
+  ('POR', 'King Poring Meme Standard', 'Novice South-Field Syndicate', 'Meme & Social Frenzy', 'Pure Community Speculation', 'CRYPTO', 100, 100, 0, 4.50, 0, 1),
+  ('NZN', 'Neo-Zeny Kafra Dollar', 'Kafra Reserve Trust', 'Settlement & Arbitrage', '1:1 Reserve-Pegged Dollar', 'CRYPTO', 100, 100, 2, 0.05, 20, 1),
+  ('ALM', 'Alchemax AMM Pool', 'Morroc Bazaar Cauldron', 'Decentralized Finance (DeFi)', 'Automated Liquidity Cauldron', 'CRYPTO', 100, 100, 4, 2.10, 35, 1),
+  ('KFX', 'Kafra Fast-eXchange', 'Inter-Realm Remittance', 'Sovereign Banking Rail', 'Institutional Remittance Ledger', 'CRYPTO', 100, 100, 3, 1.50, 25, 1)
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `broker_title` = VALUES(`broker_title`),
   `sector` = VALUES(`sector`),
   `archetype` = VALUES(`archetype`),
+  `asset_type` = VALUES(`asset_type`),
   `beta` = VALUES(`beta`),
   `target_yield_bps` = VALUES(`target_yield_bps`),
   `enabled` = VALUES(`enabled`);

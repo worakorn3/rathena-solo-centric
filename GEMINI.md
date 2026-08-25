@@ -26,6 +26,7 @@ To save AI context window tokens, detailed specifications have been extracted. R
 - **[Database Conventions](file:///E:/Games/Ragnarok/rathena-solo-centric/ai/DATABASE_RULES.md):** Rules for SQL immutability and custom migrations.
 - **[Scripting Rules](file:///E:/Games/Ragnarok/rathena-solo-centric/RATHENA_NPC_RULES.md):** **MANDATORY** rules for writing NPC scripts (Tabs, Variables, Weight checks).
 - **[Testing & CI](file:///E:/Games/Ragnarok/rathena-solo-centric/ai/TESTING_AND_CI.md):** Instructions for automated script testing via Docker and CI boundaries.
+- **Web Rebuild Rule:** **MANDATORY** - Always rebuild and restart the Docker Compose container (`docker compose -f tools/docker/docker-compose.yml up -d --build --no-deps web-portal`) whenever making ANY changes to the web frontend or backend.
 - **Coding Style:** Follow existing rAthena C++ conventions. Use `ShowError`/`ShowInfo`. Prefer `.yml` for new DB entries.
 
 ---

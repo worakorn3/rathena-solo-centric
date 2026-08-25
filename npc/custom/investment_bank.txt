@@ -1,4 +1,4 @@
-// ==============================================================
+// ===============================================================
 // Solo-Centric Investment Bank
 // ===============================================================
 // Provides an alternative to Kafra Storage with a deposit fee 
@@ -10,115 +10,138 @@
 // ===============================================================
 
 prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
-    mes "[Midgard Investment Bank]";
-    mes "Welcome to the Midgard Sovereign Bank.";
-    mes "Deposit fee: ^FF00002%^000000";
-    mes "Interest rate: ^00FF001% per day^000000 (Max 10% accumulation)";
-    next;
+	mes "[Midgard Investment Bank]";
+	mes "Welcome to the Midgard Sovereign Bank.";
+	mes "Deposit fee: ^FF00002%^000000";
+	mes "Interest rate: ^00FF001% per day^000000 (Max 10% accumulation)";
+	next;
 
-    .@account_id = getcharid(3);
-    .@balance = 0;
-    .@deposit_time = 0;
-    
-    // Read from dedicated table (identical to Stock Exchange parity)
-    query_sql "SELECT `principal`, `deposit_time` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@balance, .@deposit_time;
+	.@account_id = getcharid(3);
+	.@balance = 0;
+	.@deposit_time = 0;
+	.@interest_paid_total = 0;
+	
+	// Read from dedicated table (dual-access parity with Web Portal)
+	query_sql "SELECT `principal`, `deposit_time`, `interest_paid_total` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@balance, .@deposit_time, .@interest_paid_total;
 
-    // Check if player has an existing balance and calculate pending interest
-    .@days = 0;
-    .@interest = 0;
-    if (.@balance > 0 && .@deposit_time > 0) {
-        .@elapsed = gettimetick(2) - .@deposit_time;
-        if (.@elapsed > 0) {
-            .@days = .@elapsed / 86400; // 86400 seconds = 1 day
-            if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
-            .@interest = ((.@balance / 100) * .@days) + (((.@balance % 100) * .@days) / 100);
-        }
-    }
+	// Check if player has an existing balance and calculate pending interest
+	.@days = 0;
+	.@interest = 0;
+	if (.@balance > 0 && .@deposit_time > 0) {
+		.@elapsed = gettimetick(2) - .@deposit_time;
+		if (.@elapsed > 0) {
+			.@days = .@elapsed / 86400; // 86400 seconds = 1 day
+			if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
+			.@interest = ((.@balance / 100) * .@days) + (((.@balance % 100) * .@days) / 100);
+		}
+	}
+	.@total_available = .@balance + .@interest;
 
-    mes "[Investment Bank]";
-    mes "Your current principal: ^0000FF" + F_InsertComma(.@balance) + " Zeny^000000";
-    mes "Accumulated interest: ^00FF00" + F_InsertComma(.@interest) + " Zeny^000000 (" + .@days + " days)";
-    mes "Total available: ^0000FF" + F_InsertComma(.@balance + .@interest) + " Zeny^000000";
-    next;
+	mes "[Investment Bank]";
+	mes "Your current principal: ^0000FF" + F_InsertComma(.@balance) + " Zeny^000000";
+	mes "Accumulated interest: ^00FF00" + F_InsertComma(.@interest) + " Zeny^000000 (" + .@days + " days)";
+	mes "Total available: ^0000FF" + F_InsertComma(.@total_available) + " Zeny^000000";
+	next;
 
-    switch(select("Deposit Zeny:Withdraw All:Cancel")) {
-        case 1:
-            mes "[Investment Bank]";
-            mes "How much would you like to deposit?";
-            mes "Remember, there is a 2% deposit fee.";
-            next;
-            input .@amount;
-            
-            if (.@amount < 100) {
-                mes "[Investment Bank]";
-                mes "The minimum deposit is 100 Zeny.";
-                close;
-            }
+	switch(select("Deposit Zeny:Withdraw Zeny:Cancel")) {
+		case 1:
+			mes "[Investment Bank]";
+			mes "How much would you like to deposit?";
+			mes "Example: ^0000FF100m^000000, ^0000FF50k^000000, or exact Zeny.";
+			next;
+			input .@amount$;
+			.@amount = callfunc("F_ParseZenyInput", .@amount$);
+			
+			if (.@amount < 100) {
+				mes "[Investment Bank]";
+				mes "The minimum deposit is 100 Zeny.";
+				close;
+			}
 
-            if (Zeny < .@amount) {
-                mes "[Investment Bank]";
-                mes "You don't have that much Zeny.";
-                close;
-            }
+			if (Zeny < .@amount) {
+				mes "[Investment Bank]";
+				mes "You don't have that much Zeny.";
+				close;
+			}
 
-            .@fee = .@amount / 50; // 2% fee
-            .@net_deposit = .@amount - .@fee;
+			.@fee = .@amount / 50; // 2% fee
+			.@net_deposit = .@amount - .@fee;
 
-            if (.@balance + .@interest + .@net_deposit > 1900000000) {
-                mes "[Investment Bank]";
-                mes "We cannot accept this deposit. Your principal would exceed our 1,900,000,000 Zeny limit.";
-                close;
-            }
+			if (.@total_available + .@net_deposit > 1900000000) {
+				mes "[Investment Bank]";
+				mes "We cannot accept this deposit. Your principal would exceed our 1,900,000,000 Zeny limit.";
+				close;
+			}
 
-            // Deduct from inventory safely
-            Zeny -= .@amount;
-            
-            .@new_principal = .@balance + .@interest + .@net_deposit;
-            .@now = gettimetick(2);
+			// Deduct from inventory safely
+			Zeny -= .@amount;
+			
+			.@new_principal = .@total_available + .@net_deposit;
+			.@now = gettimetick(2);
 
-            // Atomic upsert into dedicated table
-            query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ") ON DUPLICATE KEY UPDATE `principal` = VALUES(`principal`), `deposit_time` = VALUES(`deposit_time`)";
+			// Atomic upsert into dedicated table
+			query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ") ON DUPLICATE KEY UPDATE `principal` = VALUES(`principal`), `deposit_time` = VALUES(`deposit_time`)";
 
-            mes "[Investment Bank]";
-            mes "You deposited " + F_InsertComma(.@amount) + " Zeny.";
-            mes "Fee paid: " + F_InsertComma(.@fee) + " Zeny.";
-            mes "New Principal: ^0000FF" + F_InsertComma(.@new_principal) + " Zeny^000000.";
-            mes "Your interest timer has been reset.";
-            close;
+			mes "[Investment Bank]";
+			mes "You deposited " + F_InsertComma(.@amount) + " Zeny (Fee: " + F_InsertComma(.@fee) + "z).";
+			mes "New Principal: ^0000FF" + F_InsertComma(.@new_principal) + " Zeny^000000.";
+			mes "Your interest timer has been reset.";
+			close;
 
-        case 2:
-            if (.@balance <= 0) {
-                mes "[Investment Bank]";
-                mes "You have no funds to withdraw.";
-                close;
-            }
+		case 2:
+			if (.@total_available <= 0) {
+				mes "[Investment Bank]";
+				mes "You have no funds to withdraw.";
+				close;
+			}
 
-            .@total_payout = .@balance + .@interest;
+			mes "[Investment Bank]";
+			mes "How much would you like to withdraw?";
+			mes "Available: ^0000FF" + F_InsertComma(.@total_available) + " Zeny^000000";
+			next;
+			input .@amount$;
+			.@amount = callfunc("F_ParseZenyInput", .@amount$);
 
-            // Prevent Zeny overflow (Max Zeny is 2,100,000,000 in standard RO)
-            if (2100000000 - Zeny < .@total_payout) {
-                mes "[Investment Bank]";
-                mes "You cannot hold that much Zeny in your inventory.";
-                mes "Please make room before withdrawing.";
-                close;
-            }
+			if (.@amount < 1) {
+				mes "[Investment Bank]";
+				mes "Please enter a valid amount to withdraw.";
+				close;
+			}
 
-            // Give Zeny
-            Zeny += .@total_payout;
+			if (.@amount > .@total_available) {
+				mes "[Investment Bank]";
+				mes "You cannot withdraw more than your available balance of " + F_InsertComma(.@total_available) + " Zeny.";
+				close;
+			}
 
-            // Reset balance in DB
-            query_sql "UPDATE `solo_bank_account` SET `principal` = 0, `deposit_time` = 0, `interest_paid_total` = `interest_paid_total` + " + .@interest + " WHERE `account_id` = " + .@account_id;
+			// Prevent Zeny overflow (Max Zeny is 2,100,000,000 in standard RO)
+			if (2100000000 - Zeny < .@amount) {
+				mes "[Investment Bank]";
+				mes "You cannot hold that much Zeny in your inventory.";
+				mes "Please make room before withdrawing.";
+				close;
+			}
 
-            mes "[Investment Bank]";
-            mes "You have successfully withdrawn ^0000FF" + F_InsertComma(.@total_payout) + " Zeny^000000.";
-            mes "Thank you for doing business with us.";
-            close;
+			// Give Zeny
+			Zeny += .@amount;
 
-        case 3:
-            close;
-    }
+			.@new_principal = .@total_available - .@amount;
+			.@new_time = (.@new_principal > 0) ? gettimetick(2) : 0;
+			query_sql "UPDATE `solo_bank_account` SET `principal` = " + .@new_principal + ", `deposit_time` = " + .@new_time + ", `interest_paid_total` = `interest_paid_total` + " + .@interest + " WHERE `account_id` = " + .@account_id;
+
+			mes "[Investment Bank]";
+			mes "You have successfully withdrawn ^0000FF" + F_InsertComma(.@amount) + " Zeny^000000.";
+			if (.@new_principal > 0) {
+				mes "Remaining principal: ^0000FF" + F_InsertComma(.@new_principal) + " Zeny^000000.";
+			}
+			mes "Thank you for doing business with us.";
+			close;
+
+		case 3:
+			close;
+	}
 
 OnInit:
-    waitingroom "Midgard Investment Bank", 0;
-    end;
+	waitingroom "Midgard Investment Bank", 0;
+	end;
 }

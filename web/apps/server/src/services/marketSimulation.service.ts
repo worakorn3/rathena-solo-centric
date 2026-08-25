@@ -1,4 +1,5 @@
 import { primaryQuery, primaryExecute } from "../db/pool";
+import { isCryptoAsset } from "@rathena/shared";
 
 export const MARKET_SHIFT_INTERVAL_SEC = 600;
 
@@ -12,13 +13,6 @@ export class MarketSimulationService {
     let equitiesDrift = 0;
     let cryptoMood = 0;
     let cryptoDrift = 0;
-
-    const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
-    const isCrypto = (ticker: string, sector?: string): boolean => {
-      if (CRYPTO_TICKERS.has(ticker.toUpperCase().trim())) return true;
-      if (sector && (sector.toLowerCase().includes("protocol") || sector.toLowerCase().includes("defi"))) return true;
-      return false;
-    };
 
     const moodRows = await primaryQuery(
       "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'CryptoMood')"
@@ -48,8 +42,18 @@ export class MarketSimulationService {
 
     // Query all active stock tickers dynamically from DB
     const stockRows = await primaryQuery(
-      "SELECT ticker, sector, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+      "SELECT ticker, sector, asset_type, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
     );
+
+    // Shared sector drifts (lightweight peer correlation)
+    const sectorDriftMap = new Map<string, number>();
+    const getSectorDrift = (sectorName?: string): number => {
+      if (!sectorName) return 0;
+      if (!sectorDriftMap.has(sectorName)) {
+        sectorDriftMap.set(sectorName, Math.floor(Math.random() * 5) - 2); // rand(-2, 2)
+      }
+      return sectorDriftMap.get(sectorName)!;
+    };
 
     let equitiesUpCount = 0;
     let equitiesDownCount = 0;
@@ -63,7 +67,7 @@ export class MarketSimulationService {
       const city = stock.ticker;
       const price = Number(stock.price) || 0;
       const beta = Number(stock.beta) || 1.0;
-      const cryptoAsset = isCrypto(city, stock.sector);
+      const cryptoAsset = isCryptoAsset(city, stock.asset_type || stock.sector);
 
       // Decoupled Local Mood & Drift
       let localMood = tickerMoods.get(city);
@@ -91,6 +95,25 @@ export class MarketSimulationService {
         else if (localMood === 3) f += (Math.floor(Math.random() * 36) - 15); // Chaos: rand(-15, 20)
       }
 
+      // Add lightweight sector correlation
+      f += getSectorDrift(stock.sector);
+
+      // Continuous Elastic Valuation Curve (Buoyancy at bottom, Gravity at top)
+      let volume = Math.floor(Math.random() * 120) + 10;
+      if (price < 100) {
+        const discount = (100 - price) / 90; // 0.0 at 100z -> 1.0 at 10z
+        if (Math.random() < discount * 0.85) {
+          const isValue = (Number(stock.target_yield_bps) || 0) > 0;
+          f += isValue ? Math.floor(discount * 5) + 2 : Math.floor(discount * 14) + 6;
+          if (!isValue && discount > 0.4) volume = Math.floor(Math.random() * 250) + 200;
+        }
+      } else if (price > 100) {
+        const overbought = (price - 100) / 900; // 0.0 at 100z -> 1.0 at 1000z
+        if (Math.random() < Math.pow(overbought, 1.8) * 0.90) {
+          f -= Math.floor(overbought * 6) + 2;
+        }
+      }
+
       // Apply beta volatility multiplier
       f = Math.round(f * beta);
 
@@ -99,7 +122,7 @@ export class MarketSimulationService {
         delta = f > 0 ? 1 : -1;
       }
       let newPrice = price + delta;
-      if (newPrice < 50) newPrice = 50;
+      if (newPrice < 10) newPrice = 10;
 
       if (newPrice >= 1000) {
         newPrice = Math.floor(newPrice / 10);
@@ -129,7 +152,6 @@ export class MarketSimulationService {
       const close = newPrice;
       const high = Math.max(open, close) + Math.floor(Math.random() * wickSpread);
       const low = Math.max(1, Math.min(open, close) - Math.floor(Math.random() * wickSpread));
-      const volume = Math.floor(Math.random() * 120) + 10;
       candlesToInsert.push({ ticker: city, open, high, low, close, volume });
     }
 
@@ -196,16 +218,16 @@ export class MarketSimulationService {
       await primaryExecute(`
         INSERT INTO \`solo_stock_history_daily\` (\`ticker\`, \`open_price\`, \`high_price\`, \`low_price\`, \`close_price\`, \`volume\`, \`date\`)
         SELECT 
-          ticker,
-          CAST(SUBSTRING_INDEX(GROUP_CONCAT(open_price ORDER BY timestamp ASC), ',', 1) AS UNSIGNED) AS open_price,
-          MAX(high_price) AS high_price,
-          MIN(low_price) AS low_price,
-          CAST(SUBSTRING_INDEX(GROUP_CONCAT(close_price ORDER BY timestamp DESC), ',', 1) AS UNSIGNED) AS close_price,
-          SUM(volume) AS volume,
-          DATE(timestamp) AS \`date\`
-        FROM \`solo_stock_history\`
-        WHERE timestamp < CURDATE()
-        GROUP BY ticker, DATE(timestamp)
+          h.ticker,
+          (SELECT h1.open_price FROM \`solo_stock_history\` h1 WHERE h1.ticker = h.ticker AND DATE(h1.timestamp) = DATE(h.timestamp) ORDER BY h1.timestamp ASC LIMIT 1) AS open_price,
+          MAX(h.high_price) AS high_price,
+          MIN(h.low_price) AS low_price,
+          (SELECT h2.close_price FROM \`solo_stock_history\` h2 WHERE h2.ticker = h.ticker AND DATE(h2.timestamp) = DATE(h.timestamp) ORDER BY h2.timestamp DESC LIMIT 1) AS close_price,
+          SUM(h.volume) AS volume,
+          DATE(h.timestamp) AS \`date\`
+        FROM \`solo_stock_history\` h
+        WHERE h.timestamp < CURDATE()
+        GROUP BY h.ticker, DATE(h.timestamp)
         ON DUPLICATE KEY UPDATE
           open_price = VALUES(open_price),
           high_price = VALUES(high_price),
@@ -329,7 +351,7 @@ export class MarketSimulationService {
     let marketDrift = metaMap.get("MarketDrift") || 0;
 
     const stockRows = await primaryQuery(
-      "SELECT ticker, price, dividend, split_count, beta FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+      "SELECT ticker, sector, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
     );
     if (stockRows.length === 0) return 0;
 
@@ -340,8 +362,10 @@ export class MarketSimulationService {
     // In-memory ticker tracking
     const state = stockRows.map((s: any) => ({
       ticker: s.ticker,
+      sector: s.sector,
       price: Number(s.price) || 50,
       beta: Number(s.beta) || 1.0,
+      targetYieldBps: Number(s.target_yield_bps) || 0,
       splitCount: Number(s.split_count) || 0,
       totalSplitsDuringOffline: 0,
     }));
@@ -366,6 +390,7 @@ export class MarketSimulationService {
 
       // Step drift transition
       marketDrift = Math.floor(Math.random() * 9) - 4;
+      const sectorDriftMap = new Map<string, number>();
       let upCount = 0;
       let downCount = 0;
 
@@ -377,15 +402,40 @@ export class MarketSimulationService {
         else if (localMood === 2) f -= 2;
         else if (localMood === 3) f += Math.floor(Math.random() * 36) - 15;
 
-        f = Math.round(f * stock.beta);
+        // Sector correlation
+        if (stock.sector) {
+          if (!sectorDriftMap.has(stock.sector)) {
+            sectorDriftMap.set(stock.sector, Math.floor(Math.random() * 5) - 2);
+          }
+          f += sectorDriftMap.get(stock.sector)!;
+        }
 
         const oldPrice = stock.price;
+        let volume = Math.floor(Math.random() * 120) + 10;
+
+        // Continuous Elastic Valuation Curve (Buoyancy at bottom, Gravity at top)
+        if (oldPrice < 100) {
+          const discount = (100 - oldPrice) / 90; // 0.0 at 100z -> 1.0 at 10z
+          if (Math.random() < discount * 0.85) {
+            const isValue = stock.targetYieldBps > 0;
+            f += isValue ? Math.floor(discount * 5) + 2 : Math.floor(discount * 14) + 6;
+            if (!isValue && discount > 0.4) volume = Math.floor(Math.random() * 250) + 200;
+          }
+        } else if (oldPrice > 100) {
+          const overbought = (oldPrice - 100) / 900; // 0.0 at 100z -> 1.0 at 1000z
+          if (Math.random() < Math.pow(overbought, 1.8) * 0.90) {
+            f -= Math.floor(overbought * 6) + 2;
+          }
+        }
+
+        f = Math.round(f * stock.beta);
+
         let delta = Math.round((oldPrice * f) / 100);
         if (delta === 0 && f !== 0) {
           delta = f > 0 ? 1 : -1;
         }
         let newPrice = oldPrice + delta;
-        if (newPrice < 50) newPrice = 50;
+        if (newPrice < 10) newPrice = 10;
 
         // Handle stock split
         if (newPrice >= 1000) {
@@ -402,7 +452,6 @@ export class MarketSimulationService {
         const wickSpread = Math.max(1, Math.round(newPrice * 0.008));
         const high = Math.max(oldPrice, newPrice) + Math.floor(Math.random() * wickSpread);
         const low = Math.max(1, Math.min(oldPrice, newPrice) - Math.floor(Math.random() * wickSpread));
-        const volume = Math.floor(Math.random() * 120) + 10;
 
         candlesToInsert.push({
           ticker: stock.ticker,
@@ -561,7 +610,7 @@ export class MarketSimulationService {
 
       if (pricePct !== 0) {
         await primaryExecute(
-          "UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+          "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
           [pricePct, t]
         );
       }
@@ -602,7 +651,7 @@ export class MarketSimulationService {
 
         for (const secTicker of secondaryTickers) {
           await primaryExecute(
-            "UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+            "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
             [secPricePct, secTicker]
           );
         }

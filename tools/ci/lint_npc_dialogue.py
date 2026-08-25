@@ -39,7 +39,7 @@ class DialogueIssue:
     def __init__(self, file_path: str, line_num: int, issue_type: str, message: str, snippet: str = ""):
         self.file_path = file_path
         self.line_num = line_num
-        self.issue_type = issue_type  # 'STACKED_DIALOGUE', 'UNPAGINATED_LOOP'
+        self.issue_type = issue_type  # 'STACKED_DIALOGUE', 'UNPAGINATED_LOOP', 'EMOJI_IN_DIALOGUE'
         self.message = message
         self.snippet = snippet
 
@@ -53,7 +53,7 @@ class DialogueIssue:
         }
 
     def __str__(self) -> str:
-        tag_color = 'red' if self.issue_type == 'STACKED_DIALOGUE' else 'yellow'
+        tag_color = 'red' if self.issue_type in ('STACKED_DIALOGUE', 'EMOJI_IN_DIALOGUE') else 'yellow'
         return (
             f"{color(self.file_path, 'cyan')}:{color(str(self.line_num), 'yellow')}: "
             f"{color(f'[{self.issue_type}]', tag_color)} {self.message}"
@@ -108,14 +108,10 @@ def count_mes_lines_in_statement(stmt_text: str) -> int:
     matches = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', stmt_text)
     if not matches:
         return 1
-    
-    total_lines = 0
-    for match in matches:
-        # Count explicit \n inside string
-        embedded_newlines = match.count('\\n')
-        total_lines += 1 + embedded_newlines
 
-    return max(1, total_lines)
+    total_embedded_newlines = sum(match.count('\\n') for match in matches)
+    return 1 + total_embedded_newlines
+
 
 
 def lint_script_content(file_path: str, content: str, max_lines: int = 5) -> List[DialogueIssue]:
@@ -136,6 +132,10 @@ def lint_script_content(file_path: str, content: str, max_lines: int = 5) -> Lis
     
     # Loop start regex
     LOOP_START_REGEX = re.compile(r'\b(for|while)\s*\(', re.IGNORECASE)
+
+    # Unicode emoji and non-ASCII pattern (outside standard 7-bit ASCII printable range)
+    EMOJI_OR_NON_ASCII_REGEX = re.compile(r'[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u0080-\uffff]')
+    DIALOGUE_STMT_REGEX = re.compile(r'\b(mes|select|menu|announce|npctalk|waitingroom)\b', re.IGNORECASE)
 
     consecutive_mes_count = 0
     mes_start_line = 0
@@ -159,6 +159,20 @@ def lint_script_content(file_path: str, content: str, max_lines: int = 5) -> Lis
         # Track block depth
         open_braces = trimmed.count('{')
         close_braces = trimmed.count('}')
+
+        # Check for non-ASCII / emoji in dialogue or menu text
+        if in_script_body and DIALOGUE_STMT_REGEX.search(trimmed):
+            if EMOJI_OR_NON_ASCII_REGEX.search(trimmed):
+                issues.append(DialogueIssue(
+                    file_path=file_path,
+                    line_num=line_num,
+                    issue_type='EMOJI_IN_DIALOGUE',
+                    message=(
+                        "Non-ASCII or emoji character detected in NPC dialogue/menu statement. "
+                        "Ragnarok Online client cannot render multi-byte UTF-8 emojis, causing corrupted characters in-game."
+                    ),
+                    snippet=trimmed
+                ))
 
         # Check if a loop started on this line
         if LOOP_START_REGEX.search(trimmed):

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Landmark, Clock, CheckCircle2, AlertTriangle, ArrowRight, Wallet, User, Coins, Sparkles } from "lucide-react";
+import { Landmark, Clock, CheckCircle2, AlertTriangle, ArrowRight, Wallet, User } from "lucide-react";
 import { BankData, CharacterSummary } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { api } from "../../lib/api";
@@ -49,9 +49,9 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
   const netDeposit = parsedDeposit - depositFee;
   const newPrincipalOnDeposit = principal + pendingInterest + netDeposit;
 
-  // Withdraw Preview Math
-  const parsedWithdraw = withdrawAmount === "" ? totalPayout : Math.floor(Number(withdrawAmount) || 0);
-  const safeWithdraw = Math.min(Math.max(0, parsedWithdraw), totalPayout);
+  // Withdraw Preview Math (strict input amount)
+  const parsedWithdraw = Math.floor(Number(withdrawAmount) || 0);
+  const safeWithdraw = Math.min(parsedWithdraw, totalPayout);
   const remainingPrincipalOnWithdraw = Math.max(0, totalPayout - safeWithdraw);
 
   const handleDeposit = async () => {
@@ -91,8 +91,12 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
       setError("Please select a character.");
       return;
     }
-    if (safeWithdraw <= 0) {
+    if (parsedWithdraw <= 0) {
       setError("Please enter a valid amount to withdraw.");
+      return;
+    }
+    if (parsedWithdraw > totalPayout) {
+      setError(`Cannot withdraw more than accessible balance (${formatZeny(totalPayout)} Z).`);
       return;
     }
     setIsLoading(true);
@@ -101,10 +105,10 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
     try {
       const res = await api.post<any>("/api/economy/bank/withdraw", {
         charId: selectedChar.charId,
-        amount: safeWithdraw >= totalPayout ? undefined : safeWithdraw,
+        amount: parsedWithdraw,
       });
       if (res.success) {
-        setSuccess(res.message || `Withdrew ${formatZeny(safeWithdraw)} Z successfully.`);
+        setSuccess(res.message || `Withdrew ${formatZeny(parsedWithdraw)} Z successfully.`);
         setWithdrawAmount("");
         if (onRefresh) await onRefresh();
         setActiveTab("OVERVIEW");
@@ -119,24 +123,24 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
   };
 
   return (
-    <div className="bento-card p-3.5 flex flex-col justify-between shrink-0 overflow-hidden relative border border-border/80">
+    <div className="bento-card p-3 sm:p-3.5 flex-1 min-h-0 flex flex-col overflow-hidden border border-border/80">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/60 pb-2 mb-2.5 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+      <div className="flex items-center justify-between border-b border-border pb-2 mb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
             <Landmark className="w-3.5 h-3.5 text-accent" />
           </div>
-          <h3 className="font-bold text-xs uppercase tracking-wider text-primary truncate">
-            Investment Bank
-          </h3>
+          <div>
+            <h3 className="font-bold text-xs uppercase tracking-wider text-primary">
+              Midgard Sovereign Bank
+            </h3>
+            <span className="text-[10px] text-muted">Fixed-Yield Vault System</span>
+          </div>
         </div>
-        <span className="text-[10px] font-mono font-bold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20 shrink-0">
-          +1%/day (Max 10%)
-        </span>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-2.5 p-0.5 bg-surface2/40 rounded-md border border-border/50 shrink-0">
+      <div className="flex gap-1 mb-2.5 p-1 bg-surface2/50 rounded-lg border border-border/50 shrink-0">
         {(["OVERVIEW", "DEPOSIT", "WITHDRAW"] as const).map((tab) => (
           <button
             key={tab}
@@ -147,305 +151,395 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
               setDepositAmount("");
               setWithdrawAmount("");
             }}
-            className={`flex-1 text-[10px] font-bold py-1.5 rounded transition-all ${
+            className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-all ${
               activeTab === tab
                 ? "bg-surface text-primary shadow-sm border border-border"
-                : "text-muted hover:text-primary hover:bg-surface2/60"
+                : "text-muted hover:text-primary hover:bg-surface2/80"
             }`}
           >
-            {tab === "OVERVIEW" ? "Overview" : tab === "DEPOSIT" ? "Deposit" : "Withdraw"}
+            {tab === "OVERVIEW" ? "Vault Overview" : tab === "DEPOSIT" ? "Deposit Funds" : "Withdraw Funds"}
           </button>
         ))}
       </div>
 
       {/* Tab 1: Overview */}
       {activeTab === "OVERVIEW" && (
-        <div className="space-y-2.5 animate-in fade-in duration-150">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-lg bg-surface2/30 border border-border/50">
-              <div className="text-[9px] text-muted font-bold uppercase tracking-wider mb-0.5">
-                Principal
+        <div className="flex-1 min-h-0 flex flex-col justify-between gap-2.5 overflow-y-auto animate-in fade-in duration-150">
+          <div className="space-y-2">
+            {/* Principal & Interest Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-xl bg-surface2/30 border border-border/50">
+                <div className="text-[9px] text-muted font-bold uppercase tracking-wider mb-0.5">
+                  Active Principal
+                </div>
+                <div className="text-sm sm:text-base font-bold font-mono text-primary truncate">
+                  {formatZeny(principal)} Z
+                </div>
               </div>
-              <div className="text-sm font-bold font-mono text-primary truncate">
-                {formatZeny(principal)} Z
+              <div className="p-2.5 rounded-xl bg-surface2/30 border border-border/50 text-right">
+                <div className="text-[9px] text-muted font-bold uppercase tracking-wider mb-0.5">
+                  Accrued Interest
+                </div>
+                <div className="text-sm sm:text-base font-bold font-mono text-accent truncate">
+                  +{formatZeny(pendingInterest)} Z
+                </div>
               </div>
             </div>
-            <div className="p-2.5 rounded-lg bg-surface2/30 border border-border/50 text-right">
-              <div className="text-[9px] text-muted font-bold uppercase tracking-wider mb-0.5">
-                Accrued Interest
+
+            {/* Accrual Progress */}
+            <div className="p-2.5 rounded-xl bg-surface2/20 border border-border/40 space-y-1.5">
+              <div className="flex justify-between text-xs font-mono text-muted">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-info" /> Interest Accumulation
+                </span>
+                <span className={`font-bold ${isCapped ? "text-accent" : "text-primary"}`}>
+                  {daysAccrued}/{maxDays} Days {isCapped ? "(10% Cap Reached)" : ""}
+                </span>
               </div>
-              <div className="text-sm font-bold font-mono text-accent truncate">
-                +{formatZeny(pendingInterest)} Z
+              <div className="w-full bg-surface2 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    isCapped ? "bg-accent shadow-[0_0_10px_rgba(var(--color-accent),0.5)]" : "bg-info"
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Total Accessible Balance */}
+            <div className="flex justify-between items-center text-xs font-mono p-2.5 rounded-xl bg-surface2/40 border border-border/60">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted">Total Accessible:</span>
+              <span className="font-bold text-accent text-sm sm:text-base font-mono">{formatZeny(totalPayout)} Z</span>
+            </div>
+
+            {/* Vault Rules / Policy */}
+            <div className="p-2.5 rounded-xl bg-surface2/20 border border-border/40 text-[11px] text-muted space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">
+                <span>Vault Policy & Rates</span>
+                <span className="text-success font-mono">1.0% / Day</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Daily Accrual Rate:</span>
+                <span className="font-mono text-primary">+1.0% of principal</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Accrual Duration Cap:</span>
+                <span className="font-mono text-primary">10 Days (Max +10%)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Deposit Surcharge:</span>
+                <span className="font-mono text-warning">2.0% one-time fee</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Withdrawal Surcharge:</span>
+                <span className="font-mono text-success">0% (Instant access)</span>
               </div>
             </div>
           </div>
 
-          {/* Accrual Progress */}
-          <div className="p-2.5 rounded-lg bg-surface2/20 border border-border/40 space-y-1.5">
-            <div className="flex justify-between text-[10px] font-mono text-muted">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-info" /> Accrual Progress
-              </span>
-              <span className={`font-bold ${isCapped ? "text-accent" : "text-primary"}`}>
-                {daysAccrued}/{maxDays} Days {isCapped ? "(Capped)" : ""}
-              </span>
-            </div>
-            <div className="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
-              <div
-                className={`h-1.5 rounded-full transition-all duration-500 ${
-                  isCapped ? "bg-accent shadow-[0_0_8px_rgba(var(--color-accent),0.5)]" : "bg-info"
-                }`}
-                style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center text-xs font-mono pt-1.5 text-muted border-t border-border/40">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Total Accessible:</span>
-            <span className="font-bold text-primary text-sm font-mono">{formatZeny(totalPayout)} Z</span>
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-2 pt-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("DEPOSIT")}
+              className="py-2 px-3 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent font-bold text-xs border border-accent/30 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>Deposit Funds</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("WITHDRAW")}
+              disabled={totalPayout <= 0}
+              className="py-2 px-3 rounded-lg bg-surface2 hover:bg-surface2/80 text-primary font-bold text-xs border border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>Withdraw Funds</span>
+            </button>
           </div>
         </div>
       )}
 
       {/* Tab 2: Deposit */}
       {activeTab === "DEPOSIT" && (
-        <div className="flex flex-col gap-2 animate-in fade-in duration-150">
-          {/* Character Selector */}
-          <div className="bg-surface2/30 p-2 rounded-lg border border-border/50 space-y-1">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-muted flex items-center gap-1">
-                <User className="w-3 h-3 text-accent" /> Source Account:
+        <div className="flex-1 min-h-0 flex flex-col justify-between gap-2.5 overflow-y-auto animate-in fade-in duration-150">
+          <div className="space-y-2">
+            {/* Source Character Wallet */}
+            <div className="bg-surface2/30 p-2.5 rounded-xl border border-border/50 space-y-1.5">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-muted flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                  <User className="w-3.5 h-3.5 text-accent" /> Source Character (Wallet)
+                </span>
+                <span className="font-mono text-muted text-xs">
+                  Available: <strong className="text-accent">{formatZeny(selectedChar?.zeny || 0)} Z</strong>
+                </span>
+              </div>
+              {safeChars.length > 1 ? (
+                <select
+                  value={selectedChar?.charId || ""}
+                  onChange={(e) => setLocalCharId(Number(e.target.value))}
+                  className="w-full bg-surface border border-border rounded-lg px-2 py-1.5 text-xs text-primary font-bold outline-none focus:border-accent"
+                >
+                  {safeChars.map((c) => (
+                    <option key={c.charId} value={c.charId}>
+                      {c.name} (Lv.{c.baseLevel} {c.className}) — {formatZeny(c.zeny)} Z {c.online === 1 ? "[ONLINE]" : "[OFFLINE]"}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-xs font-bold text-primary flex justify-between bg-surface/60 p-1.5 rounded-lg border border-border/40">
+                  <span>{selectedChar?.name || "No character found"}</span>
+                  {selectedChar && (
+                    <span className={`text-[10px] ${isOnline ? "text-warning" : "text-success"}`}>
+                      {isOnline ? "In-Game" : "Offline"}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Destination Vault Indicator */}
+            <div className="flex justify-between items-center text-[10px] font-mono px-2.5 py-1.5 bg-surface2/20 rounded-lg border border-border/40 text-muted">
+              <span className="flex items-center gap-1">
+                <Landmark className="w-3 h-3 text-accent" /> Destination: Midgard Sovereign Vault
               </span>
-              <span className="font-mono text-accent font-bold">
-                {formatZeny(selectedChar?.zeny || 0)} Z
+              <span>
+                Current Principal: <strong className="text-primary">{formatZeny(principal)} Z</strong>
               </span>
             </div>
-            {safeChars.length > 1 ? (
-              <select
-                value={selectedChar?.charId || ""}
-                onChange={(e) => setLocalCharId(Number(e.target.value))}
-                className="w-full bg-surface border border-border rounded px-2 py-1 text-xs text-primary font-bold outline-none focus:border-accent"
-              >
-                {safeChars.map((c) => (
-                  <option key={c.charId} value={c.charId}>
-                    {c.name} (Lv.{c.baseLevel} {c.className}) — {formatZeny(c.zeny)} Z {c.online === 1 ? "[ONLINE]" : "[OFFLINE]"}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="text-xs font-bold text-primary flex justify-between">
-                <span>{selectedChar?.name || "No character found"}</span>
-                {selectedChar && (
-                  <span className={`text-[10px] ${isOnline ? "text-warning" : "text-success"}`}>
-                    {isOnline ? "In-Game" : "Offline"}
-                  </span>
-                )}
+
+            {isOnline ? (
+              <div className="p-2.5 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-start gap-2 text-xs">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>Character is currently logged in. Please log out of the game to deposit funds safely.</p>
               </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder={`Deposit Amount (Max ${formatZeny(selectedChar?.zeny || 0)} Z)`}
+                      className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono text-primary outline-none focus:border-accent pr-8"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <span className="absolute right-3 top-2 text-sm font-mono text-muted">Z</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[0.25, 0.5, 0.75, 1].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setDepositAmount(Math.floor((selectedChar?.zeny || 0) * pct).toString())}
+                        disabled={isLoading || !selectedChar?.zeny}
+                        className="flex-1 py-1 rounded-md bg-surface2/40 hover:bg-surface2/80 text-[10px] font-mono font-bold text-muted hover:text-primary transition-colors border border-border/40 disabled:opacity-40"
+                      >
+                        {pct === 1 ? "MAX" : `${pct * 100}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {parsedDeposit > 0 && (
+                  <div className="bg-surface2/20 border border-border/40 rounded-xl p-2.5 text-xs space-y-1 font-mono">
+                    <div className="flex justify-between text-muted text-[11px]">
+                      <span>Deposit Surcharge (2%):</span>
+                      <span className="text-warning">-{formatZeny(depositFee)} Z</span>
+                    </div>
+                    <div className="flex justify-between text-muted text-[11px]">
+                      <span>Net Added to Vault:</span>
+                      <span className="text-success">+{formatZeny(netDeposit)} Z</span>
+                    </div>
+                    {pendingInterest > 0 && (
+                      <div className="flex justify-between text-success text-[11px]">
+                        <span>Compound Interest Rollover:</span>
+                        <span>+{formatZeny(pendingInterest)} Z</span>
+                      </div>
+                    )}
+                    <div className="border-t border-border/40 my-1 pt-1 flex justify-between font-bold text-primary text-[11px]">
+                      <span>New Total Vault Principal:</span>
+                      <span className="text-accent">{formatZeny(newPrincipalOnDeposit)} Z</span>
+                    </div>
+                    <div className="flex justify-between text-muted text-[11px]">
+                      <span>Remaining Character Wallet:</span>
+                      <span className="text-primary">{formatZeny(Math.max(0, (selectedChar?.zeny || 0) - parsedDeposit))} Z</span>
+                    </div>
+                  </div>
+                )}
+
+                {error && <div className="text-xs text-error font-bold">{error}</div>}
+                {success && (
+                  <div className="text-xs text-success font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {success}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {isOnline ? (
-            <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 text-warning flex items-start gap-1.5 text-[10px]">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <p>Character is currently logged in. Please log out to perform bank transactions.</p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="Deposit Amount (Min 100 Z)"
-                    className="w-full bg-surface border border-border rounded-md px-2.5 py-1.5 text-xs font-mono text-primary outline-none focus:border-accent pr-8"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <span className="absolute right-2.5 top-1.5 text-xs font-mono text-muted">Z</span>
-                </div>
-                <div className="flex gap-1">
-                  {[0.25, 0.5, 0.75, 1].map((pct) => (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => setDepositAmount(Math.floor((selectedChar?.zeny || 0) * pct).toString())}
-                      disabled={isLoading || !selectedChar?.zeny}
-                      className="flex-1 py-1 rounded bg-surface2/40 hover:bg-surface2/80 text-[9px] font-mono font-bold text-muted hover:text-primary transition-colors border border-border/40 disabled:opacity-40"
-                    >
-                      {pct === 1 ? "MAX" : `${pct * 100}%`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {parsedDeposit > 0 && (
-                <div className="bg-surface2/20 border border-border/40 rounded-lg p-2 text-[10px] space-y-1">
-                  <div className="flex justify-between text-muted">
-                    <span>Deposit Amount:</span>
-                    <span className="font-mono">{formatZeny(parsedDeposit)} Z</span>
-                  </div>
-                  <div className="flex justify-between text-warning">
-                    <span>Deposit Fee (2%):</span>
-                    <span className="font-mono">-{formatZeny(depositFee)} Z</span>
-                  </div>
-                  {pendingInterest > 0 && (
-                    <div className="flex justify-between text-success">
-                      <span>Compound Interest:</span>
-                      <span className="font-mono">+{formatZeny(pendingInterest)} Z</span>
-                    </div>
-                  )}
-                  <div className="border-t border-border/40 my-0.5 pt-1 flex justify-between font-bold text-primary">
-                    <span>New Total Principal:</span>
-                    <span className="font-mono text-accent">{formatZeny(newPrincipalOnDeposit)} Z</span>
-                  </div>
-                </div>
-              )}
-
-              {error && <div className="text-[10px] text-error font-bold">{error}</div>}
-              {success && (
-                <div className="text-[10px] text-success font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {success}
-                </div>
-              )}
-
-              <button
-                onClick={handleDeposit}
-                disabled={isLoading || !selectedChar || parsedDeposit < 100 || parsedDeposit > (selectedChar?.zeny || 0)}
-                className="w-full py-2 rounded-md bg-accent/20 hover:bg-accent/30 text-accent font-bold text-xs uppercase tracking-wider border border-accent/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-1.5"
-              >
-                {isLoading ? "Processing..." : "Confirm Deposit"}
-                {!isLoading && <Wallet className="w-3.5 h-3.5" />}
-              </button>
-            </>
+          {!isOnline && (
+            <button
+              onClick={handleDeposit}
+              disabled={isLoading || !selectedChar || parsedDeposit < 100 || parsedDeposit > (selectedChar?.zeny || 0)}
+              className="w-full py-2.5 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent font-bold text-xs uppercase tracking-wider border border-accent/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-1.5 shrink-0"
+            >
+              {isLoading ? "Processing Deposit..." : "Confirm Deposit"}
+              {!isLoading && <Wallet className="w-4 h-4" />}
+            </button>
           )}
         </div>
       )}
 
       {/* Tab 3: Withdraw */}
       {activeTab === "WITHDRAW" && (
-        <div className="flex flex-col gap-2 animate-in fade-in duration-150">
-          {/* Character Selector */}
-          <div className="bg-surface2/30 p-2 rounded-lg border border-border/50 space-y-1">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-muted flex items-center gap-1">
-                <User className="w-3 h-3 text-accent" /> Receiving Character:
-              </span>
-              <span className="font-mono text-accent font-bold">
-                {formatZeny(selectedChar?.zeny || 0)} Z
-              </span>
-            </div>
-            {safeChars.length > 1 ? (
-              <select
-                value={selectedChar?.charId || ""}
-                onChange={(e) => setLocalCharId(Number(e.target.value))}
-                className="w-full bg-surface border border-border rounded px-2 py-1 text-xs text-primary font-bold outline-none focus:border-accent"
-              >
-                {safeChars.map((c) => (
-                  <option key={c.charId} value={c.charId}>
-                    {c.name} (Lv.{c.baseLevel} {c.className}) — {formatZeny(c.zeny)} Z {c.online === 1 ? "[ONLINE]" : "[OFFLINE]"}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="text-xs font-bold text-primary flex justify-between">
-                <span>{selectedChar?.name || "No character found"}</span>
-                {selectedChar && (
-                  <span className={`text-[10px] ${isOnline ? "text-warning" : "text-success"}`}>
-                    {isOnline ? "In-Game" : "Offline"}
-                  </span>
-                )}
+        <div className="flex-1 min-h-0 flex flex-col justify-between gap-2.5 overflow-y-auto animate-in fade-in duration-150">
+          <div className="space-y-2">
+            {/* Source: Vault Available Balance */}
+            <div className="p-2.5 rounded-xl bg-accent/10 border border-accent/25 space-y-1">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-accent font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Landmark className="w-3.5 h-3.5 text-accent" /> Available in Vault to Withdraw
+                </span>
+                <span className="text-[9px] font-mono font-bold text-success bg-success/15 px-1.5 py-0.5 rounded border border-success/25">
+                  0% Fee / Free
+                </span>
               </div>
+              <div className="flex items-baseline justify-between pt-0.5">
+                <div className="text-lg font-black font-mono text-primary flex items-baseline gap-1">
+                  <span>{formatZeny(totalPayout)}</span>
+                  <span className="text-accent text-xs font-sans font-bold">Z</span>
+                </div>
+                <div className="text-[10px] font-mono text-muted text-right">
+                  Principal: {formatZeny(principal)} Z · Yield: +{formatZeny(pendingInterest)} Z
+                </div>
+              </div>
+            </div>
+
+            {/* Destination Character Selector */}
+            <div className="bg-surface2/30 p-2.5 rounded-xl border border-border/50 space-y-1.5">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-muted flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                  <User className="w-3.5 h-3.5 text-accent" /> Destination Character (Wallet)
+                </span>
+                <span className="font-mono text-muted text-xs">
+                  Current Wallet: <strong className="text-primary">{formatZeny(selectedChar?.zeny || 0)} Z</strong>
+                </span>
+              </div>
+              {safeChars.length > 1 ? (
+                <select
+                  value={selectedChar?.charId || ""}
+                  onChange={(e) => setLocalCharId(Number(e.target.value))}
+                  className="w-full bg-surface border border-border rounded-lg px-2 py-1.5 text-xs text-primary font-bold outline-none focus:border-accent"
+                >
+                  {safeChars.map((c) => (
+                    <option key={c.charId} value={c.charId}>
+                      {c.name} (Lv.{c.baseLevel} {c.className}) — {formatZeny(c.zeny)} Z {c.online === 1 ? "[ONLINE]" : "[OFFLINE]"}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-xs font-bold text-primary flex justify-between bg-surface/60 p-1.5 rounded-lg border border-border/40">
+                  <span>{selectedChar?.name || "No character found"}</span>
+                  {selectedChar && (
+                    <span className={`text-[10px] ${isOnline ? "text-warning" : "text-success"}`}>
+                      {isOnline ? "In-Game" : "Offline"}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {isOnline ? (
+              <div className="p-2.5 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-start gap-2 text-xs">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>Character is currently logged in. Please log out of the game to withdraw funds safely.</p>
+              </div>
+            ) : totalPayout <= 0 ? (
+              <div className="p-4 text-center text-muted text-xs bg-surface2/20 rounded-xl border border-border/40 space-y-2">
+                <p>No active principal or accrued interest available in the vault to withdraw.</p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("DEPOSIT")}
+                  className="px-3 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent text-xs font-bold transition-colors"
+                >
+                  Deposit Funds
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Amount Input & Preset Chips */}
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder={`Withdraw Amount (Max ${formatZeny(totalPayout)} Z)`}
+                      className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono text-primary outline-none focus:border-accent pr-8"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <span className="absolute right-3 top-2 text-sm font-mono text-muted">Z</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[0.25, 0.5, 0.75, 1].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setWithdrawAmount(Math.floor(totalPayout * pct).toString())}
+                        disabled={isLoading || totalPayout <= 0}
+                        className="flex-1 py-1 rounded-md bg-surface2/40 hover:bg-surface2/80 text-[10px] font-mono font-bold text-muted hover:text-primary transition-colors border border-border/40 disabled:opacity-40"
+                      >
+                        {pct === 1 ? "MAX" : `${pct * 100}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live Transaction Preview */}
+                {parsedWithdraw > 0 && (
+                  <div className="bg-surface2/20 border border-border/40 rounded-xl p-2.5 text-xs space-y-1.5 font-mono">
+                    <div className="flex justify-between text-muted text-[11px]">
+                      <span>Transferring to Character:</span>
+                      <span className="font-bold text-success">+{formatZeny(safeWithdraw)} Z</span>
+                    </div>
+                    <div className="flex justify-between text-muted text-[11px]">
+                      <span>New Character Wallet:</span>
+                      <span className="text-primary">{formatZeny((selectedChar?.zeny || 0) + safeWithdraw)} Z</span>
+                    </div>
+                    <div className="border-t border-border/40 pt-1 flex justify-between text-muted text-[11px]">
+                      <span>Remaining Vault Balance:</span>
+                      <span className="font-bold text-accent">{formatZeny(remainingPrincipalOnWithdraw)} Z</span>
+                    </div>
+                    <div className="flex justify-between text-muted text-[10px]">
+                      <span>Withdrawal Surcharge:</span>
+                      <span className="text-success">0 Z (Free / Instant)</span>
+                    </div>
+                  </div>
+                )}
+
+                {error && <div className="text-xs text-error font-bold">{error}</div>}
+                {success && (
+                  <div className="text-xs text-success font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {success}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {isOnline ? (
-            <div className="p-2 rounded-lg bg-warning/10 border border-warning/20 text-warning flex items-start gap-1.5 text-[10px]">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <p>Character is currently logged in. Please log out to perform bank transactions.</p>
-            </div>
-          ) : totalPayout <= 0 ? (
-            <div className="p-4 text-center text-muted text-xs bg-surface2/20 rounded-lg border border-border/40">
-              No active balance or interest available to withdraw.
-            </div>
-          ) : (
-            <>
-              {/* Amount Input & Preset Chips */}
-              <div className="space-y-1">
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder={`Withdraw Amount (Max ${formatZeny(totalPayout)} Z)`}
-                    className="w-full bg-surface border border-border rounded-md px-2.5 py-1.5 text-xs font-mono text-primary outline-none focus:border-accent pr-8"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <span className="absolute right-2.5 top-1.5 text-xs font-mono text-muted">Z</span>
-                </div>
-                <div className="flex gap-1">
-                  {[0.25, 0.5, 0.75].map((pct) => (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => setWithdrawAmount(Math.floor(totalPayout * pct).toString())}
-                      disabled={isLoading || totalPayout <= 0}
-                      className="flex-1 py-1 rounded bg-surface2/40 hover:bg-surface2/80 text-[9px] font-mono font-bold text-muted hover:text-primary transition-colors border border-border/40 disabled:opacity-40"
-                    >
-                      {pct * 100}%
-                    </button>
-                  ))}
-                  {pendingInterest > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setWithdrawAmount(pendingInterest.toString())}
-                      disabled={isLoading}
-                      className="py-1 px-1.5 rounded bg-accent/15 hover:bg-accent/30 text-[9px] font-mono font-bold text-accent transition-colors border border-accent/30"
-                      title="Withdraw only accumulated interest"
-                    >
-                      Interest
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawAmount(totalPayout.toString())}
-                    disabled={isLoading || totalPayout <= 0}
-                    className="flex-1 py-1 rounded bg-surface2/40 hover:bg-surface2/80 text-[9px] font-mono font-bold text-muted hover:text-primary transition-colors border border-border/40 disabled:opacity-40"
-                  >
-                    MAX
-                  </button>
-                </div>
-              </div>
-
-              {/* Summary Breakdown */}
-              <div className="bg-surface2/20 border border-border/40 rounded-lg p-2 text-[10px] space-y-1">
-                <div className="flex justify-between text-muted">
-                  <span>Withdrawing:</span>
-                  <span className="font-mono font-bold text-primary">{formatZeny(safeWithdraw)} Z</span>
-                </div>
-                <div className="flex justify-between text-muted">
-                  <span>Remaining Principal:</span>
-                  <span className="font-mono">{formatZeny(remainingPrincipalOnWithdraw)} Z</span>
-                </div>
-              </div>
-
-              {error && <div className="text-[10px] text-error font-bold">{error}</div>}
-              {success && (
-                <div className="text-[10px] text-success font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {success}
-                </div>
-              )}
-
-              <button
-                onClick={handleWithdraw}
-                disabled={isLoading || !selectedChar || safeWithdraw <= 0}
-                className="w-full py-2 rounded-md bg-success/20 hover:bg-success/30 text-success font-bold text-xs uppercase tracking-wider border border-success/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-1.5"
-              >
-                {isLoading ? "Processing..." : safeWithdraw >= totalPayout ? "Liquidate All" : "Confirm Withdrawal"}
-                {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
-              </button>
-            </>
+          {!isOnline && totalPayout > 0 && (
+            <button
+              onClick={handleWithdraw}
+              disabled={isLoading || !selectedChar || parsedWithdraw <= 0 || parsedWithdraw > totalPayout}
+              className="w-full py-2.5 rounded-lg bg-success/20 hover:bg-success/30 text-success font-bold text-xs uppercase tracking-wider border border-success/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-1.5 shrink-0"
+            >
+              {isLoading ? "Processing Withdrawal..." : "Confirm Withdrawal"}
+              {!isLoading && <ArrowRight className="w-4 h-4" />}
+            </button>
           )}
         </div>
       )}

@@ -98,4 +98,14 @@ describe("Database Replica & Read-Only Safety Tests", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });
+
+  it("should fetch Net Worth Summary without ReferenceError", async () => {
+    const summary = await EconomyService.getNetWorthSummary(2000001);
+    expect(summary).toBeDefined();
+    expect(typeof summary.totalNetWorth).toBe("number");
+    expect(typeof summary.stockMarketValue).toBe("number");
+    expect(typeof summary.cryptoMarketValue).toBe("number");
+    expect(typeof summary.municipalMarketValue).toBe("number");
+    expect(Array.isArray(summary.holdings)).toBe(true);
+  });
 });

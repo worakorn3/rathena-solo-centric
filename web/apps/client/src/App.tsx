@@ -27,7 +27,7 @@ import {
   ProgressionSummary,
   StockMarketQuote,
 } from "@rathena/shared";
-import { Coins, Shield, Skull, Target, User, Sparkles } from "lucide-react";
+import { Coins, Shield, Skull, Target, User, Sparkles, Briefcase, Landmark, PieChart } from "lucide-react";
 
 const VALID_TABS: Record<string, NavTab> = {
   character: "CHARACTER",
@@ -59,11 +59,16 @@ export const AppContent: React.FC = () => {
   const [selectedCharDetail, setSelectedCharDetail] = useState<CharacterDetail | null>(null);
   const [progression, setProgression] = useState<ProgressionSummary | null>(null);
   const [portfolioAssetFilter, setPortfolioAssetFilter] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
+  const [portfolioTab, setPortfolioTab] = useState<"HOLDINGS" | "BANK" | "BREAKDOWN">("HOLDINGS");
 
   // Public Market Data
   const [quotes, setQuotes] = useState<StockMarketQuote[]>([]);
   const [marketMood, setMarketMood] = useState(0);
   const [marketDrift, setMarketDrift] = useState(0);
+  const [equitiesMood, setEquitiesMood] = useState(0);
+  const [equitiesDrift, setEquitiesDrift] = useState(0);
+  const [cryptoMood, setCryptoMood] = useState(0);
+  const [cryptoDrift, setCryptoDrift] = useState(0);
   const [latestEvent, setLatestEvent] = useState<any>(null);
   const [rankings, setRankings] = useState<CharacterSummary[]>([]);
 
@@ -75,6 +80,10 @@ export const AppContent: React.FC = () => {
           quotes: StockMarketQuote[];
           marketMood?: number;
           marketDrift?: number;
+          equitiesMood?: number;
+          equitiesDrift?: number;
+          cryptoMood?: number;
+          cryptoDrift?: number;
           latestEvent?: any;
         }>("/api/economy/quotes"),
         api.get<{ success: boolean; rankings: CharacterSummary[] }>("/api/character/rankings"),
@@ -83,6 +92,10 @@ export const AppContent: React.FC = () => {
         setQuotes(qRes.quotes);
         if (qRes.marketMood !== undefined) setMarketMood(qRes.marketMood);
         if (qRes.marketDrift !== undefined) setMarketDrift(qRes.marketDrift);
+        if (qRes.equitiesMood !== undefined) setEquitiesMood(qRes.equitiesMood);
+        if (qRes.equitiesDrift !== undefined) setEquitiesDrift(qRes.equitiesDrift);
+        if (qRes.cryptoMood !== undefined) setCryptoMood(qRes.cryptoMood);
+        if (qRes.cryptoDrift !== undefined) setCryptoDrift(qRes.cryptoDrift);
         if (qRes.latestEvent !== undefined) setLatestEvent(qRes.latestEvent);
       }
       if (rRes.success) setRankings(rRes.rankings);
@@ -263,38 +276,90 @@ export const AppContent: React.FC = () => {
             {user && netWorth ? (
               <>
                 {/* Hero Net Worth Bar */}
-                <NetWorthCard summary={netWorth} />
+                <NetWorthCard summary={netWorth} onSelectTab={setPortfolioTab} />
 
                 {/* 5:7 Balanced Bento Grid */}
                 <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
-                  {/* Left 5 Cols: Top Sub-row (Donut + Bank) & Expanded Municipal Portfolio */}
-                  <div className="col-span-12 lg:col-span-5 flex flex-col gap-3 min-h-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 shrink-0">
-                      <AssetAllocationPie
-                        liquidZeny={netWorth.liquidZeny}
-                        bankTotal={netWorth.bankTotal}
-                        stockMarketValue={netWorth.stockMarketValue}
-                        municipalMarketValue={netWorth.municipalMarketValue}
-                        cryptoMarketValue={netWorth.cryptoMarketValue}
-                        totalNetWorth={netWorth.totalNetWorth}
-                        selectedAssetCategory={portfolioAssetFilter}
-                        onSelectAssetCategory={setPortfolioAssetFilter}
-                      />
-                      <ErrorBoundary>
-                        <BankWidget
-                          bank={netWorth.bank}
-                          characters={characters}
-                          selectedCharId={selectedCharId}
-                          onRefresh={loadUserData}
-                        />
-                      </ErrorBoundary>
+                  {/* Left 5 Cols: Unified Account & Asset Hub (IBKR Style) */}
+                  <div className="col-span-12 lg:col-span-5 flex flex-col gap-2 min-h-0">
+                    {/* IBKR-Style Sub-Navigation Segmented Control */}
+                    <div className="flex items-center justify-between p-1 bg-surface2/60 rounded-xl border border-border/80 shrink-0 text-xs font-mono">
+                      <div className="flex items-center gap-1 w-full">
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioTab("HOLDINGS")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                            portfolioTab === "HOLDINGS"
+                              ? "bg-surface text-primary shadow-sm border border-border"
+                              : "text-muted hover:text-primary hover:bg-surface2/80"
+                          }`}
+                        >
+                          <Briefcase className="w-3.5 h-3.5 text-info" />
+                          <span>Positions ({netWorth.holdings.length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioTab("BANK")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                            portfolioTab === "BANK"
+                              ? "bg-surface text-primary shadow-sm border border-border"
+                              : "text-muted hover:text-primary hover:bg-surface2/80"
+                          }`}
+                        >
+                          <Landmark className="w-3.5 h-3.5 text-accent" />
+                          <span>Bank Vault</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioTab("BREAKDOWN")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                            portfolioTab === "BREAKDOWN"
+                              ? "bg-surface text-primary shadow-sm border border-border"
+                              : "text-muted hover:text-primary hover:bg-surface2/80"
+                          }`}
+                        >
+                          <PieChart className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Allocation</span>
+                        </button>
+                      </div>
                     </div>
-                    <StockPortfolio
-                      holdings={netWorth.holdings}
-                      totalNetWorth={netWorth.totalNetWorth}
-                      assetClassTab={portfolioAssetFilter}
-                      onAssetClassChange={setPortfolioAssetFilter}
-                    />
+
+                    {/* Active Tab View */}
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      {portfolioTab === "HOLDINGS" && (
+                        <StockPortfolio
+                          holdings={netWorth.holdings}
+                          totalNetWorth={netWorth.totalNetWorth}
+                          assetClassTab={portfolioAssetFilter}
+                          onAssetClassChange={setPortfolioAssetFilter}
+                        />
+                      )}
+                      {portfolioTab === "BANK" && (
+                        <ErrorBoundary>
+                          <BankWidget
+                            bank={netWorth.bank}
+                            characters={characters}
+                            selectedCharId={selectedCharId}
+                            onRefresh={loadUserData}
+                          />
+                        </ErrorBoundary>
+                      )}
+                      {portfolioTab === "BREAKDOWN" && (
+                        <AssetAllocationPie
+                          liquidZeny={netWorth.liquidZeny}
+                          bankTotal={netWorth.bankTotal}
+                          stockMarketValue={netWorth.stockMarketValue}
+                          municipalMarketValue={netWorth.municipalMarketValue}
+                          cryptoMarketValue={netWorth.cryptoMarketValue}
+                          totalNetWorth={netWorth.totalNetWorth}
+                          selectedAssetCategory={portfolioAssetFilter}
+                          onSelectAssetCategory={(cat) => {
+                            setPortfolioAssetFilter(cat);
+                            setPortfolioTab("HOLDINGS");
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* Right 7 Cols: Full Stock Exchange Terminal */}
@@ -303,6 +368,10 @@ export const AppContent: React.FC = () => {
                       quotes={netWorth.quotes}
                       marketMood={netWorth.marketMood}
                       marketDrift={netWorth.marketDrift}
+                      equitiesMood={netWorth.equitiesMood}
+                      equitiesDrift={netWorth.equitiesDrift}
+                      cryptoMood={netWorth.cryptoMood}
+                      cryptoDrift={netWorth.cryptoDrift}
                       latestEvent={netWorth.latestEvent}
                     />
                   </div>
@@ -336,6 +405,10 @@ export const AppContent: React.FC = () => {
                     quotes={quotes}
                     marketMood={marketMood}
                     marketDrift={marketDrift}
+                    equitiesMood={equitiesMood}
+                    equitiesDrift={equitiesDrift}
+                    cryptoMood={cryptoMood}
+                    cryptoDrift={cryptoDrift}
                     latestEvent={latestEvent}
                   />
                 </div>

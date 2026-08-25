@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { AuthUser } from "@rathena/shared";
+import { RoIcon } from "../common/RoIcon";
 
 export type NavTab = "FINANCE" | "CHARACTER" | "LEISURE" | "PROGRESSION" | "BOUNTIES" | "GACHA";
 
@@ -67,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="relative w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors"
             title="Photonic Singularity • Solo RO"
           >
-            <Shield className="w-5 h-5 text-accent" />
+            <RoIcon className="w-5 h-5 text-accent" />
             <span
               className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface animate-pulse shadow-[0_0_6px_#4ade80]"
               title="Kafra Live Network: Synchronized"
@@ -261,7 +262,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand & Live Sync Badge */}
         <div className="flex items-center gap-2.5">
           <div className="relative w-8 h-8 rounded-lg bg-surface2 border border-border flex items-center justify-center shadow-inner">
-            <Shield className="w-4 h-4 text-accent" />
+            <RoIcon className="w-4 h-4 text-accent" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-success ring-1 ring-surface animate-pulse" />
           </div>
           <div>

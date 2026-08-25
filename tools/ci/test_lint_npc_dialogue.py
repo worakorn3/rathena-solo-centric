@@ -134,6 +134,22 @@ prontera,150,150,4\tscript\tTestNpc\t100,{
         loop_issues = [i for i in issues if i.issue_type == 'UNPAGINATED_LOOP']
         self.assertEqual(len(loop_issues), 1, "Unpaginated loop must trigger UNPAGINATED_LOOP")
 
+    def test_emoji_in_dialogue_detected(self):
+        script = """
+prontera,150,150,4\tscript\tTestNpc\t100,{
+    mes "[🏛️ Municipal Index]";
+    switch(select("🏛️ Municipal Equities Index:⚡ Decentralized Rune Protocols:Exit")) {
+        case 1: close;
+    }
+    close;
+}
+"""
+        issues = lint_script_content("test.txt", script, max_lines=5)
+        emoji_issues = [i for i in issues if i.issue_type == 'EMOJI_IN_DIALOGUE']
+        self.assertEqual(len(emoji_issues), 2, "Emojis in mes and select must trigger EMOJI_IN_DIALOGUE")
+        self.assertEqual(emoji_issues[0].line_num, 3)
+        self.assertEqual(emoji_issues[1].line_num, 4)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

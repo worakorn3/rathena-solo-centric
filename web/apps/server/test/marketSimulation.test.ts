@@ -209,7 +209,7 @@ describe("MarketSimulationService", () => {
       await MarketSimulationService.processBlackSwan();
 
       const priceUpdates = primaryExecuteMock.mock.calls.filter(call =>
-        (call[0] as string).includes("UPDATE `solo_stock_market` SET price = GREATEST(50, ROUND(price * (1 + ? / 100))) WHERE ticker = ?")
+        (call[0] as string).includes("UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?")
       );
       expect(priceUpdates.length).toBe(1);
       expect(priceUpdates[0][1][0]).toBe(80);
@@ -427,7 +427,7 @@ describe("MarketSimulationService", () => {
       });
 
       const originalRandom = Math.random;
-      Math.random = () => 0.5; // f = 0 + 2 = +2% -> 990 * 1.02 = 1009 >= 1000 -> split to 100
+      Math.random = () => 0.95; // f = 0 + 2 = +2% -> 990 * 1.02 = 1010 >= 1000 -> split to 101
 
       try {
         const shifts = await MarketSimulationService.catchUpOfflineShifts();
@@ -437,7 +437,7 @@ describe("MarketSimulationService", () => {
           (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?")
         );
         expect(splitStockUpdates.length).toBe(1);
-        expect(splitStockUpdates[0][1][0]).toBe(101); // 1010 / 10 = 101
+        expect(splitStockUpdates[0][1][0]).toBe(110); // 1109 / 10 = 110
         expect(splitStockUpdates[0][1][1]).toBe(1); // split_count = 1
 
         const playerShareMultipliers = primaryExecuteMock.mock.calls.filter((call) =>

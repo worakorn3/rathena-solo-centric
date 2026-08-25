@@ -6,11 +6,12 @@ import { Loader2, TrendingUp } from "lucide-react";
 
 interface CandlestickChartProps {
   ticker: string;
+  splitCount?: number;
 }
 
 type Timeframe = "1D" | "1W" | "1M" | "ALL";
 
-export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) => {
+export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker, splitCount }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -211,6 +212,11 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ ticker }) =>
           <span className="text-[10px] text-accent/80 font-normal px-1.5 py-0.2 rounded bg-accent/10 border border-accent/20">
             BKK UTC+7
           </span>
+          {splitCount !== undefined && splitCount > 0 && (
+            <span className="text-[10px] text-amber-400 font-medium px-1.5 py-0.2 rounded bg-amber-400/10 border border-amber-400/20">
+              Split 10:1 (x{splitCount})
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 bg-surface p-0.5 rounded border border-border font-mono text-[10px]">

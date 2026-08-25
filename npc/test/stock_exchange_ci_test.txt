@@ -3,7 +3,7 @@ OnInit:
 	debugmes "Stock Exchange CI Test: Starting intensive test suite...";
 
 	// 1. Setup Mock DB Data for Isolated Tickers
-	query_sql "REPLACE INTO `solo_stock_market` (ticker, name, price, price_old, dividend, div_acc, split_count, enabled) VALUES ('TST1', 'Test Corp 1', 100, 100, 10, 0, 0, 1), ('TST2', 'Test Corp 2', 200, 200, 20, 0, 0, 1), ('TST3', 'Test Corp 3', 900, 900, 30, 0, 0, 1), ('TST4', 'Test Corp 4', 400, 400, 40, 0, 0, 1)";
+	query_sql "REPLACE INTO `solo_stock_market` (ticker, name, asset_type, price, price_old, dividend, div_acc, split_count, enabled) VALUES ('TST1', 'Test Corp 1', 'EQUITY', 100, 100, 10, 0, 0, 1), ('TST2', 'Test Corp 2', 'EQUITY', 200, 200, 20, 0, 0, 1), ('TST3', 'Test Corp 3', 'EQUITY', 900, 900, 30, 0, 0, 1), ('TST4', 'Test Corp 4', 'EQUITY', 400, 400, 40, 0, 0, 1)";
 	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999999, 'TST1', 10, 1000, 0, 1, 0), (999999, 'TST3', 5, 4500, 0, 0, 0)";
 
 	// 2. T1: Accrual & Ticker Isolation Verification
@@ -90,7 +90,7 @@ OnInit:
 	// 7. T6: Verify All 9 Active Live Municipal Tickers (Phase 0 + Phase 1)
 	deletearray .@active_tickers$[0], getarraysize(.@active_tickers$);
 	deletearray .@active_names$[0], getarraysize(.@active_names$);
-	.@active_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC", .@active_tickers$, .@active_names$);
+	.@active_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'EQUITY' ORDER BY ticker ASC", .@active_tickers$, .@active_names$);
 
 	AssertEquals(9, .@active_count, "T6: Exactly 9 municipal stocks should be enabled (Base 5 + Schwarzwald 4)");
 	AssertEquals("ALB", .@active_tickers$[0], "T6: 1st ticker is ALB (Alberta Shipping Corp)");
@@ -103,10 +103,27 @@ OnInit:
 	AssertEquals("PRT", .@active_tickers$[7], "T6: 8th ticker is PRT (Prontera Capital Inc.)");
 	AssertEquals("YUN", .@active_tickers$[8], "T6: 9th ticker is YUN (Yuno Arcane Institute)");
 
-	// 8. T7: Verify Disabled Phase 2-5 Stocks Omitted from Active Index (4 + 4 + 8 + 2 = 18)
+	// 8. T7: Verify All 10 Active Live Decentralized Rune & Crypto Protocols (Phase 13)
+	deletearray .@crypto_tickers$[0], getarraysize(.@crypto_tickers$);
+	deletearray .@crypto_names$[0], getarraysize(.@crypto_names$);
+	.@crypto_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'CRYPTO' ORDER BY ticker ASC", .@crypto_tickers$, .@crypto_names$);
+
+	AssertEquals(10, .@crypto_count, "T7: Exactly 10 decentralized protocols should be enabled");
+	AssertEquals("ALM", .@crypto_tickers$[0], "T7: 1st crypto ticker is ALM (Alchemax AMM Pool)");
+	AssertEquals("EMP", .@crypto_tickers$[1], "T7: 2nd crypto ticker is EMP (Emperium Shard Protocol)");
+	AssertEquals("KFX", .@crypto_tickers$[2], "T7: 3rd crypto ticker is KFX (Kafra Fast-eXchange)");
+	AssertEquals("NZN", .@crypto_tickers$[3], "T7: 4th crypto ticker is NZN (Neo-Zeny Kafra Dollar)");
+	AssertEquals("ORA", .@crypto_tickers$[4], "T7: 5th crypto ticker is ORA (Eye of Odin Oracle)");
+	AssertEquals("POR", .@crypto_tickers$[5], "T7: 6th crypto ticker is POR (King Poring Meme Standard)");
+	AssertEquals("SHD", .@crypto_tickers$[6], "T7: 7th crypto ticker is SHD (Shadow Guild Stealth Ring)");
+	AssertEquals("WRP", .@crypto_tickers$[7], "T7: 8th crypto ticker is WRP (Warp Light Protocol)");
+	AssertEquals("YMI", .@crypto_tickers$[8], "T7: 9th crypto ticker is YMI (Heart of Ymir Alchemax)");
+	AssertEquals("ZEX", .@crypto_tickers$[9], "T7: 10th crypto ticker is ZEX (Midgard Exchange Coin)");
+
+	// 9. T8: Verify Disabled Future Municipal Phases 2-5 Omitted from Active Index (4 + 4 + 8 + 2 = 18)
 	.@disabled_count = 0;
 	query_sql("SELECT COUNT(*) FROM `solo_stock_market` WHERE enabled = 0", .@disabled_count);
-	AssertEquals(18, .@disabled_count, "T7: Exactly 18 future-phase tickers should be stored as disabled (enabled = 0)");
+	AssertEquals(18, .@disabled_count, "T8: Exactly 18 future-phase municipal tickers should be stored as disabled (enabled = 0)");
 
 	debugmes "Stock Exchange CI Test: Completed successfully.";
 	end;

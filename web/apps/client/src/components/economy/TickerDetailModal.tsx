@@ -750,10 +750,24 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
                   {/* Summary & Submit Action */}
                   <div className="pt-2 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between gap-2.5">
                     <div className="text-[11px] font-mono text-muted w-full sm:w-auto">
-                      <span>
-                        {parsedShares.toLocaleString()} {vocab.unitAbbr} × {formatZeny(quote.price)} Z ={" "}
-                        <strong className="text-primary font-bold">{formatZeny(parsedTotalZeny)} Z</strong>
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          {parsedShares.toLocaleString()} {vocab.unitAbbr} × {formatZeny(quote.price)} Z ={" "}
+                          <strong className="text-primary font-bold">{formatZeny(parsedTotalZeny)} Z</strong>
+                        </span>
+                        {parsedShares > 0 && (
+                          <span className="text-[10px] text-accent/90 bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20">
+                            {tradeAction === "BUY" ? "+1% Fee: " : "-1% Fee: "}
+                            {formatZeny(Math.max(1, Math.round(parsedTotalZeny * 0.01)))} Z (Total:{" "}
+                            {formatZeny(
+                              tradeAction === "BUY"
+                                ? parsedTotalZeny + Math.max(1, Math.round(parsedTotalZeny * 0.01))
+                                : Math.max(0, parsedTotalZeny - Math.max(1, Math.round(parsedTotalZeny * 0.01)))
+                            )}{" "}
+                            Z)
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -783,7 +797,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
           )}
 
           {/* Interactive TradingView Candlestick Chart */}
-          <CandlestickChart ticker={quote.ticker} />
+          <CandlestickChart ticker={quote.ticker} splitCount={quote.splitCount ?? (quote as any).split_count} />
 
           {/* Sector & Classification Badges */}
           <div className="flex flex-wrap gap-1.5">

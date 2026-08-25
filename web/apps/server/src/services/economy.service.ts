@@ -11,6 +11,7 @@ import {
   StockCandle,
   StockHistoryResponse,
   TradeStockResponse,
+  isCryptoAsset,
   getJobName
 } from "@rathena/shared";
 
@@ -36,6 +37,7 @@ interface StockMarketRow {
   sector?: string;
   archetype?: string;
   lore?: string;
+  asset_type?: "EQUITY" | "CRYPTO";
   price: number;
   price_old: number;
   dividend: number;
@@ -139,32 +141,24 @@ export class EconomyService {
     let marketRows: StockMarketRow[] = [];
     try {
       marketRows = await query<StockMarketRow>(
-        "SELECT ticker, name, broker_title, sector, archetype, lore, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
     } catch {
       // If table doesn't exist yet, return empty
       marketRows = [];
     }
 
-    const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
-
-    const isCrypto = (ticker: string, sector?: string): boolean => {
-      if (CRYPTO_TICKERS.has(ticker.toUpperCase().trim())) return true;
-      if (sector && (sector.toLowerCase().includes("protocol") || sector.toLowerCase().includes("defi"))) return true;
-      return false;
-    };
-
     const quotes: StockMarketQuote[] = marketRows.map((m) => {
       const price = Number(m.price) || 0;
       const priceOld = Number(m.price_old) || price;
       const changeAmount = price - priceOld;
       const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
-      const cryptoAsset = isCrypto(m.ticker, m.sector);
+      const assetType = m.asset_type || (isCryptoAsset(m.ticker, m.sector) ? "CRYPTO" : "EQUITY");
 
       return {
         ticker: m.ticker,
         name: m.name || `${m.ticker} Enterprises`,
-        assetType: cryptoAsset ? "CRYPTO" : "EQUITY",
+        assetType,
         sector: m.sector || undefined,
         archetype: m.archetype || undefined,
         lore: m.lore || undefined,
@@ -212,7 +206,7 @@ export class EconomyService {
         totalCost > 0 ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2)) : 0;
 
       const pendingDividends = Number(p.pending_div) || 0;
-      const cryptoAsset = isCrypto(p.ticker, quote?.sector);
+      const cryptoAsset = isCryptoAsset(p.ticker, quote?.assetType || quote?.sector);
 
       stockMarketValue += marketValue;
       if (cryptoAsset) {
@@ -641,31 +635,48 @@ export class EconomyService {
     // 3. BUY Execution
     if (tradeAction === "BUY") {
       const totalCost = shares * price;
-      if (Number(char.zeny) < totalCost) {
+      const tradeFee = Math.max(1, Math.round(totalCost * 0.01)); // 1% Brokerage Commission (Currency Sink)
+      const totalRequired = totalCost + tradeFee;
+
+      if (Number(char.zeny) < totalRequired) {
         return {
           success: false,
-          error: `Insufficient Zeny. Required: ${totalCost.toLocaleString()} Z, Available: ${Number(char.zeny).toLocaleString()} Z.`,
+          error: `Insufficient Zeny. Required: ${totalRequired.toLocaleString()} Z (${totalCost.toLocaleString()} Z + ${tradeFee.toLocaleString()} Z 1% fee), Available: ${Number(char.zeny).toLocaleString()} Z.`,
         };
       }
 
       await primaryExecute(
         "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND zeny >= ?",
-        [totalCost, charId, totalCost]
+        [totalRequired, charId, totalRequired]
       );
 
       await primaryExecute(
         "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE shares = shares + VALUES(shares), total_cost = total_cost + VALUES(total_cost)",
-        [accountId, cleanTicker, shares, totalCost]
+        [accountId, cleanTicker, shares, totalRequired]
       );
 
-      const remainingZeny = Number(char.zeny) - totalCost;
+      // Player Whale Trade Impact: Large block orders add immediate market volume and tactile price pressure
+      if (shares >= 500) {
+        await primaryExecute(
+          "UPDATE `solo_stock_history` SET volume = volume + ? WHERE ticker = ? ORDER BY timestamp DESC LIMIT 1",
+          [shares, cleanTicker]
+        );
+        if (shares >= 1000) {
+          await primaryExecute(
+            "UPDATE `solo_stock_market` SET price = price + 1 WHERE ticker = ? AND price < 990",
+            [cleanTicker]
+          );
+        }
+      }
+
+      const remainingZeny = Number(char.zeny) - totalRequired;
 
       return {
         success: true,
-        message: `Purchased ${shares.toLocaleString()} ${cleanTicker} shares for ${totalCost.toLocaleString()} Z.`,
+        message: `Purchased ${shares.toLocaleString()} ${cleanTicker} shares for ${totalCost.toLocaleString()} Z (Fee: ${tradeFee.toLocaleString()} Z).`,
         executedShares: shares,
         pricePerShare: price,
-        totalAmount: totalCost,
+        totalAmount: totalRequired,
         remainingZeny,
       };
     }
@@ -686,11 +697,13 @@ export class EconomyService {
       };
     }
 
-    const proceeds = shares * price;
+    const grossProceeds = shares * price;
+    const tradeFee = Math.max(1, Math.round(grossProceeds * 0.01)); // 1% Brokerage Commission (Currency Sink)
+    const netProceeds = grossProceeds - tradeFee;
 
     await primaryExecute(
       "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
-      [proceeds, charId]
+      [netProceeds, charId]
     );
 
     const remainingShares = Number(holding.shares) - shares;
@@ -708,14 +721,28 @@ export class EconomyService {
       );
     }
 
-    const remainingZeny = Number(char.zeny) + proceeds;
+    // Player Whale Trade Impact on SELL: Large dumps register volume and mild price pressure
+    if (shares >= 500) {
+      await primaryExecute(
+        "UPDATE `solo_stock_history` SET volume = volume + ? WHERE ticker = ? ORDER BY timestamp DESC LIMIT 1",
+        [shares, cleanTicker]
+      );
+      if (shares >= 1000) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = GREATEST(50, price - 1) WHERE ticker = ?",
+          [cleanTicker]
+        );
+      }
+    }
+
+    const remainingZeny = Number(char.zeny) + netProceeds;
 
     return {
       success: true,
-      message: `Sold ${shares.toLocaleString()} ${cleanTicker} shares for ${proceeds.toLocaleString()} Z.`,
+      message: `Sold ${shares.toLocaleString()} ${cleanTicker} shares for ${grossProceeds.toLocaleString()} Z (Net: ${netProceeds.toLocaleString()} Z after ${tradeFee.toLocaleString()} Z fee).`,
       executedShares: shares,
       pricePerShare: price,
-      totalAmount: proceeds,
+      totalAmount: netProceeds,
       remainingZeny,
     };
   }

@@ -28,4 +28,33 @@ function	script	F_RecordEconomy	{
 	return;
 }
 
+// F_ParseZenyInput(input_string$)
+// Safely parses player financial input strings into integer Zeny.
+// Supports: "100m", "100M", "50k", "1b", "100,000,000", "100000000".
+// Solves official RO client 8-character limit on numeric input dialogs.
+function	script	F_ParseZenyInput	{
+	.@raw$ = getarg(0, "");
+	.@raw$ = replacestr(.@raw$, ",", "");
+	.@raw$ = replacestr(.@raw$, " ", "");
+	.@raw$ = replacestr(.@raw$, "z", "");
+	.@raw$ = replacestr(.@raw$, "Z", "");
+	.@len = getstrlen(.@raw$);
+	if (.@len <= 0) return 0;
+
+	.@last_char$ = strtoupper(substr(.@raw$, .@len - 1, 1));
+	if (.@last_char$ == "K") {
+		.@num = atoi(substr(.@raw$, 0, .@len - 1));
+		return .@num * 1000;
+	} else if (.@last_char$ == "M") {
+		.@num = atoi(substr(.@raw$, 0, .@len - 1));
+		return .@num * 1000000;
+	} else if (.@last_char$ == "B") {
+		.@num = atoi(substr(.@raw$, 0, .@len - 1));
+		return .@num * 1000000000;
+	}
+
+	return atoi(.@raw$);
+}
+
+
 

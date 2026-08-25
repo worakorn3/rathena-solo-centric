@@ -3,6 +3,7 @@ import { Coins, Search, User, LogOut, Shield, Database } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { formatZeny } from "../../lib/assets";
 import { SyncButton } from "./SyncButton";
+import { RoIcon } from "../common/RoIcon";
 
 interface HeaderProps {
   netWorth?: number;
@@ -26,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Logo & Title */}
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-lg bg-surface2 border border-border flex items-center justify-center">
-            <Shield className="text-accent" size={20} />
+            <RoIcon className="text-accent" size={20} />
           </div>
           <div>
             <div className="flex items-center space-x-2">

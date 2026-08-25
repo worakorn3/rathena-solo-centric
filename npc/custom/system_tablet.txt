@@ -142,7 +142,7 @@ OnUse:
 			mes "Select an index to inspect:";
 			next;
 			
-			switch(select("🏛️ Municipal Equities:⚡ Decentralized Rune Protocols:📰 Black Swan News Wire:Cancel")) {
+			switch(select("Municipal Equities:Decentralized Rune Protocols:Black Swan News Wire:Cancel")) {
 				case 1: // Municipal Equities
 					.@eq_mood = 0;
 					query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood'", .@eq_mood;
@@ -154,13 +154,13 @@ OnUse:
 					deletearray .@tab_tickers$[0], getarraysize(.@tab_tickers$);
 					deletearray .@tab_prices[0], getarraysize(.@tab_prices);
 					deletearray .@tab_price_olds[0], getarraysize(.@tab_price_olds);
-					.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 AND sector NOT LIKE '%Protocol%' AND sector NOT LIKE '%DeFi%' ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
+					.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'EQUITY' ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
 					
 					.@tab_per_page = 5;
 					.@tab_total_pages = (.@tab_stock_cnt + .@tab_per_page - 1) / .@tab_per_page;
 					for (.@p = 0; .@p < .@tab_total_pages; .@p++) {
 						clear;
-						mes "[🏛️ Municipal Equities - Page " + (.@p + 1) + "/" + .@tab_total_pages + "]";
+						mes "[Municipal Equities - Page " + (.@p + 1) + "/" + .@tab_total_pages + "]";
 						mes "Sentiment: " + .@eq_mood$;
 						mes "---------------------------";
 						.@start_idx = .@p * .@tab_per_page;
@@ -190,13 +190,13 @@ OnUse:
 					deletearray .@tab_tickers$[0], getarraysize(.@tab_tickers$);
 					deletearray .@tab_prices[0], getarraysize(.@tab_prices);
 					deletearray .@tab_price_olds[0], getarraysize(.@tab_price_olds);
-					.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 AND (sector LIKE '%Protocol%' OR sector LIKE '%DeFi%') ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
+					.@tab_stock_cnt = query_sql("SELECT ticker, price, price_old FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'CRYPTO' ORDER BY ticker ASC", .@tab_tickers$, .@tab_prices, .@tab_price_olds);
 					
 					.@tab_per_page = 5;
 					.@tab_total_pages = (.@tab_stock_cnt + .@tab_per_page - 1) / .@tab_per_page;
 					for (.@p = 0; .@p < .@tab_total_pages; .@p++) {
 						clear;
-						mes "[⚡ Decentralized Protocols - Page " + (.@p + 1) + "/" + .@tab_total_pages + "]";
+						mes "[Decentralized Protocols - Page " + (.@p + 1) + "/" + .@tab_total_pages + "]";
 						mes "Sentiment: " + .@cr_mood$;
 						mes "---------------------------";
 						.@start_idx = .@p * .@tab_per_page;

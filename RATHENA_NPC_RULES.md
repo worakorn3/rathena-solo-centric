@@ -139,6 +139,19 @@ Standard Ragnarok Online game clients render approximately 4–5 lines of text p
 
 ---
 
+### E. Character Encoding & Emoji Prohibitions (Strictly Prohibited)
+The Ragnarok Online game client uses regional single/double-byte character sets (e.g. EUC-KR / CP949 / Windows-1252) and **CANNOT render 3-byte or 4-byte UTF-8 emojis or non-ASCII unicode symbols**.
+* **Zero Emojis in NPC Scripts:** Never use unicode emojis (e.g., 🏛️, ⚡, 💼, 💰, ⚙️, 📰, 📈, etc.) or multi-byte unicode symbols in:
+  - NPC dialogue (`mes`)
+  - Menu choices (`select`, `menu`, `prompt`)
+  - NPC announcements (`announce`, `mapannounce`)
+  - Overhead text (`npctalk`)
+  - Waiting rooms (`waitingroom`)
+* **Symptom of Violation:** Emojis cause severe mojibake corruption in-game (e.g. `?뤪?`, `??`, `?뮦`, `?숍들`).
+* **Approved Styling:** Use standard printable ASCII text with native rAthena color codes (`^RRGGBB...^000000`) or standard ASCII punctuation `[...]` / `*...*` for UI highlights.
+
+---
+
 ## 5. Coding Style & Optimization Best Practices
 
 1. **Avoid Nested If-Else Chains:**

@@ -45,10 +45,16 @@ Open **`http://localhost:5173`** in your browser.
 
 The container is configured as a multi-stage Bun build that serves both the API and the compiled React SPA from a single lightweight container.
 
+> [!IMPORTANT]
+> **Mandatory Web Rebuild Rule:** Always rebuild and restart the Docker Compose container whenever making any changes to the web codebase (frontend or backend):
+> ```powershell
+> docker compose -f tools/docker/docker-compose.yml up -d --build --no-deps web-portal
+> ```
+
 ### Run with Docker Compose
 ```powershell
 cd tools/docker
-docker compose up -d web-portal
+docker compose up -d --build --no-deps web-portal
 ```
 Access at **`http://localhost:3001`**.
 

@@ -27,5 +27,10 @@ Open `rAthena.sln` in Visual Studio 2017 or newer and build the solution in **Re
   ```
 
 ### Web Server
-- **Docker Rebuild Rule:** For every web change, always rebuild the docker compose.
+- **Docker Rebuild Rule (MANDATORY):** Should there be ANY changes to the web application (frontend `web/src` or backend `web/server`), ALWAYS rebuild and restart the Docker Compose container immediately:
+  ```bash
+  docker compose -f tools/docker/docker-compose.yml up -d --build --no-deps web-portal
+  ```
+  *(or `docker compose up -d --build --no-deps web-portal` if running from `tools/docker`).*
+  > **Note:** Never run `docker compose build` without `up -d` or omit `--build` when testing changes, as running containers will otherwise continue serving stale cached builds.
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Zap, TrendingUp, Landmark } from "lucide-react";
-import { StockMarketQuote, StockEventLog, getAssetVocabulary } from "@rathena/shared";
+import { StockMarketQuote, StockEventLog, getAssetVocabulary, isCryptoAsset } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
@@ -19,8 +19,6 @@ interface MarketWatchProps {
   onSelectTicker?: (ticker: string | null) => void;
 }
 
-const CRYPTO_TICKERS = new Set(["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"]);
-
 const getMoodString = (mood?: number) => {
   if (mood === 1) return { text: "Bullish", color: "text-success", bg: "bg-success/10", border: "border-success/20" };
   if (mood === 2) return { text: "Bearish", color: "text-danger", bg: "bg-danger/10", border: "border-danger/20" };
@@ -37,8 +35,35 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   selectedTicker,
   onSelectTicker,
 }) => {
-  const effectiveEquitiesMood = equitiesMood !== undefined ? equitiesMood : (marketMood !== undefined ? marketMood : 0);
-  const effectiveCryptoMood = cryptoMood !== undefined ? cryptoMood : (marketMood === 3 ? 3 : 0);
+  // Derive effective municipal sentiment:
+  // 1. explicit equitiesMood if > 0
+  // 2. general marketMood if > 0
+  // 3. dynamic fallback from municipal quotes
+  const muniQuotes = quotes.filter((q) => !isCryptoAsset(q.ticker, q.assetType || q.sector));
+  const muniUp = muniQuotes.filter((q) => q.changeAmount > 0).length;
+  const muniDown = muniQuotes.filter((q) => q.changeAmount < 0).length;
+  const fallbackMuniMood = muniQuotes.length > 0 ? (muniUp > muniDown ? 1 : muniDown > muniUp ? 2 : 0) : 0;
+  const effectiveEquitiesMood =
+    equitiesMood && equitiesMood > 0
+      ? equitiesMood
+      : marketMood && marketMood > 0
+      ? marketMood
+      : fallbackMuniMood;
+
+  // Derive effective crypto sentiment:
+  // 1. explicit cryptoMood if > 0
+  // 2. global chaos (3) if marketMood === 3
+  // 3. dynamic fallback from crypto quotes
+  const cryptoQuotes = quotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector));
+  const cryptoUp = cryptoQuotes.filter((q) => q.changeAmount > 0).length;
+  const cryptoDown = cryptoQuotes.filter((q) => q.changeAmount < 0).length;
+  const fallbackCryptoMood = cryptoQuotes.length > 0 ? (cryptoUp > cryptoDown ? 1 : cryptoDown > cryptoUp ? 2 : 0) : 0;
+  const effectiveCryptoMood =
+    cryptoMood && cryptoMood > 0
+      ? cryptoMood
+      : marketMood === 3
+      ? 3
+      : fallbackCryptoMood;
 
   const equitiesMoodInfo = getMoodString(effectiveEquitiesMood);
   const cryptoMoodInfo = getMoodString(effectiveCryptoMood);
@@ -58,16 +83,13 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   };
 
   const filteredQuotes = quotes.filter((q) => {
-    const isCrypto =
-      CRYPTO_TICKERS.has(q.ticker) ||
-      q.sector?.toLowerCase().includes("protocol") ||
-      q.sector?.toLowerCase().includes("defi");
+    const isCrypto = isCryptoAsset(q.ticker, q.assetType || q.sector);
     if (filterTab === "crypto") return isCrypto;
     if (filterTab === "municipal") return !isCrypto;
     return true;
   });
 
-  const cryptoCount = quotes.filter((q) => CRYPTO_TICKERS.has(q.ticker)).length;
+  const cryptoCount = quotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector)).length;
   const municipalCount = quotes.length - cryptoCount;
 
   return (
@@ -195,7 +217,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
               {filteredQuotes.map((q) => {
                 const isUp = q.changeAmount >= 0;
                 const theme = getTickerTheme(q.ticker);
-                const isCrypto = CRYPTO_TICKERS.has(q.ticker);
+                const isCrypto = isCryptoAsset(q.ticker, q.assetType || q.sector);
                 return (
                   <tr
                     key={q.ticker}

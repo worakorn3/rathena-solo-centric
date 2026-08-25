@@ -226,4 +226,13 @@ export interface BankTransactionResponse {
   remainingZeny?: number;
 }
 
+export const CRYPTO_TICKERS = ["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"] as const;
+export type CryptoTicker = typeof CRYPTO_TICKERS[number];
+
+export function isCryptoAsset(ticker: string, assetType?: string): boolean {
+  if (assetType === "CRYPTO") return true;
+  if (assetType === "EQUITY") return false;
+  return (CRYPTO_TICKERS as readonly string[]).includes(ticker.toUpperCase().trim());
+}
+
 
