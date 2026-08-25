@@ -1,6 +1,6 @@
 import React from "react";
 import { useAudio } from "../../context/AudioContext";
-import { Play, Pause, Headphones, X } from "lucide-react";
+import { Play, Pause, Headphones, X, SkipBack, SkipForward } from "lucide-react";
 import { NavTab } from "../layout/Sidebar";
 
 interface GlobalAudioDockProps {
@@ -12,7 +12,17 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
   activeTab,
   onNavigateTab,
 }) => {
-  const { activeTrack, isPlaying, hasStarted, isOnlineNetwork, togglePlay, closeRadio } = useAudio();
+  const {
+    title,
+    subtitle,
+    isPlaying,
+    hasStarted,
+    isOnlineNetwork,
+    togglePlay,
+    nextTrack,
+    prevTrack,
+    closeRadio,
+  } = useAudio();
 
   // Floating mini pill stays visible across other tabs once started (even when paused)
   if (!hasStarted || !isOnlineNetwork || activeTab === "LEISURE") {
@@ -41,9 +51,9 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
       </div>
 
       {/* Track Info */}
-      <div className="flex flex-col min-w-0 max-w-[130px] sm:max-w-[190px]">
+      <div className="flex flex-col min-w-0 max-w-[120px] sm:max-w-[180px]">
         <span className="text-xs font-bold text-primary truncate leading-tight flex items-center gap-1">
-          <span className="truncate">{activeTrack.title}</span>
+          <span className="truncate">{title}</span>
           {!isPlaying && (
             <span className="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-surface2 text-muted shrink-0">
               Paused
@@ -51,12 +61,21 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
           )}
         </span>
         <span className="text-[9px] text-muted truncate font-mono">
-          {activeTrack.subtitle}
+          {subtitle}
         </span>
       </div>
 
-      {/* Controls: Play/Pause, Quick Return to Lounge, and Dismiss */}
-      <div className="flex items-center gap-1.5 pl-1 border-l border-border">
+      {/* Controls: Prev, Play/Pause, Next, Return to Lounge, and Dismiss */}
+      <div className="flex items-center gap-1 pl-1 border-l border-border">
+        <button
+          onClick={prevTrack}
+          className="p-1.5 rounded-full hover:bg-surface2 text-muted hover:text-primary transition-colors cursor-pointer"
+          title="Previous Track"
+          aria-label="Previous Track"
+        >
+          <SkipBack className="w-3 h-3" />
+        </button>
+
         <button
           onClick={togglePlay}
           className="p-1.5 rounded-full bg-surface2 hover:bg-border text-primary hover:text-accent transition-colors cursor-pointer"
@@ -67,8 +86,17 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
         </button>
 
         <button
+          onClick={nextTrack}
+          className="p-1.5 rounded-full hover:bg-surface2 text-muted hover:text-primary transition-colors cursor-pointer"
+          title="Next Track"
+          aria-label="Next Track"
+        >
+          <SkipForward className="w-3 h-3" />
+        </button>
+
+        <button
           onClick={() => onNavigateTab("LEISURE")}
-          className="px-2 py-1 rounded-full bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+          className="px-2 py-1 rounded-full bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer ml-0.5"
           title="Open Leisure Lounge"
         >
           <Headphones className="w-3 h-3" />
@@ -77,7 +105,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
 
         <button
           onClick={closeRadio}
-          className="p-1 rounded-full text-muted hover:text-primary transition-colors cursor-pointer"
+          className="p-1 rounded-full text-muted hover:text-primary transition-colors cursor-pointer ml-0.5"
           title="Dismiss Radio Dock"
           aria-label="Dismiss Radio Dock"
         >

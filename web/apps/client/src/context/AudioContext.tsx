@@ -1,67 +1,40 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-export interface TrackInfo {
-  id: string;
-  title: string;
-  subtitle: string;
-  accentColor: string;
-}
-
-export const CURATED_TRACKS: TrackInfo[] = [
-  {
-    id: "4DFPRCGMx6k",
-    title: "Ragnarok LoFi Mix",
-    subtitle: "Prontera & Fields Chill Compilation",
-    accentColor: "bg-accent",
-  },
-  {
-    id: "IeG0fw-nR6g",
-    title: "Midgard Nostalgia Tape",
-    subtitle: "Peaceful Town & Dungeon LoFi",
-    accentColor: "bg-info",
-  },
-  {
-    id: "JJAwgGggD2U",
-    title: "Relaxing RO Soundscape",
-    subtitle: "Extended Ambient Study & Relax Beats",
-    accentColor: "bg-success",
-  },
-  {
-    id: "_DWTntfXPlg",
-    title: "Midgard Coffee Beats",
-    subtitle: "Cozy Grind & LoFi Soundtrack",
-    accentColor: "bg-purple",
-  },
-  {
-    id: "MEFQr826Bdc",
-    title: "Acoustic & Peaceful Melodies",
-    subtitle: "Ragnarok Memories LoFi Chill",
-    accentColor: "bg-danger",
-  },
-];
+export const DEFAULT_PLAYLIST_ID = "PLLlAbcezVXFM";
+export const PLAYLIST_ID =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_YOUTUBE_PLAYLIST_ID) ||
+  DEFAULT_PLAYLIST_ID;
+export const PLAYLIST_TITLE =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_YOUTUBE_PLAYLIST_TITLE) ||
+  "Ragnarok Online LoFi Radio";
+export const PLAYLIST_SUBTITLE =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_YOUTUBE_PLAYLIST_SUBTITLE) ||
+  "Midgard LoFi & Chill Playlist";
 
 interface AudioContextType {
-  tracks: TrackInfo[];
-  activeTrack: TrackInfo;
+  playlistId: string;
+  title: string;
+  subtitle: string;
   isPlaying: boolean;
   hasStarted: boolean;
   isOnlineNetwork: boolean;
-  playTrack: (track: TrackInfo) => void;
+  startRadio: () => void;
   togglePlay: () => void;
+  nextTrack: () => void;
+  prevTrack: () => void;
   closeRadio: () => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTrack, setActiveTrack] = useState<TrackInfo>(CURATED_TRACKS[0]);
-  const [hasStarted, setHasStarted] = useState<boolean>(false); // No initial clutter/autoplay
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isOnlineNetwork, setIsOnlineNetwork] = useState<boolean>(() => {
     return typeof navigator !== "undefined" ? navigator.onLine : true;
   });
 
-  // Browser network connectivity monitoring
+  // Network connectivity monitoring
   useEffect(() => {
     const handleOnline = () => setIsOnlineNetwork(true);
     const handleOffline = () => setIsOnlineNetwork(false);
@@ -75,29 +48,39 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const sendIframeCommand = (cmd: "playVideo" | "pauseVideo") => {
+  const sendIframeCommand = (cmd: string, args: any[] = []) => {
     const iframe = document.querySelector('iframe[title="Ragnarok LoFi Beats"]') as HTMLIFrameElement | null;
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage(
-        JSON.stringify({ event: "command", func: cmd, args: [] }),
+        JSON.stringify({ event: "command", func: cmd, args }),
         "*"
       );
     }
   };
 
-  const playTrack = (track: TrackInfo) => {
-    setActiveTrack(track);
+  const startRadio = () => {
     setHasStarted(true);
     setIsPlaying(true);
     setTimeout(() => {
       sendIframeCommand("playVideo");
-    }, 100);
+    }, 150);
   };
+
+  const nextTrack = useCallback(() => {
+    sendIframeCommand("nextVideo");
+    setHasStarted(true);
+    setIsPlaying(true);
+  }, []);
+
+  const prevTrack = useCallback(() => {
+    sendIframeCommand("previousVideo");
+    setHasStarted(true);
+    setIsPlaying(true);
+  }, []);
 
   const togglePlay = () => {
     if (!hasStarted) {
-      setHasStarted(true);
-      setIsPlaying(true);
+      startRadio();
       return;
     }
 
@@ -117,13 +100,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <AudioContext.Provider
       value={{
-        tracks: CURATED_TRACKS,
-        activeTrack,
+        playlistId: PLAYLIST_ID,
+        title: PLAYLIST_TITLE,
+        subtitle: PLAYLIST_SUBTITLE,
         isPlaying,
         hasStarted,
         isOnlineNetwork,
-        playTrack,
+        startRadio,
         togglePlay,
+        nextTrack,
+        prevTrack,
         closeRadio,
       }}
     >

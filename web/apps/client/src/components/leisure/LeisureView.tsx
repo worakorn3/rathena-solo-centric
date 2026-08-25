@@ -6,6 +6,8 @@ import {
   Headphones,
   Info,
   Play,
+  ListMusic,
+  ExternalLink,
 } from "lucide-react";
 import { formatZeny } from "../../lib/assets";
 import { useAudio } from "../../context/AudioContext";
@@ -25,13 +27,13 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
 }) => {
   const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000));
   const {
-    tracks,
-    activeTrack,
+    playlistId,
+    title,
+    subtitle,
     isPlaying,
     hasStarted,
     isOnlineNetwork,
-    playTrack,
-    togglePlay,
+    startRadio,
   } = useAudio();
 
   const activeChar =
@@ -78,9 +80,8 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
   const displayMins = cappedMin % 60;
   const displaySecs = isOffline && totalAccruedMin < 2880 ? elapsedSec % 60 : 0;
   const pad = (n: number) => String(n).padStart(2, "0");
-  const timeDisplay = `${pad(displayHours)}h ${pad(displayMins)}m ${pad(displaySecs)}s`;
 
-  // Base EXP & Job EXP Yield (Zero Zeny)
+  // Base EXP & Job EXP Yield
   const estBaseExp = Math.floor(activeChar.baseLevel * 10 * cappedMin);
   const estJobExp = Math.floor(activeChar.baseLevel * 5 * cappedMin);
 
@@ -205,7 +206,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
           </div>
         </div>
 
-        {/* RIGHT 6 COLS: Ragnarok Online LoFi Radio Hub */}
+        {/* RIGHT 6 COLS: Ragnarok Online LoFi Radio Lounge */}
         <div className="col-span-12 lg:col-span-6 flex flex-col min-h-0">
           <div className="bento-card flex-1 flex flex-col justify-between p-4 sm:p-5 overflow-hidden">
             <div>
@@ -216,7 +217,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     <Radio className="w-4 h-4" />
                   </span>
                   <h3 className="text-xs sm:text-sm font-bold text-primary">
-                    Ragnarok Online LoFi Radio
+                    {title}
                   </h3>
                 </div>
                 <div
@@ -237,7 +238,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     ) : (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-muted" />
-                        <span>Standby (Click to Play)</span>
+                        <span>Standby</span>
                       </>
                     )
                   ) : (
@@ -249,7 +250,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                 </div>
               </div>
 
-              {/* Responsive Video Container OR Offline / Standby Fallback */}
+              {/* Video Player Frame with Native YouTube Playlist */}
               <div
                 id="leisureVideoSlot"
                 className="relative w-full aspect-video rounded-xl bg-black border border-border overflow-hidden shadow-inner flex items-center justify-center mb-3"
@@ -257,9 +258,9 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                 {isOnlineNetwork ? (
                   hasStarted ? (
                     <iframe
-                      key={activeTrack.id}
+                      key="ragnarok-lofi-playlist"
                       className="w-full h-full"
-                      src={`https://www.youtube-nocookie.com/embed/${activeTrack.id}?autoplay=1&enablejsapi=1`}
+                      src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
                       title="Ragnarok LoFi Beats"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -273,18 +274,18 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                       </div>
                       <div>
                         <div className="text-xs font-bold text-primary">
-                          Midgard LoFi Audio Radio
+                          {title}
                         </div>
                         <p className="text-[11px] text-muted max-w-xs mt-1">
-                          Select any soundscape below to begin streaming. Plays continuously in the background across all tabs without interrupting.
+                          Curated Ragnarok Online playlist. Plays continuously in the background across all tabs with automatic looping.
                         </p>
                       </div>
                       <button
-                        onClick={() => playTrack(activeTrack)}
+                        onClick={startRadio}
                         className="px-4 py-1.5 bg-accent hover:bg-accent/90 text-background rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Start Listening</span>
+                        <span>Start Playlist</span>
                       </button>
                     </div>
                   )
@@ -306,33 +307,23 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                 )}
               </div>
 
-              {/* Curated Soundscape Switches */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-medium text-muted">
-                  Curated Soundscapes
+              {/* Playlist Feature Card */}
+              <div className="p-3 rounded-lg bg-surface2/50 border border-border flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5 text-muted">
+                  <ListMusic className="w-4 h-4 text-accent shrink-0" />
+                  <div>
+                    <span className="font-bold text-primary">Interactive Playlist:</span> Click the playlist icon in the top-right of the video player to browse all tracks.
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {tracks.map((track) => {
-                    const isSelected = activeTrack.id === track.id;
-                    return (
-                      <button
-                        key={track.id}
-                        onClick={() => playTrack(track)}
-                        className={`px-3 py-2 rounded-lg border text-left flex items-center gap-2.5 text-xs transition-colors cursor-pointer ${
-                          isSelected && isPlaying
-                            ? "bg-surface2 border-accent/50 text-primary shadow-sm ring-1 ring-accent/30"
-                            : "bg-surface2/60 hover:bg-surface2 border-border text-muted hover:text-primary"
-                        }`}
-                      >
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${track.accentColor}`} />
-                        <div className="truncate min-w-0">
-                          <div className="font-bold truncate text-primary">{track.title}</div>
-                          <div className="text-[10px] text-muted truncate">{track.subtitle}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <a
+                  href={`https://www.youtube.com/playlist?list=${playlistId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded bg-surface2 hover:bg-border text-muted hover:text-primary transition-colors flex items-center gap-1 font-mono text-[10px] shrink-0"
+                >
+                  <span>YouTube</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
 

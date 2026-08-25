@@ -23,6 +23,7 @@
 | **HOT (1x)** | `DEAD_CODE_PRUNING` | Prune dead legacy calls instead of re-implementing bloat | When unmaintained `callfunc`/`callsub` fails after system migration, delete dead calls |
 | **HOT (1x)** | `REACT_SCOPE_INTEGRITY` | Verify full component scope before chunk edits | Inspect all downstream variable access before replacing React component preamble |
 | **HOT (1x)** | `FAULT_ISOLATION` | Wrap dynamic modals & widgets in Error Boundaries | Always isolate auxiliary dialogs/charts in `<ErrorBoundary>` to protect core viewport |
+| **HOT (1x)** | `HARDCODED_CONFIG` | Parameterize external media/API IDs via env vars | Use `import.meta.env.VITE_*` / env schemas with sensible fallback defaults |
 
 ## Hot Caveman Log
 - [2026-08-01] NPC_HEADER_TAB [FREQ: 4] | BAD: map-server crash `expected tab, found space` | WHY: space between header fields | FIX: single literal `\t` | RULE: strictly literal `\t` in NPC/warp/shop/monster headers
@@ -44,5 +45,6 @@
 - [2026-08-25] ADMIN_ROLE_GUARD [FREQ: 1] | BAD: standard player (`groupId: 0`) seeing admin management button | WHY: fallback to auto-seeded `localStorage` admin key in client | FIX: strictly require `user && user.groupId >= 1`; removed localStorage auto-seeding | RULE: never use client localStorage fallback to determine user role permissions
 - [2026-08-25] DIVIDEND_ZERO_STUCK [FREQ: 1] | BAD: all active stock dividends stuck at 0z | WHY: marketMood===3 set dividend=0 in master table and split dividend/10 truncated integer | FIX: organic convergence to target yield without zero-wipes and post-split target recalculation | RULE: never zero out master stock table dividends on market mood; recalibrate yield on stock splits
 - [2026-08-25] AUDIO_IFRAME_PORTAL_SINGLETON [FREQ: 1] | BAD: background audio reset to 0:00 when navigating back to Leisure tab | WHY: separate iframes in LeisureView and GlobalAudioDock unmounted/remounted each other on tab switch | FIX: single singleton iframe in GlobalAudioDock portaled via createPortal into #leisureVideoSlot | RULE: never mount duplicate media iframes across views; use single persistent root portal for seamless background audio
+- [2026-08-25] HARDCODED_EXTERNAL_CONFIG [FREQ: 1] | BAD: hardcoded `PLAYLIST_ID = "PLLlAbcezVXFM"` in AudioContext.tsx | WHY: coupled 3rd-party external asset ID directly into UI source code | FIX: extract to `import.meta.env.VITE_YOUTUBE_PLAYLIST_ID` with config fallback | RULE: never hardcode external media IDs, playlists, or integration endpoints in component files; parameterize via env config
 
-*For historical 1-off debug logs and domain edge cases, see [MISTAKES_ARCHIVE.md](file:///E:/Games/Ragnarok/rathena-solo-centric/MISTAKES_ARCHIVE.md).*
+*For historical 1-off debug logs and domain edge cases, see [MISTAKES_ARCHIVE.md](file:///E:/Games/Ragnarok/rathena-solo-centric/MISTAKES_ARCHIVE.md).*
