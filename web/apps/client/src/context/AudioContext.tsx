@@ -18,8 +18,12 @@ interface AudioContextType {
   isPlaying: boolean;
   hasStarted: boolean;
   isOnlineNetwork: boolean;
+  isShuffled: boolean;
+  isLooped: boolean;
   startRadio: () => void;
   togglePlay: () => void;
+  toggleShuffle: () => void;
+  toggleLoop: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
   closeRadio: () => void;
@@ -30,6 +34,8 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isShuffled, setIsShuffled] = useState<boolean>(true); // Enabled by default
+  const [isLooped, setIsLooped] = useState<boolean>(true); // Enabled by default
   const [isOnlineNetwork, setIsOnlineNetwork] = useState<boolean>(() => {
     return typeof navigator !== "undefined" ? navigator.onLine : true;
   });
@@ -62,8 +68,26 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setHasStarted(true);
     setIsPlaying(true);
     setTimeout(() => {
+      sendIframeCommand("setLoop", [true]);
+      sendIframeCommand("setShuffle", [true]);
       sendIframeCommand("playVideo");
-    }, 150);
+    }, 200);
+  };
+
+  const toggleShuffle = () => {
+    setIsShuffled((prev) => {
+      const next = !prev;
+      sendIframeCommand("setShuffle", [next]);
+      return next;
+    });
+  };
+
+  const toggleLoop = () => {
+    setIsLooped((prev) => {
+      const next = !prev;
+      sendIframeCommand("setLoop", [next]);
+      return next;
+    });
   };
 
   const nextTrack = useCallback(() => {
@@ -106,8 +130,12 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isPlaying,
         hasStarted,
         isOnlineNetwork,
+        isShuffled,
+        isLooped,
         startRadio,
         togglePlay,
+        toggleShuffle,
+        toggleLoop,
         nextTrack,
         prevTrack,
         closeRadio,

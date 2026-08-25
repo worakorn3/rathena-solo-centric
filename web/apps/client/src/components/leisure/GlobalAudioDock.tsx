@@ -1,6 +1,6 @@
 import React from "react";
 import { useAudio } from "../../context/AudioContext";
-import { Play, Pause, Headphones, X, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, Headphones, X, SkipBack, SkipForward, Shuffle, Repeat } from "lucide-react";
 import { NavTab } from "../layout/Sidebar";
 
 interface GlobalAudioDockProps {
@@ -18,7 +18,11 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
     isPlaying,
     hasStarted,
     isOnlineNetwork,
+    isShuffled,
+    isLooped,
     togglePlay,
+    toggleShuffle,
+    toggleLoop,
     nextTrack,
     prevTrack,
     closeRadio,
@@ -51,7 +55,7 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
       </div>
 
       {/* Track Info */}
-      <div className="flex flex-col min-w-0 max-w-[120px] sm:max-w-[180px]">
+      <div className="flex flex-col min-w-0 max-w-[110px] sm:max-w-[160px]">
         <span className="text-xs font-bold text-primary truncate leading-tight flex items-center gap-1">
           <span className="truncate">{title}</span>
           {!isPlaying && (
@@ -65,8 +69,30 @@ export const GlobalAudioDock: React.FC<GlobalAudioDockProps> = ({
         </span>
       </div>
 
-      {/* Controls: Prev, Play/Pause, Next, Return to Lounge, and Dismiss */}
+      {/* Controls: Shuffle, Loop, Prev, Play/Pause, Next, Return to Lounge, and Dismiss */}
       <div className="flex items-center gap-1 pl-1 border-l border-border">
+        <button
+          onClick={toggleShuffle}
+          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+            isShuffled ? "text-accent bg-accent/15" : "text-muted hover:text-primary hover:bg-surface2"
+          }`}
+          title={isShuffled ? "Shuffle Active" : "Shuffle Disabled"}
+          aria-label={isShuffled ? "Shuffle Active" : "Shuffle Disabled"}
+        >
+          <Shuffle className="w-3 h-3" />
+        </button>
+
+        <button
+          onClick={toggleLoop}
+          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+            isLooped ? "text-accent bg-accent/15" : "text-muted hover:text-primary hover:bg-surface2"
+          }`}
+          title={isLooped ? "Loop Active" : "Loop Disabled"}
+          aria-label={isLooped ? "Loop Active" : "Loop Disabled"}
+        >
+          <Repeat className="w-3 h-3" />
+        </button>
+
         <button
           onClick={prevTrack}
           className="p-1.5 rounded-full hover:bg-surface2 text-muted hover:text-primary transition-colors cursor-pointer"

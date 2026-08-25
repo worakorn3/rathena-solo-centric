@@ -8,6 +8,8 @@ import {
   Play,
   ListMusic,
   ExternalLink,
+  Shuffle,
+  Repeat,
 } from "lucide-react";
 import { formatZeny } from "../../lib/assets";
 import { useAudio } from "../../context/AudioContext";
@@ -33,7 +35,11 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
     isPlaying,
     hasStarted,
     isOnlineNetwork,
+    isShuffled,
+    isLooped,
     startRadio,
+    toggleShuffle,
+    toggleLoop,
   } = useAudio();
 
   const activeChar =
@@ -220,33 +226,63 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     {title}
                   </h3>
                 </div>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono border ${
-                    isOnlineNetwork
-                      ? isPlaying
-                        ? "bg-success/10 border-success/20 text-success"
-                        : "bg-surface2 border-border text-muted"
-                      : "bg-danger/10 border-danger/20 text-danger"
-                  }`}
-                >
-                  {isOnlineNetwork ? (
-                    isPlaying ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span>Online Stream</span>
-                      </>
+
+                {/* Status and Controls Header Bar */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={toggleShuffle}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono border flex items-center gap-1 transition-colors cursor-pointer ${
+                      isShuffled
+                        ? "bg-accent/15 border-accent/30 text-accent font-bold"
+                        : "bg-surface2 border-border text-muted hover:text-primary"
+                    }`}
+                    title={isShuffled ? "Shuffle Enabled" : "Shuffle Disabled"}
+                  >
+                    <Shuffle className="w-3 h-3" />
+                    <span>Shuffle</span>
+                  </button>
+
+                  <button
+                    onClick={toggleLoop}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono border flex items-center gap-1 transition-colors cursor-pointer ${
+                      isLooped
+                        ? "bg-accent/15 border-accent/30 text-accent font-bold"
+                        : "bg-surface2 border-border text-muted hover:text-primary"
+                    }`}
+                    title={isLooped ? "Loop Enabled" : "Loop Disabled"}
+                  >
+                    <Repeat className="w-3 h-3" />
+                    <span>Loop</span>
+                  </button>
+
+                  <div
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono border ${
+                      isOnlineNetwork
+                        ? isPlaying
+                          ? "bg-success/10 border-success/20 text-success"
+                          : "bg-surface2 border-border text-muted"
+                        : "bg-danger/10 border-danger/20 text-danger"
+                    }`}
+                  >
+                    {isOnlineNetwork ? (
+                      isPlaying ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                          <span>Online Stream</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-muted" />
+                          <span>Standby</span>
+                        </>
+                      )
                     ) : (
                       <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted" />
-                        <span>Standby</span>
+                        <WifiOff className="w-3 h-3 text-danger" />
+                        <span>Offline (Network Required)</span>
                       </>
-                    )
-                  ) : (
-                    <>
-                      <WifiOff className="w-3 h-3 text-danger" />
-                      <span>Offline (Network Required)</span>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -260,7 +296,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     <iframe
                       key="ragnarok-lofi-playlist"
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+                      src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&loop=1&autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
                       title="Ragnarok LoFi Beats"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -277,7 +313,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                           {title}
                         </div>
                         <p className="text-[11px] text-muted max-w-xs mt-1">
-                          Curated Ragnarok Online playlist. Plays continuously in the background across all tabs with automatic looping.
+                          Curated Ragnarok Online playlist. Plays continuously in the background across all tabs with automatic shuffle and looping.
                         </p>
                       </div>
                       <button
