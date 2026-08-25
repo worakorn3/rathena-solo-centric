@@ -183,3 +183,106 @@ export const MUNICIPAL_LORE: Record<string, MunicipalLoreProfile> = {
     lore: "Sapha and Laphine extraplanar mining alliance extracting refined Bradium ores and Yggdrasil sap energy across the dimensional rift."
   }
 };
+
+export interface CryptoLoreProfile {
+  protocolName: string;
+  network: string;
+  consensusModel: string;
+  pegMechanism: string;
+  pegTarget?: string;
+  utility: string;
+  lore: string;
+}
+
+export const CRYPTO_LORE: Record<string, CryptoLoreProfile> = {
+  EMP: {
+    protocolName: "Emperium Guild Reserve Protocol",
+    network: "Rune Consensus Network",
+    consensusModel: "Proof-of-Sovereignty (PoS)",
+    pegMechanism: "Soft-pegged to 1 physical Emperium (750,000 Z parity target)",
+    pegTarget: "750,000 Z / EMP",
+    utility: "Guild castle territory staking & Emperium energy reserve backing",
+    lore: "Decentralized treasury reserve collateralized by physical Emperium crystals held in sovereign guild master vaults. Stakers secure castle warp lines and receive daily sovereign emission yields."
+  },
+  YMI: {
+    protocolName: "Heart of Ymir Genesis",
+    network: "Juperos Quantum Mesh",
+    consensusModel: "Algorithmic Resonance Equilibrium",
+    pegMechanism: "Algorithmic Supply Elasticity (Target: 100 Z / YMI)",
+    pegTarget: "100 Z / YMI",
+    utility: "Antigravity power computation & Juperos floating core physics",
+    lore: "Experimental algorithmic asset designed to maintain parity with ancient Juperos antigravity engines. Expands and contracts circulating supply automatically as atmospheric mana shifts."
+  },
+  WRP: {
+    protocolName: "Warp Transit Protocol",
+    network: "Kafra Dimensional Layer 2",
+    consensusModel: "Proof-of-Routing (PoR)",
+    pegMechanism: "Floating Utility Gas Meter",
+    pegTarget: "Network Gas Index",
+    utility: "Dimensional portal gas fees & Kafra teleportation routing bandwidth",
+    lore: "High-throughput utility token powering continent-wide Kafra teleportation networks. Validators route cross-realm adventurers and earn continuous network gas fee distributions."
+  },
+  SHD: {
+    protocolName: "Shadow Guild Dark Pool",
+    network: "Zero-Knowledge Morroc Subnet",
+    consensusModel: "Zero-Knowledge Proofs (zk-SNARKs)",
+    pegMechanism: "Unpegged Asymmetric Speculative",
+    pegTarget: "Free Market Floating",
+    utility: "Anonymous black-market liquidity & encrypted bounty escrow",
+    lore: "Privacy-preserving liquidity protocol operated by the Assassin Guild syndicate. Facilitates anonymous OTC transactions and dark pool relic settlements across Midgard."
+  },
+  ZEX: {
+    protocolName: "Zeny Exchange Protocol",
+    network: "Midgard Settlement Chain",
+    consensusModel: "Proof-of-Liquidity (PoL)",
+    pegMechanism: "Automated Market Maker Liquidity Pair",
+    pegTarget: "Dynamic Pool Index",
+    utility: "Decentralized automated market making (AMM) & liquidity pool rewards",
+    lore: "The native liquidity routing token for Midgard DEX. Liquidity providers earn continuous trade commission rewards from cross-currency arbitrage."
+  },
+  ORA: {
+    protocolName: "Geffenia Data Oracle",
+    network: "Arcane P2P Network",
+    consensusModel: "Proof-of-Truth (PoT)",
+    pegMechanism: "Decentralized Feed Collateral",
+    pegTarget: "Utility Standard",
+    utility: "Magical price feeds, black swan catalyst telemetry & event triggers",
+    lore: "Decentralized oracle network transmitting real-time alchemical, weather, and monster migration telemetry to smart contracts across all Rune realms."
+  },
+  POR: {
+    protocolName: "Poring Liquidity Farm",
+    network: "Prontera Fields Meme Net",
+    consensusModel: "Proof-of-Bounce (PoB)",
+    pegMechanism: "Speculative Algorithmic Yield",
+    pegTarget: "Free Market Float",
+    utility: "High-yield regenerative meme staking & jellopy liquidity pools",
+    lore: "Highly volatile community-governed yield farm. Distributes algorithmic jelly rewards to fearless liquidity providers navigating high impermanent loss."
+  },
+  NZN: {
+    protocolName: "Neo-Zeny Sovereign Protocol",
+    network: "Schwarzwald Central Ledger",
+    consensusModel: "Federated Byzantine Agreement",
+    pegMechanism: "Digital Sovereign Currency Reserve",
+    pegTarget: "1:1 Digital Zeny Parity",
+    utility: "High-speed corporate remittances & Rekenber supply chain settlement",
+    lore: "Schwarzwald Republic institutional digital asset designed for frictionless high-frequency cross-border commerce between Lighthalzen and Einbroch."
+  },
+  ALM: {
+    protocolName: "Alchemi Synthetic Protocol",
+    network: "Geffen Synthetic Layer",
+    consensusModel: "Over-Collateralized Synthetic Alchemy",
+    pegMechanism: "Over-Collateralized Reagent Basket (Gemstones/Herbs)",
+    pegTarget: "Reagent Basket Standard",
+    utility: "Synthetic alchemical derivatives & rare catalyst exposure",
+    lore: "Synthetic asset protocol allowing traders to gain direct price exposure to blue gemstones, witch starsand, and rare boss catalysts without physical vault custody."
+  },
+  KFX: {
+    protocolName: "Kafra Express Network",
+    network: "Kafra Global Cloud",
+    consensusModel: "Delegated Proof-of-Storage (DPoS)",
+    pegMechanism: "Storage Utility Standard",
+    pegTarget: "Utility Standard",
+    utility: "Decentralized storage rent, cart express pass & VIP transport perks",
+    lore: "Decentralized storage access token granting holders discounted universal Kafra cart rental and prioritized dimensional vault access."
+  }
+};

@@ -48,7 +48,7 @@ export class MarketSimulationService {
 
     // Query all active stock tickers dynamically from DB
     const stockRows = await primaryQuery(
-      "SELECT ticker, sector, price, dividend, split_count, beta FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+      "SELECT ticker, sector, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
     );
 
     let equitiesUpCount = 0;
@@ -97,9 +97,11 @@ export class MarketSimulationService {
 
       if (newPrice >= 1000) {
         newPrice = Math.floor(newPrice / 10);
+        const targetBps = Number(stock.target_yield_bps) || 0;
+        const postSplitDiv = targetBps === 0 ? 0 : Math.max(1, Math.round((newPrice * targetBps) / 1000));
         await primaryExecute(
-          "UPDATE `solo_stock_market` SET price = ?, price_old = price_old / 10, dividend = dividend / 10, split_count = split_count + 1 WHERE ticker = ?",
-          [newPrice, city]
+          "UPDATE `solo_stock_market` SET price = ?, price_old = price_old / 10, dividend = ?, split_count = split_count + 1 WHERE ticker = ?",
+          [newPrice, postSplitDiv, city]
         );
         await primaryExecute("UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = ?", [city]);
         console.log(`[MarketSimulation] Stock Split for ${city}!`);
@@ -231,13 +233,24 @@ export class MarketSimulationService {
 
       let target = targetBps === 0 ? 0 : Math.max(1, Math.round((price * targetBps) / 1000));
 
-      if (Math.floor(Math.random() * 100) + 1 <= 30) {
-        if (dividend < target && marketMood !== 2) dividend += 1;
-        else if (dividend > target && marketMood !== 1) dividend -= 1;
+      if (target === 0) {
+        dividend = 0;
+      } else {
+        // Dynamic target yield tracking with sentiment sensitivity:
+        // Bullish market provides slight yield premium (+10%), Bearish slight discount (-10%)
+        const moodMultiplier = marketMood === 1 ? 1.1 : marketMood === 2 ? 0.9 : 1.0;
+        const dynamicTarget = Math.max(1, Math.round(target * moodMultiplier));
+
+        if (dividend === 0) {
+          dividend = dynamicTarget;
+        } else if (dividend < dynamicTarget) {
+          dividend = Math.min(dynamicTarget, dividend + Math.max(1, Math.ceil((dynamicTarget - dividend) / 2)));
+        } else if (dividend > dynamicTarget) {
+          dividend = Math.max(1, dividend - Math.max(1, Math.ceil((dividend - dynamicTarget) / 2)));
+        }
       }
 
-      if (marketMood === 3) dividend = 0;
-      else if (dividend < 0) dividend = 0;
+      if (dividend < 0) dividend = 0;
       if (dividend > 500) dividend = 500;
 
       await primaryExecute("UPDATE `solo_stock_market` SET dividend = ?, div_acc = div_acc + ? WHERE ticker = ?", [dividend, dividend, city]);

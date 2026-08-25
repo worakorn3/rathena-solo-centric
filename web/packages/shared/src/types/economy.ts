@@ -134,4 +134,57 @@ export interface StockHistoryResponse {
   candles: StockCandle[];
 }
 
+export interface AssetVocabulary {
+  classLabel: string;
+  badgeLabel: string;
+  unitLabel: string;
+  unitAbbr: string;
+  yieldLabel: string;
+  yieldRateLabel: string;
+  rewardsLabel: string;
+  reinvestLabel: string;
+  valuationLabel: string;
+  splitLabel: string;
+  profileHeader: string;
+  tradeGuidance: string;
+}
+
+export const ASSET_VOCABULARY: Record<"EQUITY" | "CRYPTO", AssetVocabulary> = {
+  EQUITY: {
+    classLabel: "Municipal Equities",
+    badgeLabel: "Municipal Equity",
+    unitLabel: "Shares",
+    unitAbbr: "sh",
+    yieldLabel: "Dividend",
+    yieldRateLabel: "Dividend Yield",
+    rewardsLabel: "Pending Dividends",
+    reinvestLabel: "DRIP Reinvestment",
+    valuationLabel: "Market Capitalization",
+    splitLabel: "Stock Split",
+    profileHeader: "Municipal Profile & Heritage",
+    tradeGuidance: "Physical share certificates traded via registered City Hall Brokers in Prontera and municipal halls.",
+  },
+  CRYPTO: {
+    classLabel: "Crypto Protocols",
+    badgeLabel: "Crypto Protocol",
+    unitLabel: "Tokens",
+    unitAbbr: "tokens",
+    yieldLabel: "Staking APY",
+    yieldRateLabel: "Staking Yield",
+    rewardsLabel: "Claimable Rewards",
+    reinvestLabel: "Auto-Compound",
+    valuationLabel: "Total Value Locked (TVL)",
+    splitLabel: "Token Rebase",
+    profileHeader: "Protocol Whitepaper & Tokenomics",
+    tradeGuidance: "Tokens swapped & staked via Rune Protocol Contracts, Kafra DEX, and decentralized liquidity pools.",
+  },
+};
+
+export function getAssetVocabulary(assetType?: string): AssetVocabulary {
+  if (assetType === "CRYPTO") {
+    return ASSET_VOCABULARY.CRYPTO;
+  }
+  return ASSET_VOCABULARY.EQUITY;
+}
+
 

@@ -13,11 +13,15 @@ import {
   Clock,
   Coins,
   Loader2,
+  Cpu,
+  Layers,
 } from "lucide-react";
 import {
   StockMarketQuote,
   TickerNewsResponse,
   MUNICIPAL_LORE,
+  CRYPTO_LORE,
+  getAssetVocabulary,
 } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { api } from "../../lib/api";
@@ -123,6 +127,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
   if (!quote) return null;
 
   const profile = MUNICIPAL_LORE[quote.ticker];
+  const cryptoProfile = CRYPTO_LORE[quote.ticker];
   const activeEvents = newsData?.activeEvents || [];
   const historicalEvents = newsData?.historicalEvents || [];
   const hasLiveOrHistoricalNews = activeEvents.length > 0 || historicalEvents.length > 0;
@@ -131,6 +136,8 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     ["EMP", "YMI", "WRP", "SHD", "ZEX", "ORA", "POR", "NZN", "ALM", "KFX"].includes(quote.ticker) ||
     (quote.sector?.toLowerCase().includes("protocol") ?? false) ||
     (quote.sector?.toLowerCase().includes("defi") ?? false);
+
+  const vocab = getAssetVocabulary(isCrypto ? "CRYPTO" : "EQUITY");
 
   return (
     <div
@@ -146,9 +153,11 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
         {/* Modal Title Bar */}
         <div className="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-              isCrypto ? "bg-accent/10 border-accent/20" : "bg-info/10 border-info/20"
-            }`}>
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                isCrypto ? "bg-accent/10 border-accent/20" : "bg-info/10 border-info/20"
+              }`}
+            >
               {isCrypto ? (
                 <Zap className="w-4 h-4 text-accent" />
               ) : (
@@ -161,21 +170,33 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
                 <span>·</span>
                 <span className="truncate">{quote.name}</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                  className={`px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider shrink-0 flex items-center gap-1 ${
                     isCrypto
                       ? "bg-accent/15 text-accent border border-accent/30"
                       : "bg-info/15 text-info border border-info/30"
                   }`}
+                  aria-label={`Asset Class: ${vocab.badgeLabel}`}
                 >
-                  {isCrypto ? "⚡ Crypto Protocol" : "🏛️ Municipal Equity"}
+                  {isCrypto ? (
+                    <Zap className="w-2.5 h-2.5" />
+                  ) : (
+                    <Landmark className="w-2.5 h-2.5" />
+                  )}
+                  <span>{vocab.badgeLabel}</span>
                 </span>
               </div>
-              {profile?.cityName && (
+              {isCrypto && cryptoProfile ? (
+                <div className="text-[11px] text-muted flex items-center gap-1 mt-0.5 font-mono">
+                  <span className="text-accent">{cryptoProfile.network}</span>
+                  <span className="text-muted/60">•</span>
+                  <span className="text-muted/80">{cryptoProfile.consensusModel}</span>
+                </div>
+              ) : profile?.cityName ? (
                 <div className="text-[11px] text-muted flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3 text-muted/80" /> {profile.cityName}{" "}
                   <span className="text-muted/60">({profile.region})</span>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
           <button
@@ -202,7 +223,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
             </div>
             <div className="p-2 rounded bg-surface2/60 border border-border/70">
               <div className="text-[10px] text-muted uppercase tracking-wider">
-                Dividend
+                {vocab.yieldLabel}
               </div>
               <div className="font-bold text-success mt-0.5 text-xs sm:text-sm">
                 {quote.dividend > 0 ? `${quote.dividend} Z` : "0 Z"}
@@ -243,23 +264,61 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
                 {profile.specialty}
               </span>
             )}
+            {cryptoProfile?.utility && (
+              <span className="px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-[11px] font-medium text-accent">
+                {cryptoProfile.utility}
+              </span>
+            )}
             {quote.splitCount > 0 && (
               <span className="px-2 py-0.5 rounded bg-surface2 border border-border text-[11px] font-mono text-muted">
-                {quote.splitCount}x Split
+                {quote.splitCount}x {vocab.splitLabel}
               </span>
             )}
           </div>
 
-          {/* Municipal Background & Lore */}
-          <div className="p-3.5 rounded-lg bg-surface2/50 border border-border/60 text-muted leading-relaxed font-sans text-xs space-y-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-primary/70 flex items-center gap-1.5 font-mono">
-              <ShieldCheck className="w-3.5 h-3.5 text-accent" /> Municipal Profile & Heritage
+          {/* Lore & Whitepaper Profile */}
+          <div className="p-3.5 rounded-lg bg-surface2/50 border border-border/60 text-muted leading-relaxed font-sans text-xs space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 font-mono">
+              {isCrypto ? (
+                <>
+                  <Cpu className="w-3.5 h-3.5 text-accent" />
+                  <span className="text-accent">{vocab.profileHeader}</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5 text-info" />
+                  <span className="text-primary/80">{vocab.profileHeader}</span>
+                </>
+              )}
             </div>
             <p className="text-primary/90">
-              {quote.lore ||
-                profile?.lore ||
-                "Municipal enterprise operating under royal trade jurisdiction with registered securities trading on the Midgard Stock Exchange."}
+              {isCrypto
+                ? cryptoProfile?.lore ||
+                  quote.lore ||
+                  "Decentralized autonomous protocol executing smart contracts across the Midgard Rune Network."
+                : quote.lore ||
+                  profile?.lore ||
+                  "Municipal enterprise operating under royal trade jurisdiction with registered securities trading on the Midgard Stock Exchange."}
             </p>
+
+            {/* Crypto Peg & Collateralization Box */}
+            {isCrypto && cryptoProfile?.pegMechanism && (
+              <div className="p-2 rounded bg-surface border border-accent/20 flex flex-col gap-1 text-[10px] font-mono mt-2">
+                <div className="flex items-center justify-between text-muted">
+                  <span className="flex items-center gap-1 text-accent font-bold">
+                    <Layers className="w-3 h-3 text-accent" /> Peg & Stability Model
+                  </span>
+                  {cryptoProfile.pegTarget && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-accent/10 text-accent border border-accent/20">
+                      Target: {cryptoProfile.pegTarget}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-primary/80 font-sans">
+                  {cryptoProfile.pegMechanism}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Real-time Active Market Disruptions (Live Event Ongoing) */}
@@ -380,9 +439,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
           {/* Trade Guidance Notice */}
           <div className="p-3 rounded-lg bg-surface2/30 border border-border/40 text-[11px] text-muted font-sans flex items-center gap-2">
             <Coins className="w-4 h-4 text-accent shrink-0" />
-            <span>
-              Physical shares trading is available via registered Stock Brokers in Prontera and municipal halls.
-            </span>
+            <span>{vocab.tradeGuidance}</span>
           </div>
         </div>
 

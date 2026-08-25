@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Zap, TrendingUp, Landmark } from "lucide-react";
-import { StockMarketQuote, StockEventLog } from "@rathena/shared";
+import { StockMarketQuote, StockEventLog, getAssetVocabulary } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";

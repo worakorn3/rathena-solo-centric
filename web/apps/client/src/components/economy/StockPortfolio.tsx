@@ -9,8 +9,10 @@ import {
   PieChart as PieIcon,
   Coins,
   Newspaper,
+  Landmark,
+  Zap,
 } from "lucide-react";
-import { StockHolding, StockMarketQuote } from "@rathena/shared";
+import { StockHolding, StockMarketQuote, getAssetVocabulary } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
@@ -146,13 +148,15 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
           <div className="grid grid-cols-2 gap-2 mb-2 shrink-0 text-[10px] font-mono">
             <div className="flex items-center justify-between px-2 py-1 rounded bg-info/10 border border-info/20 text-info">
               <span className="flex items-center gap-1 font-sans font-medium text-[9px]">
-                🏛️ Municipal Equities
+                <Landmark className="w-3 h-3 text-info shrink-0" />
+                <span>Municipal Equities</span>
               </span>
               <span className="font-bold">{formatZeny(municipalValue)} Z</span>
             </div>
             <div className="flex items-center justify-between px-2 py-1 rounded bg-accent/10 border border-accent/20 text-accent">
               <span className="flex items-center gap-1 font-sans font-medium text-[9px]">
-                ⚡ Crypto Protocols
+                <Zap className="w-3 h-3 text-accent shrink-0" />
+                <span>Crypto Protocols</span>
               </span>
               <span className="font-bold">{formatZeny(cryptoValue)} Z</span>
             </div>
@@ -193,24 +197,26 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
               <button
                 type="button"
                 onClick={() => setAssetClassTab("EQUITY")}
-                className={`px-2 py-0.5 rounded transition-colors ${
+                className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
                   assetClassTab === "EQUITY"
                     ? "bg-surface text-info font-bold shadow-sm"
                     : "text-muted hover:text-primary"
                 }`}
               >
-                🏛️ Equities ({municipalHoldingsCount})
+                <Landmark className="w-3 h-3 text-info" />
+                <span>Equities ({municipalHoldingsCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setAssetClassTab("CRYPTO")}
-                className={`px-2 py-0.5 rounded transition-colors ${
+                className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
                   assetClassTab === "CRYPTO"
                     ? "bg-surface text-accent font-bold shadow-sm"
                     : "text-muted hover:text-primary"
                 }`}
               >
-                ⚡ Crypto ({cryptoHoldingsCount})
+                <Zap className="w-3 h-3 text-accent" />
+                <span>Crypto ({cryptoHoldingsCount})</span>
               </button>
             </div>
 
@@ -267,11 +273,11 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted text-xs">
             <Briefcase className="w-8 h-8 mb-2 opacity-40 text-muted" />
             <span className="font-bold text-primary/80">
-              No active stock positions
+              No active investment positions
             </span>
             <span className="text-[11px] text-muted/80 mt-1 max-w-xs">
-              Visit Midgard Stock Exchange brokers in Prontera or major cities to
-              purchase municipal equity shares.
+              Visit Midgard Stock Exchange brokers in Prontera and municipal halls to
+              acquire municipal equity shares and crypto protocol tokens.
             </span>
           </div>
         ) : sortedHoldings.length === 0 ? (
@@ -282,6 +288,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
           sortedHoldings.map((h) => {
             const theme = getTickerTheme(h.ticker);
             const isExpanded = expandedTicker === h.ticker;
+            const vocab = getAssetVocabulary(h.isCrypto ? "CRYPTO" : "EQUITY");
 
             return (
               <div
@@ -335,7 +342,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           </span>
                         )}
                         <span className="text-muted/60 hidden md:inline">
-                          • {h.shares.toLocaleString()} sh
+                          • {h.shares.toLocaleString()} {vocab.unitAbbr}
                         </span>
                       </div>
                     </div>
@@ -379,7 +386,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
                         <span className="text-[9px] text-muted block">
-                          Shares Held
+                          {vocab.unitLabel} Held
                         </span>
                         <span className="font-bold text-primary">
                           {h.shares.toLocaleString()}
@@ -387,7 +394,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                       </div>
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
                         <span className="text-[9px] text-muted block">
-                          Avg Buy Price
+                          {h.isCrypto ? "Cost Basis" : "Avg Buy Price"}
                         </span>
                         <span className="font-bold text-primary">
                           {formatZeny(h.avgBuyPrice)} Z
@@ -428,7 +435,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                         {h.pendingDividends > 0 && (
                           <span className="text-accent font-medium flex items-center gap-0.5">
                             <Coins className="w-2.5 h-2.5 inline" />
-                            Div: {formatZeny(h.pendingDividends)} Z
+                            {h.isCrypto ? "Rewards" : "Div"}: {formatZeny(h.pendingDividends)} Z
                           </span>
                         )}
                       </div>
