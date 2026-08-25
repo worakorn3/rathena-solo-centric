@@ -49,26 +49,55 @@ interface RawRotationRow {
 
 export class GachaService {
   /**
+   * Get Current Stock Market Economic Conditions for Gacha Pricing
+   * 1 = Bullish -> base 5% discount + drift * 2% (clamped 1% to 15% discount)
+   * 2 = Bearish -> base -5% surcharge + drift * 1.5% (clamped -10% to -1% surcharge)
+   * 3 = Chaos -> erratic swing based on drift * 3%, clamped between -10% and 15%
+   * 0 / Other = Neutral -> drift * 1%, clamped between -4% and 4%
+   */
+  static async getMarketEconomicState(): Promise<{
+    marketMood: number;
+    marketDrift: number;
+    discountPct: number;
+  }> {
+    try {
+      const metaRows = await query<{ mkey: string; mval: number }>(
+        "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('MarketMood', 'MarketDrift')"
+      );
+      let marketMood = 0;
+      let marketDrift = 0;
+      for (const row of metaRows) {
+        if (row.mkey === "MarketMood") marketMood = Number(row.mval) || 0;
+        if (row.mkey === "MarketDrift") marketDrift = Number(row.mval) || 0;
+      }
+
+      let discountPct = 0;
+      if (marketMood === 1) {
+        // Bullish: 5% base discount + 2% per drift point (clamped 1% to 15%)
+        discountPct = Math.min(15, Math.max(1, Math.round(5 + marketDrift * 2)));
+      } else if (marketMood === 2) {
+        // Bearish: -5% base surcharge + 1.5% per drift point (clamped -10% to -1%)
+        discountPct = Math.max(-10, Math.min(-1, Math.round(-5 + marketDrift * 1.5)));
+      } else if (marketMood === 3) {
+        // Chaos: Highly volatile swing based on drift
+        discountPct = Math.min(15, Math.max(-10, Math.round(marketDrift * 3)));
+      } else {
+        // Neutral: Modulated solely by drift (-4% to +4%)
+        discountPct = Math.min(4, Math.max(-4, Math.round(marketDrift)));
+      }
+
+      return { marketMood, marketDrift, discountPct };
+    } catch {
+      return { marketMood: 0, marketDrift: 0, discountPct: 0 };
+    }
+  }
+
+  /**
    * Get Market Mood Discount percentage (0-15% discount for bull markets, 0-10% surcharge for bear markets)
    */
   static async getMarketDiscountPct(): Promise<number> {
-    try {
-      const metaRow = await queryOne<{ mval: number }>(
-        "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'MarketMood' LIMIT 1"
-      );
-      if (!metaRow) return 0;
-      const mood = Number(metaRow.mval) || 0;
-      // If mood > 0 (Bullish), offer 1% to 15% discount
-      // If mood < 0 (Bearish), add -1% to -10% surcharge
-      if (mood > 0) {
-        return Math.min(15, Math.max(0, Math.round(mood / 6)));
-      } else if (mood < 0) {
-        return Math.max(-10, Math.min(0, Math.round(mood / 10)));
-      }
-      return 0;
-    } catch {
-      return 0;
-    }
+    const { discountPct } = await this.getMarketEconomicState();
+    return discountPct;
   }
 
   /**
@@ -78,7 +107,7 @@ export class GachaService {
     // Check if daily rotation needs catch-up
     await this.checkAndRotateDaily();
 
-    const discountPct = await this.getMarketDiscountPct();
+    const { discountPct } = await this.getMarketEconomicState();
 
     const bannerRows = await query<RawBannerRow>(
       "SELECT * FROM `solo_gacha_banners` WHERE `enabled` = 1 ORDER BY `sort_order` ASC"

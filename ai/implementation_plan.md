@@ -112,6 +112,7 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Phase 10: Black Swan Engine** | ✅ [DONE] | 27-city black swans, active-ticker gating, dividend math fix · [Details](plans/stock_exchange_expansion.md#5-phase-10-complete-municipal-black-swan-seeding--rolling-unlock-event-engine) |
 | **Phase 11: Hardening & 17C Diamonds** | ✅ [DONE] | 32-bit overflow guards, macro `'ALL'`, 17C Diamonds (500M store of value) · [Details](plans/stock_exchange_expansion.md#6-phase-11-stock-market-hardening-arithmetic-protection--17-carat-diamond-store-of-value) |
 | **Phase 12: Offline Dividend Catch-Up**| ✅ [DONE] | Startup elapsed-time detection, missed 4h DRIP catch-up · [Details](plans/stock_exchange_expansion.md#7-phase-12-offline-dividend-catch-up--drip-compounding-on-server-boot) |
+| **Phase 12.1: Dividend Engine Calibration**| ✅ [DONE] | Dynamic target yield convergence, split recalibration, zero-wipe fix · [Details](plans/stock_exchange_expansion.md#dividend-math-calibration) |
 
 ### Phase 13: Decentralized Rune & Crypto-Asset Protocols (10 Lore Tickers)
 | Feature | Status | Details & Specification |

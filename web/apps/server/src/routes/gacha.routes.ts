@@ -27,11 +27,13 @@ export const gachaRoutes = new Elysia({ prefix: "/api/gacha" })
   // 1. Get All Banners (with dynamic prices, spotlights, and player pity stats)
   .get("/banners", async ({ authAccountId }) => {
     const banners = await GachaService.getBanners(authAccountId || undefined);
-    const discountPct = await GachaService.getMarketDiscountPct();
+    const { discountPct, marketMood, marketDrift } = await GachaService.getMarketEconomicState();
     return {
       success: true,
       banners,
       discountPct,
+      marketMood,
+      marketDrift,
     };
   })
 

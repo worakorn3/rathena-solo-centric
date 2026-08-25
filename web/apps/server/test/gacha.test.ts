@@ -3,19 +3,15 @@ import { GachaService } from "../src/services/gacha.service";
 import * as pool from "../src/db/pool";
 
 describe("Web Gacha System (Midgard Egg Spinner Altar)", () => {
-  it("computes dynamic discount and returns formatted banners", async () => {
+  it("computes dynamic discount and returns formatted banners for Bullish market", async () => {
     // Mock database queries
-    spyOn(pool, "queryOne").mockImplementation(async (sql: string) => {
-      if (sql.includes("solo_stock_meta")) {
-        return { mval: 60 }; // 60 mood -> 10% discount
-      }
-      if (sql.includes("solo_gacha_rotation")) {
-        return { count: 1 };
-      }
-      return null;
-    });
-
     spyOn(pool, "query").mockImplementation(async (sql: string) => {
+      if (sql.includes("solo_stock_meta")) {
+        return [
+          { mkey: "MarketMood", mval: 1 }, // Bullish (1)
+          { mkey: "MarketDrift", mval: 3 }, // Drift +3 -> 5 + (3 * 2) = 11% discount
+        ];
+      }
       if (sql.includes("solo_gacha_banners")) {
         return [
           {
@@ -72,13 +68,35 @@ describe("Web Gacha System (Midgard Egg Spinner Altar)", () => {
       return [];
     });
 
+    const econState = await GachaService.getMarketEconomicState();
+    expect(econState.marketMood).toBe(1);
+    expect(econState.marketDrift).toBe(3);
+    expect(econState.discountPct).toBe(11);
+
     const banners = await GachaService.getBanners();
     expect(banners.length).toBe(1);
     expect(banners[0].bannerId).toBe("supplies");
-    expect(banners[0].discountPct).toBe(10);
-    expect(banners[0].effectivePrice).toBe(9000); // 10,000 * (1 - 0.10)
+    expect(banners[0].discountPct).toBe(11);
+    expect(banners[0].effectivePrice).toBe(8900); // 10,000 * (1 - 0.11)
     expect(banners[0].featuredSsr?.itemName).toBe("Bloody Branch");
     expect(banners[0].featuredSrs?.length).toBe(1);
+  });
+
+  it("computes dynamic surcharge for Bearish market", async () => {
+    spyOn(pool, "query").mockImplementation(async (sql: string) => {
+      if (sql.includes("solo_stock_meta")) {
+        return [
+          { mkey: "MarketMood", mval: 2 }, // Bearish (2)
+          { mkey: "MarketDrift", mval: -2 }, // Drift -2 -> -5 + (-2 * 1.5) = -8% surcharge
+        ];
+      }
+      return [];
+    });
+
+    const econState = await GachaService.getMarketEconomicState();
+    expect(econState.marketMood).toBe(2);
+    expect(econState.marketDrift).toBe(-2);
+    expect(econState.discountPct).toBe(-8);
   });
 
   it("calculates correct Gacha Shards when scrapping items", async () => {

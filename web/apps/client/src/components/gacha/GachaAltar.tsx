@@ -41,6 +41,8 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
   const [banners, setBanners] = useState<GachaBanner[]>([]);
   const [selectedBannerId, setSelectedBannerId] = useState<string>("supplies");
   const [discountPct, setDiscountPct] = useState<number>(0);
+  const [marketMood, setMarketMood] = useState<number>(0);
+  const [marketDrift, setMarketDrift] = useState<number>(0);
   const [stashItems, setStashItems] = useState<GachaStashItem[]>([]);
   const [shopItems, setShopItems] = useState<GachaShopItem[]>([]);
   const [shardBalance, setShardBalance] = useState<number>(0);
@@ -61,9 +63,17 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const bannerRes = await api.get<{ success: boolean; banners: GachaBanner[]; discountPct: number }>("/api/gacha/banners");
+      const bannerRes = await api.get<{
+        success: boolean;
+        banners: GachaBanner[];
+        discountPct: number;
+        marketMood?: number;
+        marketDrift?: number;
+      }>("/api/gacha/banners");
       setBanners(bannerRes.banners);
       setDiscountPct(bannerRes.discountPct);
+      if (bannerRes.marketMood !== undefined) setMarketMood(bannerRes.marketMood);
+      if (bannerRes.marketDrift !== undefined) setMarketDrift(bannerRes.marketDrift);
 
       const stashRes = await api.get<{ success: boolean; items: GachaStashItem[] }>("/api/gacha/stash").catch(() => ({ success: true, items: [] }));
       setStashItems(stashRes.items || []);
@@ -178,10 +188,27 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
             <div className="text-[11px] text-muted flex items-center gap-1.5 font-medium">
               <span>Solo-Centric Wealth & Vanity Sink</span>
               <span>•</span>
-              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {discountPct > 0 ? `📈 Bull Market Subsidy (-${discountPct}% Zeny)` : "Market Neutral (Standard Pricing)"}
-              </span>
+              {marketMood === 1 || discountPct > 0 ? (
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  📈 Bull Market Subsidy (-{discountPct}% Zeny)
+                </span>
+              ) : marketMood === 2 || discountPct < 0 ? (
+                <span className="text-rose-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                  📉 Bear Market Surcharge (+{Math.abs(discountPct)}% Zeny)
+                </span>
+              ) : marketMood === 3 ? (
+                <span className="text-amber-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  ⚡ Chaos Volatility ({discountPct >= 0 ? `-${discountPct}` : `+${Math.abs(discountPct)}`}% Zeny)
+                </span>
+              ) : (
+                <span className="text-muted font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted/60" />
+                  ⚖️ Market Neutral (Standard Pricing)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -291,9 +318,24 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
                   <div className="text-[11px] text-muted line-clamp-1 mb-2">{b.description}</div>
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50 font-mono">
                     <span className="text-muted text-[11px]">
-                      Cost: {b.discountPct > 0 && <span className="line-through text-muted/60 mr-1">{formatZeny(b.basePrice)}z</span>}
+                      Cost:{" "}
+                      {b.discountPct > 0 ? (
+                        <span className="line-through text-muted/60 mr-1">{formatZeny(b.basePrice)}z</span>
+                      ) : b.discountPct < 0 ? (
+                        <span className="text-rose-400/80 mr-1">+{Math.abs(b.discountPct)}%</span>
+                      ) : null}
                     </span>
-                    <span className="text-accent font-bold">{formatZeny(b.effectivePrice)} Z</span>
+                    <span
+                      className={`font-bold ${
+                        b.discountPct > 0
+                          ? "text-emerald-400"
+                          : b.discountPct < 0
+                          ? "text-rose-400"
+                          : "text-accent"
+                      }`}
+                    >
+                      {formatZeny(b.effectivePrice)} Z
+                    </span>
                   </div>
                 </div>
               );
