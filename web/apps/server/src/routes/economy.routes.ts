@@ -111,7 +111,7 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
       return { success: false, error: "Invalid token" };
     }
 
-    const { ticker, action, shares, charId } = (body as any) || {};
+    const { ticker, action, shares, charId, destination } = (body as any) || {};
 
     if (!ticker || !action || !shares || !charId) {
       set.status = 400;
@@ -123,7 +123,8 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
       Number(charId),
       String(ticker),
       action as "BUY" | "SELL",
-      Number(shares)
+      Number(shares),
+      destination as "WALLET" | "BANK" | undefined
     );
 
     if (!result.success) {

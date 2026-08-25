@@ -165,34 +165,93 @@ L_ClaimDiv:
 	.@tax_amt = (.@total * .@tax_rate) / 100;
 	.@net = .@total - .@tax_amt;
 
-	// MAX_ZENY overflow protection (MAX_ZENY = 2,147,483,647)
-	.@zeny_space = 2147483647 - Zeny;
-	if (.@zeny_space <= 0) {
+	// Bank balance and capacity calculation
+	.@bank_principal = 0; .@bank_deposit_time = 0;
+	query_sql "SELECT `principal`, `deposit_time` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@bank_principal, .@bank_deposit_time;
+	.@bank_days = 0; .@bank_interest = 0;
+	if (.@bank_principal > 0 && .@bank_deposit_time > 0) {
+		.@elapsed = gettimetick(2) - .@bank_deposit_time;
+		if (.@elapsed > 0) {
+			.@bank_days = .@elapsed / 86400;
+			if (.@bank_days > 10) .@bank_days = 10;
+			.@bank_interest = ((.@bank_principal / 100) * .@bank_days) + (((.@bank_principal % 100) * .@bank_days) / 100);
+		}
+	}
+	.@bank_total_available = .@bank_principal + .@bank_interest;
+	.@bank_space = 1900000000 - .@bank_total_available;
+	if (.@bank_space < 0) .@bank_space = 0;
+
+	// MAX_ZENY wallet capacity
+	.@zeny_space = 2100000000 - Zeny;
+	if (.@zeny_space < 0) .@zeny_space = 0;
+
+	if (.@zeny_space <= 0 && .@bank_space <= 0) {
 		mes "[Midgard Stock Exchange]";
-		mes "^FF0000Your wallet is full! You cannot hold any more Zeny.^000000";
-		mes "Please deposit or spend your Zeny before claiming dividends.";
+		mes "^FF0000Both your wallet and Investment Bank vault are full!^000000";
+		mes "Please spend or withdraw some Zeny before claiming dividends.";
 		next; goto L_MenuMain;
 	}
 
-	if (.@net > .@zeny_space) {
-		.@payout = .@zeny_space;
-		.@gross_reduced = (.@total * .@payout) / .@net;
-		query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div - " + .@gross_reduced + " WHERE account_id = " + .@account_id;
-		.@net = .@payout;
-		mes "[Midgard Stock Exchange]";
-		mes "^FF0000Warning: Partial collection due to wallet limit. Remainder stays in your dividend balance.^000000";
-	} else {
-		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
-	}
-	
 	mes "[Dividend & Staking Distribution]";
 	mes "Gross Accruals: ^00FF00" + .@total + "z^000000";
 	mes "Tax (" + .@tax_rate + "%): ^FF0000-" + .@tax_amt + "z^000000";
 	mes "---------------------------";
-	mes "Net Collected: ^0000FF" + .@net + "z^000000";
-	
-	Zeny = Zeny + .@net;
-	callfunc "F_RecordEconomy", 2, .@net; // 2: Total Zeny Earned
+	mes "Net Distribution: ^0000FF" + .@net + "z^000000";
+	next;
+
+	// Destination decision
+	.@dest = 0; // 1 = Wallet, 2 = Bank
+	if (.@net <= .@zeny_space && .@net <= .@bank_space) {
+		.@dest = select("Receive in Wallet (Cash):Direct Wire to Investment Bank (0% Fee):Cancel");
+		if (.@dest == 3) goto L_MenuMain;
+	} else if (.@net <= .@zeny_space && .@net > .@bank_space) {
+		mes "[Distribution Destination]";
+		mes "Bank vault is near cap. Payout will be directed to your wallet.";
+		next;
+		if (select("Receive in Wallet (Cash):Cancel") == 2) goto L_MenuMain;
+		.@dest = 1;
+	} else if (.@net > .@zeny_space && .@net <= .@bank_space) {
+		mes "[Distribution Destination]";
+		mes "Wallet has limited capacity (" + .@zeny_space + "z).";
+		mes "Direct wire to Investment Bank vault available.";
+		next;
+		if (select("Wire to Investment Bank (0% Fee):Cancel") == 2) goto L_MenuMain;
+		.@dest = 2;
+	} else {
+		// Net exceeds both separately, partial collection to wallet if space exists
+		if (.@zeny_space > 0) {
+			.@payout = .@zeny_space;
+			.@gross_reduced = (.@total * .@payout) / .@net;
+			query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div - " + .@gross_reduced + " WHERE account_id = " + .@account_id;
+			.@net = .@payout;
+			Zeny = Zeny + .@net;
+			callfunc "F_RecordEconomy", 2, .@net;
+			mes "[Midgard Stock Exchange]";
+			mes "^FF0000Partial collection: " + .@net + "z credited to wallet. Remainder stays in dividend balance.^000000";
+			next; goto L_MenuMain;
+		} else {
+			mes "[Midgard Stock Exchange]";
+			mes "^FF0000Your wallet is full and the bank cannot accept the full amount.^000000";
+			next; goto L_MenuMain;
+		}
+	}
+
+	if (.@dest == 1) {
+		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
+		Zeny = Zeny + .@net;
+		callfunc "F_RecordEconomy", 2, .@net; // 2: Total Zeny Earned
+		mes "[Distribution Completed]";
+		mes "Credited ^00FF00" + .@net + "z^000000 to your wallet.";
+	} else if (.@dest == 2) {
+		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
+		.@new_principal = .@bank_total_available + .@net;
+		.@now = gettimetick(2);
+		query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ", " + .@bank_interest + ") ON DUPLICATE KEY UPDATE `principal` = " + .@new_principal + ", `deposit_time` = " + .@now + ", `interest_paid_total` = `interest_paid_total` + " + .@bank_interest;
+		callfunc "F_RecordEconomy", 2, .@net;
+		mes "[Distribution Completed]";
+		mes "Wired ^0000FF" + .@net + "z^000000 to Midgard Investment Bank.";
+		mes "New Bank Principal: ^00FF00" + .@new_principal + "z^000000 (Interest crystallized).";
+	}
 	next; goto L_MenuMain;
 
 L_Admin:
@@ -360,35 +419,90 @@ L_MenuSell:
 	.@payout_tax = (.@payout_gross * .@tax_rate) / 100;
 	.@payout_net = .@payout_gross - .@payout_tax;
 	
-	mes "Subtotal (" + .@qty + " units @ " + .@p + "z): " + .@subtotal + "z";
+	mes "Subtotal (" + .@qty + " @ " + .@p + "z): " + .@subtotal + "z";
 	mes "Broker Fee (1%): -" + .@fee + "z";
 	mes "Net Proceeds: ^00FF00" + .@net + "z^000000";
 	if (.@payout_gross > 0) {
-		mes "Accrued Yields (Net): ^0000FF+" + .@payout_net + "z^000000 (Gross " + .@payout_gross + "z | Tax -" + .@payout_tax + "z)";
+		mes "Yields: ^0000FF+" + .@payout_net + "z^000000 (Tax -" + .@payout_tax + "z)";
 	}
-	mes "---------------------------";
 	.@total_payout = .@net + .@payout_net;
-	mes "Total Received: ^00FF00" + .@total_payout + "z^000000";
+	mes "Total: ^00FF00" + .@total_payout + "z^000000";
 	next;
-	if (select("Confirm:Cancel") == 2) goto L_MenuMain;
+
+	// Bank balance and capacity calculation
+	.@bank_principal = 0; .@bank_deposit_time = 0;
+	query_sql "SELECT `principal`, `deposit_time` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@bank_principal, .@bank_deposit_time;
+	.@bank_days = 0; .@bank_interest = 0;
+	if (.@bank_principal > 0 && .@bank_deposit_time > 0) {
+		.@elapsed = gettimetick(2) - .@bank_deposit_time;
+		if (.@elapsed > 0) {
+			.@bank_days = .@elapsed / 86400;
+			if (.@bank_days > 10) .@bank_days = 10;
+			.@bank_interest = ((.@bank_principal / 100) * .@bank_days) + (((.@bank_principal % 100) * .@bank_days) / 100);
+		}
+	}
+	.@bank_total_available = .@bank_principal + .@bank_interest;
+	.@bank_space = 1900000000 - .@bank_total_available;
+	if (.@bank_space < 0) .@bank_space = 0;
 
 	// Check MAX_ZENY wallet capacity
-	.@zeny_space = 2147483647 - Zeny;
-	if (.@total_payout > .@zeny_space) {
+	.@zeny_space = 2100000000 - Zeny;
+	if (.@zeny_space < 0) .@zeny_space = 0;
+
+	if (.@total_payout > .@zeny_space && .@total_payout > .@bank_space) {
 		mes "[Midgard Stock Exchange]";
-		mes "^FF0000Warning: Your wallet cannot hold the full payout.^000000";
-		mes "Available space: " + .@zeny_space + "z.";
-		mes "Please deposit or spend some Zeny before selling this quantity.";
+		mes "^FF0000Warning: Order exceeds combined storage capacity.^000000";
+		mes "Available Wallet Space: " + .@zeny_space + "z";
+		mes "Available Bank Space: " + .@bank_space + "z";
+		mes "Please sell a smaller amount of shares or free up storage space.";
 		next; goto L_MenuMain;
 	}
-	
+
+	.@dest = 0; // 1 = Wallet, 2 = Bank
+	if (.@total_payout <= .@zeny_space && .@total_payout <= .@bank_space) {
+		.@dest = select("Receive in Wallet (Cash):Direct Wire to Investment Bank (0% Fee):Cancel");
+		if (.@dest == 3) goto L_MenuMain;
+	} else if (.@total_payout <= .@zeny_space && .@total_payout > .@bank_space) {
+		mes "[Midgard Stock Exchange]";
+		mes "Investment Bank is near capacity (" + .@bank_space + "z space remaining).";
+		mes "Proceed with Wallet cash payout?";
+		next;
+		if (select("Receive in Wallet (Cash):Cancel") == 2) goto L_MenuMain;
+		.@dest = 1;
+	} else {
+		// total_payout > zeny_space && total_payout <= bank_space
+		mes "[Midgard Stock Exchange]";
+		mes "^FF0000Wallet capacity exceeded (Available: " + .@zeny_space + "z).^000000";
+		mes "Direct wire to Investment Bank vault available (" + .@bank_space + "z space remaining).";
+		next;
+		if (select("Wire to Investment Bank (0% Fee):Cancel") == 2) goto L_MenuMain;
+		.@dest = 2;
+	}
+
 	if (.@qty == .@s) {
 		query_sql "UPDATE `solo_stock_player` SET shares = 0, total_cost = 0, pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	} else {
 		query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / shares), pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	}
-	Zeny = Zeny + .@total_payout;
-	callfunc "F_RecordEconomy", 2, .@total_payout; // 2: Total Zeny Earned
+
+	if (.@dest == 1) {
+		Zeny = Zeny + .@total_payout;
+		callfunc "F_RecordEconomy", 2, .@total_payout; // 2: Total Zeny Earned
+		mes "[Order Executed]";
+		mes "Liquidated " + .@qty + " shares of " + .@cn$ + ".";
+		mes "Credited ^00FF00" + .@total_payout + "z^000000 to wallet.";
+		next; goto L_MenuMain;
+	} else if (.@dest == 2) {
+		.@new_principal = .@bank_total_available + .@total_payout;
+		.@now = gettimetick(2);
+		query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ", " + .@bank_interest + ") ON DUPLICATE KEY UPDATE `principal` = " + .@new_principal + ", `deposit_time` = " + .@now + ", `interest_paid_total` = `interest_paid_total` + " + .@bank_interest;
+		callfunc "F_RecordEconomy", 2, .@total_payout;
+		mes "[Order Executed]";
+		mes "Liquidated " + .@qty + " shares of " + .@cn$ + ".";
+		mes "Wired ^0000FF" + .@total_payout + "z^000000 to Bank Vault.";
+		mes "New Principal: ^00FF00" + .@new_principal + "z^000000.";
+		next; goto L_MenuMain;
+	}
 	goto L_MenuMain;
 
 L_MenuPort:

@@ -100,6 +100,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
   // Expandable Trading Form State (expand when clicking Buy or Sell)
   const [isTradeExpanded, setIsTradeExpanded] = useState<boolean>(false);
   const [tradeAction, setTradeAction] = useState<"BUY" | "SELL">("BUY");
+  const [tradeDestination, setTradeDestination] = useState<"WALLET" | "BANK">("WALLET");
   const [sharesInput, setSharesInput] = useState<string>("");
   const [zenyInput, setZenyInput] = useState<string>("");
   const [isSubmittingTrade, setIsSubmittingTrade] = useState(false);
@@ -322,6 +323,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
         action: tradeAction,
         shares,
         charId: activeChar.charId,
+        destination: tradeAction === "SELL" ? tradeDestination : "WALLET",
       });
 
       if (res.success) {
@@ -695,6 +697,59 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* SELL Payout Destination Selector */}
+                  {tradeAction === "SELL" && (
+                    <div className="p-2.5 rounded-lg bg-surface border border-border/80 space-y-1.5">
+                      <div className="text-[10px] font-medium text-muted flex items-center justify-between">
+                        <span>Payout Destination:</span>
+                        <span className="font-mono text-[9px] text-accent font-semibold">
+                          {tradeDestination === "BANK" ? "0% Bank Fee (Vault Wire)" : "Cash in Wallet"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setTradeDestination("WALLET")}
+                          className={`px-2.5 py-1.5 rounded-md text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                            tradeDestination === "WALLET"
+                              ? "bg-accent/15 border-accent text-accent font-bold shadow-sm"
+                              : "bg-surface2/60 border-border text-muted hover:text-primary"
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          <span>Liquid Wallet</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTradeDestination("BANK")}
+                          className={`px-2.5 py-1.5 rounded-md text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                            tradeDestination === "BANK"
+                              ? "bg-accent/15 border-accent text-accent font-bold shadow-sm"
+                              : "bg-surface2/60 border-border text-muted hover:text-primary"
+                          }`}
+                        >
+                          <Landmark className="w-3.5 h-3.5" />
+                          <span>Bank Vault</span>
+                        </button>
+                      </div>
+                      <div className="text-[9px] font-mono text-muted flex justify-between pt-0.5">
+                        <span>Wallet Space: {formatZeny(Math.max(0, 2100000000 - availableZeny))} Z</span>
+                        <span>
+                          Bank Space:{" "}
+                          {formatZeny(
+                            Math.max(
+                              0,
+                              1900000000 -
+                                ((netWorth?.bankPrincipal || 0) +
+                                  (netWorth?.bankPendingInterest || 0))
+                            )
+                          )}{" "}
+                          Z
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quick Preset Chips */}
                   <div className="flex items-center gap-1.5 pt-0.5">

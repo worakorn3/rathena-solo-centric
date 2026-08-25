@@ -567,7 +567,8 @@ export class EconomyService {
     charId: number,
     ticker: string,
     action: "BUY" | "SELL",
-    rawShares: number
+    rawShares: number,
+    destination: "WALLET" | "BANK" = "WALLET"
   ): Promise<TradeStockResponse> {
     const shares = Math.floor(Number(rawShares));
     if (!shares || shares <= 0) {
@@ -701,10 +702,56 @@ export class EconomyService {
     const tradeFee = Math.max(1, Math.round(grossProceeds * 0.01)); // 1% Brokerage Commission (Currency Sink)
     const netProceeds = grossProceeds - tradeFee;
 
-    await primaryExecute(
-      "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
-      [netProceeds, charId]
-    );
+    const targetDest = (destination || "WALLET").toUpperCase() === "BANK" ? "BANK" : "WALLET";
+
+    let remainingZeny = Number(char.zeny);
+    let newBankPrincipal: number | undefined = undefined;
+
+    if (targetDest === "WALLET") {
+      // Wallet 2.1B cap protection
+      if (Number(char.zeny) + netProceeds > 2100000000) {
+        return {
+          success: false,
+          error: `Sale proceeds would exceed the 2,100,000,000 Zeny wallet limit. Available space: ${(2100000000 - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination or sell fewer shares.`,
+        };
+      }
+
+      await primaryExecute(
+        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+        [netProceeds, charId]
+      );
+      remainingZeny = Number(char.zeny) + netProceeds;
+    } else {
+      // Bank 1.9B ceiling & interest crystallization (0% bank deposit fee)
+      const bank = await primaryQueryOne<{ principal: number; deposit_time: number }>(
+        "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+        [accountId]
+      );
+
+      const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
+      const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
+
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      let pendingInterest = 0;
+      if (currentPrincipal > 0 && depositTime > 0) {
+        const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
+        const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
+        pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+      }
+
+      newBankPrincipal = currentPrincipal + pendingInterest + netProceeds;
+      if (newBankPrincipal > 1900000000) {
+        return {
+          success: false,
+          error: `Sale proceeds would exceed the 1,900,000,000 Zeny Investment Bank ceiling. Available space: ${Math.max(0, 1900000000 - (currentPrincipal + pendingInterest)).toLocaleString()} Z. Sell fewer shares or withdraw from bank.`,
+        };
+      }
+
+      await primaryExecute(
+        "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
+        [accountId, newBankPrincipal, currentTimestamp, pendingInterest, pendingInterest]
+      );
+    }
 
     const remainingShares = Number(holding.shares) - shares;
     if (remainingShares <= 0) {
@@ -735,15 +782,19 @@ export class EconomyService {
       }
     }
 
-    const remainingZeny = Number(char.zeny) + netProceeds;
+    const destMsg = targetDest === "BANK"
+      ? ` Proceeds wired to Investment Bank (New Principal: ${newBankPrincipal?.toLocaleString()} Z).`
+      : "";
 
     return {
       success: true,
-      message: `Sold ${shares.toLocaleString()} ${cleanTicker} shares for ${grossProceeds.toLocaleString()} Z (Net: ${netProceeds.toLocaleString()} Z after ${tradeFee.toLocaleString()} Z fee).`,
+      message: `Sold ${shares.toLocaleString()} ${cleanTicker} shares for ${grossProceeds.toLocaleString()} Z (Net: ${netProceeds.toLocaleString()} Z after ${tradeFee.toLocaleString()} Z fee).${destMsg}`,
       executedShares: shares,
       pricePerShare: price,
       totalAmount: netProceeds,
       remainingZeny,
+      newBankPrincipal,
+      destination: targetDest,
     };
   }
 

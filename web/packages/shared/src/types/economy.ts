@@ -192,6 +192,7 @@ export interface TradeStockPayload {
   action: "BUY" | "SELL";
   shares: number;
   charId: number;
+  destination?: "WALLET" | "BANK";
 }
 
 export interface TradeStockResponse {
@@ -202,6 +203,8 @@ export interface TradeStockResponse {
   pricePerShare?: number;
   totalAmount?: number;
   remainingZeny?: number;
+  newBankPrincipal?: number;
+  destination?: "WALLET" | "BANK";
   updatedHolding?: StockHolding;
 }
 
