@@ -28,6 +28,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
     tracks,
     activeTrack,
     isPlaying,
+    hasStarted,
     isOnlineNetwork,
     playTrack,
     togglePlay,
@@ -231,7 +232,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     isPlaying ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span>Background Live</span>
+                        <span>Online Stream</span>
                       </>
                     ) : (
                       <>
@@ -254,7 +255,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                 className="relative w-full aspect-video rounded-xl bg-black border border-border overflow-hidden shadow-inner flex items-center justify-center mb-3"
               >
                 {isOnlineNetwork ? (
-                  isPlaying ? (
+                  hasStarted ? (
                     <iframe
                       key={activeTrack.id}
                       className="w-full h-full"
@@ -307,13 +308,8 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
 
               {/* Curated Soundscape Switches */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-medium text-muted">
-                  <span>Curated Soundscapes</span>
-                  {isPlaying && (
-                    <span className="text-[10px] text-accent font-mono">
-                      Persistent Background Audio Active
-                    </span>
-                  )}
+                <div className="text-[11px] font-medium text-muted">
+                  Curated Soundscapes
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {tracks.map((track) => {
@@ -341,7 +337,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
             </div>
 
             <div className="text-[10px] font-mono text-muted text-center pt-2">
-              Midgard Audio Matrix • Persistent Background Audio
+              Midgard Audio Matrix • Ragnarok LoFi Radio
             </div>
           </div>
         </div>

@@ -44,16 +44,19 @@ interface AudioContextType {
   tracks: TrackInfo[];
   activeTrack: TrackInfo;
   isPlaying: boolean;
+  hasStarted: boolean;
   isOnlineNetwork: boolean;
   playTrack: (track: TrackInfo) => void;
   togglePlay: () => void;
+  closeRadio: () => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTrack, setActiveTrack] = useState<TrackInfo>(CURATED_TRACKS[0]);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false); // No autoplay on initial load
+  const [hasStarted, setHasStarted] = useState<boolean>(false); // No initial clutter/autoplay
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isOnlineNetwork, setIsOnlineNetwork] = useState<boolean>(() => {
     return typeof navigator !== "undefined" ? navigator.onLine : true;
   });
@@ -72,13 +75,43 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
+  const sendIframeCommand = (cmd: "playVideo" | "pauseVideo") => {
+    const iframe = document.querySelector('iframe[title="Ragnarok LoFi Beats"]') as HTMLIFrameElement | null;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: cmd, args: [] }),
+        "*"
+      );
+    }
+  };
+
   const playTrack = (track: TrackInfo) => {
     setActiveTrack(track);
-    setIsPlaying(true); // User explicitly triggered playback
+    setHasStarted(true);
+    setIsPlaying(true);
+    setTimeout(() => {
+      sendIframeCommand("playVideo");
+    }, 100);
   };
 
   const togglePlay = () => {
-    setIsPlaying((prev) => !prev);
+    if (!hasStarted) {
+      setHasStarted(true);
+      setIsPlaying(true);
+      return;
+    }
+
+    setIsPlaying((prev) => {
+      const next = !prev;
+      sendIframeCommand(next ? "playVideo" : "pauseVideo");
+      return next;
+    });
+  };
+
+  const closeRadio = () => {
+    sendIframeCommand("pauseVideo");
+    setIsPlaying(false);
+    setHasStarted(false);
   };
 
   return (
@@ -87,9 +120,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         tracks: CURATED_TRACKS,
         activeTrack,
         isPlaying,
+        hasStarted,
         isOnlineNetwork,
         playTrack,
         togglePlay,
+        closeRadio,
       }}
     >
       {children}
