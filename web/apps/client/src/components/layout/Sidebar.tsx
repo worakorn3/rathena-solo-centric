@@ -3,6 +3,7 @@ import {
   Shield,
   BarChart3,
   UserCheck,
+  Headphones,
   Skull,
   Target,
   Sparkles,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { AuthUser } from "@rathena/shared";
 
-export type NavTab = "FINANCE" | "CHARACTER" | "PROGRESSION" | "BOUNTIES" | "GACHA";
+export type NavTab = "FINANCE" | "CHARACTER" | "LEISURE" | "PROGRESSION" | "BOUNTIES" | "GACHA";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -111,7 +112,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
 
-            {/* Tab 3: Progression / Hunt Tracker */}
+            {/* Tab 3: Leisure Lounge */}
+            <button
+              onClick={() => onTabChange("LEISURE")}
+              className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
+                activeTab === "LEISURE"
+                  ? "bg-accent/15 text-accent border border-accent/30 shadow-sm"
+                  : "text-muted hover:text-primary hover:bg-surface2"
+              }`}
+              title="Leisure & Offline Progression Lounge"
+            >
+              <Headphones className="w-4 h-4" />
+              <span className="text-[8px] font-bold mt-0.5 tracking-tight">Leisure</span>
+              {activeTab === "LEISURE" && (
+                <span className="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r" />
+              )}
+            </button>
+
+            {/* Tab 4: Progression / Hunt Tracker */}
             <button
               onClick={() => onTabChange("PROGRESSION")}
               className={`rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group ${
@@ -354,7 +372,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="text-[10px] mt-0.5">Finance</span>
         </button>
 
-        {/* Tab 3: Progression / Hunt */}
+        {/* Tab 3: Leisure */}
+        <button
+          onClick={() => onTabChange("LEISURE")}
+          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+            activeTab === "LEISURE"
+              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+              : "text-muted hover:text-primary font-medium"
+          }`}
+        >
+          <Headphones className="w-4 h-4" />
+          <span className="text-[10px] mt-0.5">Leisure</span>
+        </button>
+
+        {/* Tab 4: Progression / Hunt */}
         <button
           onClick={() => onTabChange("PROGRESSION")}
           className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${

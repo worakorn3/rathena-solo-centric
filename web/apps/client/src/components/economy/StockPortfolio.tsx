@@ -466,10 +466,10 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                             }
                           }}
                           className="px-2 py-0.5 rounded bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                          title="View related Black Swan news, events and catalysts"
+                          title="View price action, lore, and trade via Web Terminal"
                         >
                           <Newspaper className="w-2.5 h-2.5" />
-                          <span>News & Intel</span>
+                          <span>Detail</span>
                         </button>
                       </div>
                     </div>

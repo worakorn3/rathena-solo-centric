@@ -95,4 +95,40 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
 
     const netWorth = await EconomyService.getNetWorthSummary(Number(payload.accountId));
     return { success: true, data: netWorth };
+  })
+  .post("/trade", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { ticker, action, shares, charId } = (body as any) || {};
+
+    if (!ticker || !action || !shares || !charId) {
+      set.status = 400;
+      return { success: false, error: "Missing required trade parameters: ticker, action, shares, charId." };
+    }
+
+    const result = await EconomyService.executeTrade(
+      Number(payload.accountId),
+      Number(charId),
+      String(ticker),
+      action as "BUY" | "SELL",
+      Number(shares)
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
   });

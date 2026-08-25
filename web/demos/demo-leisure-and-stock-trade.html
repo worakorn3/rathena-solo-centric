@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midgard Solo Companion - Leisure Lounge & Stock Trade Cockpit Demo</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            accentHover: '#f59e0b',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            ro: {
+              str: '#f87171',
+              agi: '#fbbf24',
+              vit: '#4ade80',
+              int: '#60a5fa',
+              dex: '#c084fc',
+              luk: '#fb923c',
+              gold: '#fbbf24'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    
+    .bento-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+    .rail-btn {
+      transition: all 0.15s ease;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased h-screen max-h-screen overflow-hidden flex select-none">
+
+  <!-- ==================== LEFT VERTICAL COCKPIT RAIL (16-width, exact app layout) ==================== -->
+  <aside class="w-16 bg-surface border-r border-border flex flex-col items-center py-4 px-2 shrink-0 z-30 justify-between h-full">
+    
+    <!-- Top Section: Brand & Primary Navigation Tabs -->
+    <div class="flex flex-col items-center gap-3 w-full">
+      <!-- Brand Logo with Live Pulse -->
+      <div class="relative w-10 h-10 rounded-xl bg-surface2 border border-border flex items-center justify-center shadow-inner cursor-pointer hover:border-accent/50 transition-colors" title="Photonic Singularity • Solo RO">
+        <i data-lucide="shield" class="w-5 h-5 text-accent"></i>
+        <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface animate-pulse shadow-[0_0_6px_#4ade80]" title="Kafra Live Network: Synchronized"></span>
+      </div>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-col items-center gap-2.5 w-full">
+        <!-- Tab 1: Hero / Character -->
+        <button onclick="switchTab('character')" id="nav-character" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group text-muted hover:text-primary hover:bg-surface2" title="Character & Paperdoll">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hero</span>
+        </button>
+
+        <!-- Tab 2: Financial HQ -->
+        <button onclick="switchTab('finance')" id="nav-finance" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group text-muted hover:text-primary hover:bg-surface2" title="Financial HQ">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span class="text-[8px] font-bold mt-0.5 tracking-tight">Finance</span>
+        </button>
+
+        <!-- Tab 3: Leisure Lounge (NEW) -->
+        <button onclick="switchTab('leisure')" id="nav-leisure" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group bg-accent/15 text-accent border border-accent/30 shadow-sm" title="Leisure & Offline Progression Lounge">
+          <i data-lucide="headphones" class="w-4 h-4"></i>
+          <span class="text-[8px] font-bold mt-0.5 tracking-tight">Leisure</span>
+          <span class="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>
+        </button>
+
+        <!-- Tab 4: Solo Hunt Tracker -->
+        <button onclick="switchTab('progression')" id="nav-progression" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group text-muted hover:text-primary hover:bg-surface2" title="Solo Hunt Tracker">
+          <i data-lucide="skull" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Hunt</span>
+        </button>
+
+        <!-- Tab 5: Daily Bounties -->
+        <button onclick="switchTab('bounties')" id="nav-bounties" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group text-muted hover:text-primary hover:bg-surface2" title="Daily Bounties">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Bounty</span>
+        </button>
+
+        <!-- Tab 6: Gacha Altar -->
+        <button onclick="switchTab('gacha')" id="nav-gacha" class="rail-btn relative w-11 h-11 rounded-xl flex flex-col items-center justify-center transition-all group text-muted hover:text-primary hover:bg-surface2" title="Midgard Egg Spinner Altar">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span class="text-[8px] font-medium mt-0.5 tracking-tight">Gacha</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Section: Tools & Simulation Controls -->
+    <div class="flex flex-col items-center gap-2.5 w-full">
+      <!-- Network Reachability Simulation -->
+      <button onclick="toggleInternetAccess()" id="railInternetBtn" class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-success transition-all" title="Toggle Internet Reachability Simulation">
+        <i id="railNetIcon" data-lucide="wifi" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Sync / Refresh Button -->
+      <button onclick="simulateSync()" class="w-10 h-10 rounded-xl bg-surface2/60 hover:bg-surface2 border border-border flex items-center justify-center text-accent transition-all" title="Sync Live Realm Data">
+        <i id="syncIcon" data-lucide="refresh-cw" class="w-4 h-4"></i>
+      </button>
+
+      <div class="w-6 h-px bg-border my-0.5"></div>
+
+      <!-- User Avatar -->
+      <div class="w-10 h-10 rounded-xl bg-surface2 border border-accent/40 flex items-center justify-center text-accent font-bold text-xs shadow-inner cursor-default">
+        V
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN STAGE CONTAINER (Zero body scroll cockpit) ==================== -->
+  <main class="flex-1 min-w-0 h-screen overflow-hidden p-3 md:p-4 flex flex-col">
+
+    <!-- Top Character Strip (CharSelector.tsx fidelity) -->
+    <div class="bento-card p-3 mb-3 shrink-0 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- Avatar with Online/Offline Indicator -->
+        <div class="relative w-10 h-10 rounded-xl bg-surface2 border border-accent/30 flex items-center justify-center text-sm font-bold text-accent">
+          LK
+          <span id="charOnlineDot" class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-zinc-600 ring-2 ring-surface" title="Offline"></span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-primary">Valkyrie Blade</span>
+            <span id="charOnlinePill" class="text-[9px] px-1.5 py-0.2 rounded bg-surface2 text-zinc-400 border border-border font-mono">OFFLINE (EXPEDITION ACTIVE)</span>
+          </div>
+          <div class="text-[11px] text-muted font-mono flex items-center gap-2 mt-0.5">
+            <span>Lord Knight</span>
+            <span>•</span>
+            <span>Lv. 99 / 70</span>
+            <span>•</span>
+            <span>Prontera City</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="px-3 py-1.5 rounded-lg bg-surface2/60 border border-border flex items-center gap-2 text-xs font-mono">
+          <span class="text-muted">Liquid Zeny:</span>
+          <span id="topBarZeny" class="font-bold text-accent">4,250,000 Z</span>
+        </div>
+        <button onclick="toggleCharOnlineStatus()" class="px-2.5 py-1.5 rounded-lg bg-surface2 hover:bg-border border border-border text-[11px] font-mono text-muted hover:text-primary transition-colors flex items-center gap-1.5">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-accent"></i>
+          <span>Toggle In-Game Lock</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 1: ☕ LEISURE & IDLE LOUNGE ==================== -->
+    <div id="stage-leisure" class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+      
+      <!-- Split 6:6 Balanced Bento Grid -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+        
+        <!-- LEFT 6 COLS: StatusWindow Offline Rest & Expedition Console -->
+        <div class="col-span-12 lg:col-span-6 flex flex-col min-h-0">
+          <div class="bento-card flex-1 flex flex-col justify-between p-4 sm:p-5 overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></div>
+                  <h3 class="text-xs sm:text-sm font-bold text-primary">Offline Rest & Expedition Yields</h3>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface2 border border-border text-muted">
+                  48h Ceiling
+                </span>
+              </div>
+
+              <!-- Accumulated Rest Time Card -->
+              <div class="p-4 rounded-xl bg-surface2/50 border border-border flex items-center justify-between mb-4">
+                <div>
+                  <div class="text-[10px] text-muted uppercase font-bold tracking-wider">Accumulated Rest Time</div>
+                  <div class="text-2xl font-bold font-mono text-primary flex items-baseline gap-1.5 mt-1">
+                    <span>14</span><span class="text-xs text-muted font-normal">h</span>
+                    <span>32</span><span class="text-xs text-muted font-normal">m</span>
+                    <span id="liveSecondsTicker" class="text-accent text-lg font-bold">45</span><span class="text-xs text-muted font-normal">s</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] text-muted uppercase font-bold tracking-wider">Expedition Saturation</div>
+                  <div class="text-xs font-bold text-success font-mono mt-1">30.3% / 100%</div>
+                </div>
+              </div>
+
+              <!-- Saturation Progress Bar -->
+              <div class="space-y-1.5 mb-4">
+                <div class="flex justify-between text-[11px] font-mono text-muted">
+                  <span>Accrued Time Limit</span>
+                  <span>872 / 2,880 Minutes</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-surface2 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-accent to-success rounded-full" style="width: 30.3%"></div>
+                </div>
+              </div>
+
+              <!-- Base & Job EXP Yield Gauges -->
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="p-3.5 rounded-xl bg-surface2/30 border border-border">
+                  <div class="text-[11px] font-medium text-muted flex items-center justify-between">
+                    <span>Earned Base EXP</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-info/15 text-info font-mono font-semibold">+125k/h</span>
+                  </div>
+                  <div class="text-base font-bold font-mono text-info mt-2">
+                    +1,816,666 <span class="text-xs font-normal text-muted">EXP</span>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-surface2/30 border border-border">
+                  <div class="text-[11px] font-medium text-muted flex items-center justify-between">
+                    <span>Earned Job EXP</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-ro-dex/15 text-ro-dex font-mono font-semibold">+80k/h</span>
+                  </div>
+                  <div class="text-base font-bold font-mono text-ro-dex mt-2">
+                    +1,162,666 <span class="text-xs font-normal text-muted">EXP</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- In-game System Tablet Notice -->
+            <div class="p-3 rounded-lg bg-accent/10 border border-accent/20 flex items-start gap-2.5 text-xs text-accent/90">
+              <i data-lucide="info" class="w-4 h-4 text-accent shrink-0 mt-0.5"></i>
+              <div>
+                <span class="font-bold text-accent">How to claim:</span> Rewards accumulate safely while offline. Claim your earned Base and Job EXP anytime in-game via the <span class="underline font-mono font-bold">System Tablet</span> without losing accrued progress.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT 6 COLS: Ragnarok Online LoFi Radio Lounge -->
+        <div class="col-span-12 lg:col-span-6 flex flex-col min-h-0">
+          <div class="bento-card flex-1 flex flex-col justify-between p-4 sm:p-5 overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between border-b border-border pb-3 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="p-1 rounded bg-danger/15 text-danger">
+                    <i data-lucide="radio" class="w-4 h-4"></i>
+                  </span>
+                  <h3 class="text-xs sm:text-sm font-bold text-primary">Ragnarok Online LoFi Radio</h3>
+                </div>
+                <div id="mediaNetworkBadge" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-success/10 border border-success/20 text-success text-[10px] font-mono">
+                  <span class="w-1.5 h-1.5 rounded-full bg-success"></span> Online Stream
+                </div>
+              </div>
+
+              <!-- Video Iframe or Offline Network Fallback -->
+              <div id="lofiPlayerWrapper" class="relative w-full aspect-video rounded-xl bg-black border border-border overflow-hidden shadow-inner flex items-center justify-center mb-3">
+                <iframe
+                  id="youtubeIframe"
+                  class="w-full h-full"
+                  src="https://www.youtube-nocookie.com/embed/4DFPRCGMx6k?autoplay=0&enablejsapi=1"
+                  title="Ragnarok LoFi Beats"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen>
+                </iframe>
+
+                <!-- Fallback card when disconnected -->
+                <div id="offlineMediaFallback" class="hidden absolute inset-0 bg-surface flex flex-col items-center justify-center p-6 text-center space-y-3">
+                  <div class="w-12 h-12 rounded-full bg-surface2 border border-border flex items-center justify-center text-muted">
+                    <i data-lucide="wifi-off" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-primary">Internet Connection Required</div>
+                    <p class="text-[11px] text-muted max-w-xs mt-1">
+                      YouTube LoFi streaming requires active internet access. Offline expedition progression continues locally.
+                    </p>
+                  </div>
+                  <button onclick="toggleInternetAccess()" class="px-3 py-1.5 bg-surface2 hover:bg-border rounded text-[11px] font-medium border border-border text-primary transition-colors">
+                    Retry Connection
+                  </button>
+                </div>
+              </div>
+
+              <!-- Curated Soundscape Switches -->
+              <div class="space-y-2">
+                <div class="text-[11px] font-medium text-muted">Curated Soundscapes</div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button onclick="changeTrack('4DFPRCGMx6k', 'Ragnarok LoFi Mix')" class="px-2.5 py-2 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-accent shrink-0"></span>
+                    <div class="truncate">
+                      <div class="font-bold text-primary truncate">Ragnarok LoFi Mix</div>
+                      <div class="text-[9px] text-muted truncate">Prontera Chill</div>
+                    </div>
+                  </button>
+
+                  <button onclick="changeTrack('IeG0fw-nR6g', 'Midgard Nostalgia Tape')" class="px-2.5 py-2 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-info shrink-0"></span>
+                    <div class="truncate">
+                      <div class="font-bold text-primary truncate">Nostalgia Tape</div>
+                      <div class="text-[9px] text-muted truncate">Town & Dungeons</div>
+                    </div>
+                  </button>
+
+                  <button onclick="changeTrack('JJAwgGggD2U', 'Relaxing RO Soundscape')" class="px-2.5 py-2 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-success shrink-0"></span>
+                    <div class="truncate">
+                      <div class="font-bold text-primary truncate">Relaxing RO</div>
+                      <div class="text-[9px] text-muted truncate">Ambient Beats</div>
+                    </div>
+                  </button>
+
+                  <button onclick="changeTrack('_DWTntfXPlg', 'Midgard Coffee Beats')" class="px-2.5 py-2 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>
+                    <div class="truncate">
+                      <div class="font-bold text-primary truncate">Coffee Beats</div>
+                      <div class="text-[9px] text-muted truncate">LoFi Study Mix</div>
+                    </div>
+                  </button>
+
+                  <button onclick="changeTrack('MEFQr826Bdc', 'Acoustic & Peaceful Melodies')" class="px-2.5 py-2 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer col-span-2 sm:col-span-1">
+                    <span class="w-2 h-2 rounded-full bg-rose-400 shrink-0"></span>
+                    <div class="truncate">
+                      <div class="font-bold text-primary truncate">Peaceful Melodies</div>
+                      <div class="text-[9px] text-muted truncate">Acoustic Chill</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-[10px] font-mono text-muted text-center pt-2">
+              Midgard Audio Matrix • Offline Rest Lounge
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2: 💰 FINANCE & STOCK EXCHANGE ==================== -->
+    <div id="stage-finance" class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden hidden">
+      
+      <!-- Bento Grid -->
+      <div class="flex-1 min-h-0 grid grid-cols-12 gap-3">
+
+        <!-- LEFT 5 COLS: Stock Portfolio with EXACT Card Design (Screenshot 1 Match) -->
+        <div class="col-span-12 lg:col-span-5 flex flex-col min-h-0">
+          <div class="bento-card flex-1 flex flex-col p-4 overflow-hidden">
+            <div class="flex items-center justify-between pb-3 border-b border-border mb-3 shrink-0">
+              <div class="flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-4 h-4 text-accent"></i>
+                <h3 class="text-xs font-bold text-primary">Municipal & Crypto Holdings</h3>
+              </div>
+              <span class="text-[10px] font-mono text-muted">3 Positions</span>
+            </div>
+
+            <!-- Holdings List -->
+            <div class="space-y-3 overflow-y-auto custom-scrollbar flex-1">
+              
+              <!-- Holding 1: MOR (Screenshot 1 Match) -->
+              <div class="bento-card p-3.5 bg-surface2/30 flex flex-col gap-3 border border-border hover:border-surface2">
+                <!-- Top Row -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-accent text-xs">
+                      MO
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                        <span class="font-mono text-accent">MOR</span>
+                        <span>Morroc Oasis Trading</span>
+                      </div>
+                      <div class="text-[10px] text-muted font-mono flex items-center gap-1.5 mt-0.5">
+                        <span>29.6%</span>
+                        <span>•</span>
+                        <span>29.3% NW</span>
+                        <span>•</span>
+                        <span id="cardMorShares">395,738 sh</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right font-mono">
+                    <div id="cardMorInvested" class="text-xs font-bold text-primary">31,659,040 Z</div>
+                    <div class="text-[10px] text-danger font-semibold flex items-center justify-end gap-0.5">
+                      <span>↘ -0.1% (-31,902)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4-Col Strip -->
+                <div class="p-2 rounded-lg bg-surface2/60 border border-border grid grid-cols-4 text-center text-xs font-mono">
+                  <div>
+                    <div class="text-[9px] text-muted">Shares Held</div>
+                    <div id="cardMorHeldSub" class="font-bold text-primary mt-0.5">395,738</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-muted">Avg Buy</div>
+                    <div class="font-bold text-primary mt-0.5">80 Z</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-muted">Current</div>
+                    <div class="font-bold text-primary mt-0.5">80 Z</div>
+                  </div>
+                  <div>
+                    <div class="text-[9px] text-muted">Invested</div>
+                    <div class="font-bold text-primary mt-0.5">31.6M Z</div>
+                  </div>
+                </div>
+
+                <!-- Bottom Row with Wording Changed to "Detail" -->
+                <div class="flex items-center justify-between text-[11px] font-mono pt-1">
+                  <div class="text-muted">PnL Amount: <span class="text-danger font-bold">-31,902 Z</span></div>
+                  
+                  <!-- Button: Detail (Yellow outlined button) -->
+                  <button onclick="openStockDetailModal('MOR', 'Morroc Oasis Trading', 'MUNICIPAL EQUITY', 80, 395738, 3)" class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition-colors">
+                    <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
+                    <span>Detail</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Holding 2: PRN -->
+              <div class="bento-card p-3.5 bg-surface2/30 flex flex-col gap-3 border border-border hover:border-surface2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center font-bold text-info text-xs">
+                      PR
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                        <span class="font-mono text-info">PRN</span>
+                        <span>Prontera Royal Guild</span>
+                      </div>
+                      <div class="text-[10px] text-muted font-mono flex items-center gap-1.5 mt-0.5">
+                        <span>18.4%</span>
+                        <span>•</span>
+                        <span id="cardPrnShares">50,000 sh</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right font-mono">
+                    <div class="text-xs font-bold text-primary">6,000,000 Z</div>
+                    <div class="text-[10px] text-success font-semibold">↗ +4.2% (+250,000)</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] font-mono pt-1">
+                  <div class="text-muted">PnL Amount: <span class="text-success font-bold">+250,000 Z</span></div>
+                  <button onclick="openStockDetailModal('PRN', 'Prontera Royal Guild', 'MUNICIPAL EQUITY', 120, 50000, 4)" class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold rounded-lg text-xs flex items-center gap-1.5 transition-colors">
+                    <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
+                    <span>Detail</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT 7 COLS: Market Terminal -->
+        <div class="col-span-12 lg:col-span-7 flex flex-col min-h-0">
+          <div class="bento-card flex-1 flex flex-col p-4 justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-border mb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="globe" class="w-4 h-4 text-info"></i>
+                  <h3 class="text-xs font-bold text-primary">Midgard Market Watch & Order Desk</h3>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">Bullish (+2.4%)</span>
+              </div>
+              <p class="text-xs text-muted mb-4">
+                Execute direct municipal share purchases and liquidations from your Web Terminal. Click any stock's <strong>Detail</strong> button on the left to inspect price history and trade.
+              </p>
+
+              <!-- Quick Market Ticker Strip -->
+              <div class="grid grid-cols-3 gap-2 text-center font-mono">
+                <div class="p-3 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[10px] text-muted">MORROC (MOR)</div>
+                  <div class="text-sm font-bold text-primary mt-1">80 Z</div>
+                  <div class="text-[10px] text-success mt-0.5">+3.9%</div>
+                </div>
+                <div class="p-3 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[10px] text-muted">PRONTERA (PRN)</div>
+                  <div class="text-sm font-bold text-primary mt-1">120 Z</div>
+                  <div class="text-[10px] text-danger mt-0.5">-1.2%</div>
+                </div>
+                <div class="p-3 rounded-lg bg-surface2/40 border border-border">
+                  <div class="text-[10px] text-muted">EMPERIUM (EMP)</div>
+                  <div class="text-sm font-bold text-primary mt-1">2,500 Z</div>
+                  <div class="text-[10px] text-success mt-0.5">+14.2%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-lg bg-surface2/30 border border-border flex items-center justify-between text-xs text-muted font-mono">
+              <span>MSE Regulatory Bureau Terminal</span>
+              <span>Primary DB 3306 Linked</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 3: HERO ARMORY (Placeholder) ==================== -->
+    <div id="stage-character" class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden hidden">
+      <div class="bento-card flex-1 flex items-center justify-center text-center p-8">
+        <div>
+          <h3 class="text-sm font-bold text-primary mb-1">Hero Status & Paperdoll</h3>
+          <p class="text-xs text-muted max-w-sm mx-auto">
+            Switch back to <button onclick="switchTab('leisure')" class="text-accent font-bold underline">Leisure Lounge</button> or <button onclick="switchTab('finance')" class="text-accent font-bold underline">Finance HQ</button> to test the new features.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 3. EXACT TICKER DETAIL MODAL (Screenshot 2 Match + Direct Web Trading)    -->
+  <!-- ========================================================================= -->
+  <div id="stockDetailModal" onclick="handleBackdropClick(event)" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm hidden animate-in fade-in duration-150">
+    <div class="bento-card w-full max-w-xl max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border bg-surface">
+      
+      <!-- Modal Title Bar (Screenshot 2 Match) -->
+      <div class="bg-surface2 border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border bg-info/10 border-info/20 text-info">
+            <i data-lucide="landmark" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm text-primary truncate flex items-center gap-1.5 sm:gap-2">
+              <span id="modalTicker" class="font-mono text-accent">MOR</span>
+              <span>·</span>
+              <span id="modalName" class="truncate">Morroc Oasis Trading</span>
+              <span id="modalTypeBadge" class="px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider shrink-0 flex items-center gap-1 bg-info/15 text-info border border-info/30">
+                <i data-lucide="landmark" class="w-2.5 h-2.5"></i>
+                <span>MUNICIPAL EQUITY</span>
+              </span>
+            </div>
+            <div id="modalLocation" class="text-[11px] text-muted flex items-center gap-1 mt-0.5">
+              <i data-lucide="map-pin" class="w-3 h-3 text-muted/80"></i>
+              <span>Morroc (Sograt Desert)</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closeStockDetailModal()" aria-label="Close modal" class="text-muted hover:text-primary transition-colors p-1.5 rounded-md hover:bg-surface shrink-0 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Body -->
+      <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm custom-scrollbar">
+
+        <!-- Fundamentals Metric Strip (Price, Dividend, 24h Change) -->
+        <div class="grid grid-cols-3 gap-2 text-center font-mono">
+          <div class="p-2 rounded bg-surface2/60 border border-border/70">
+            <div class="text-[10px] text-muted uppercase tracking-wider">Price</div>
+            <div id="modalPrice" class="font-bold text-primary mt-0.5 text-xs sm:text-sm">80 Z</div>
+          </div>
+          <div class="p-2 rounded bg-surface2/60 border border-border/70">
+            <div class="text-[10px] text-muted uppercase tracking-wider">Dividend</div>
+            <div id="modalDiv" class="font-bold text-accent mt-0.5 text-xs sm:text-sm">3 Z</div>
+          </div>
+          <div class="p-2 rounded bg-surface2/60 border border-border/70">
+            <div class="text-[10px] text-muted uppercase tracking-wider">24h Change</div>
+            <div id="modalChange" class="font-bold text-success mt-0.5 text-xs sm:text-sm">+3.9%</div>
+          </div>
+        </div>
+
+        <!-- 🚀 EXPANDABLE ACTION TRIGGER BAR: BUY OR SELL BUTTONS -->
+        <div class="space-y-3">
+          <!-- Action Trigger Bar -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <!-- Buy Trigger Button -->
+            <button
+              type="button"
+              onclick="toggleTradeDrawer('BUY')"
+              id="btnTriggerBuy"
+              class="px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-emerald-500/50"
+            >
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="text-left leading-tight">
+                  <div class="font-bold text-xs text-primary">Buy Shares</div>
+                  <div id="triggerBuyPriceSub" class="text-[9px] font-mono text-muted">80 Z / sh</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span id="triggerBuyBalSub" class="text-[10px] font-mono hidden sm:inline-block px-1.5 py-0.5 rounded bg-surface text-accent font-semibold">4.25M Z</span>
+                <i id="triggerBuyChevron" data-lucide="chevron-down" class="w-4 h-4 text-muted"></i>
+              </div>
+            </button>
+
+            <!-- Sell Trigger Button -->
+            <button
+              type="button"
+              onclick="toggleTradeDrawer('SELL')"
+              id="btnTriggerSell"
+              class="px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-rose-500/50"
+            >
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center">
+                  <i data-lucide="trending-down" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="text-left leading-tight">
+                  <div class="font-bold text-xs text-primary">Sell Shares</div>
+                  <div id="triggerSellHeldSub" class="text-[9px] font-mono text-muted">Held: 395,738</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span id="triggerSellHeldPill" class="text-[10px] font-mono hidden sm:inline-block px-1.5 py-0.5 rounded bg-surface text-primary font-semibold">395.7k sh</span>
+                <i id="triggerSellChevron" data-lucide="chevron-down" class="w-4 h-4 text-muted"></i>
+              </div>
+            </button>
+          </div>
+
+          <!-- 📂 EXPANDABLE TRADING DRAWER -->
+          <div id="modalTradeDrawer" class="hidden p-4 rounded-xl bg-surface2/60 border border-border space-y-3.5 animate-in fade-in zoom-in-95 duration-150 shadow-inner">
+            <!-- Offline Safe Lock Status -->
+            <div id="concurrencyLockBanner" class="p-2.5 rounded-lg border flex items-center justify-between text-[11px] font-mono bg-success/10 border-success/30 text-success">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-success"></span>
+                <span>Hero <strong>Offline</strong>: Direct Web Trading Active</span>
+              </div>
+              <button onclick="closeTradeDrawer()" class="p-1 text-muted hover:text-primary rounded hover:bg-surface transition-colors" title="Collapse">
+                <i data-lucide="chevron-up" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Mode Indicator -->
+            <div class="flex items-center justify-between text-xs px-1">
+              <span class="font-bold flex items-center gap-1.5">
+                <span id="drawerModeDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Market Order:</span>
+                <span id="drawerModeLabel" class="font-mono font-extrabold uppercase text-emerald-400">BUY (ACQUIRE SHARES)</span>
+              </span>
+              <span class="text-[11px] font-mono text-muted">
+                Price: <strong id="drawerPriceLabel" class="text-primary font-bold">80 Z</strong>
+              </span>
+            </div>
+
+            <!-- Bi-directional Inputs Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Input: Shares -->
+              <div class="space-y-1">
+                <div class="flex justify-between text-[10px] font-medium text-muted">
+                  <label for="inputShares">Share Amount</label>
+                  <span class="font-mono">Held: <strong id="modalSharesHeldLabel" class="text-primary font-bold">395,738</strong></span>
+                </div>
+                <div class="relative">
+                  <input
+                    type="number"
+                    id="inputShares"
+                    oninput="handleSharesChange()"
+                    placeholder="0"
+                    min="1"
+                    class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-primary focus:outline-none focus:border-accent"
+                  />
+                  <span class="absolute right-2.5 top-1.5 text-[9px] font-mono text-muted">SH</span>
+                </div>
+              </div>
+
+              <!-- Input: Total Zeny -->
+              <div class="space-y-1">
+                <div class="flex justify-between text-[10px] font-medium text-muted">
+                  <label for="inputTotalZeny" id="modalZenyLabel">Total Budget (Zeny)</label>
+                  <span class="font-mono">Bal: <strong id="modalLiquidZenyLabel" class="text-accent font-bold">4.25M Z</strong></span>
+                </div>
+                <div class="relative">
+                  <input
+                    type="number"
+                    id="inputTotalZeny"
+                    oninput="handleZenyChange()"
+                    placeholder="0"
+                    min="0"
+                    class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-primary focus:outline-none focus:border-accent"
+                  />
+                  <span class="absolute right-2.5 top-1.5 text-[9px] font-mono text-muted">ZENY</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span class="text-[9px] font-mono text-muted uppercase">Presets:</span>
+              <button onclick="applyPercentage(0.25)" class="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer">25%</button>
+              <button onclick="applyPercentage(0.50)" class="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer">50%</button>
+              <button onclick="applyPercentage(0.75)" class="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer">75%</button>
+              <button onclick="applyPercentage(1.00)" class="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-accent font-bold transition-colors cursor-pointer">MAX</button>
+            </div>
+
+            <!-- Summary & Submit -->
+            <div class="pt-2 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2.5">
+              <div class="text-[11px] font-mono text-muted w-full sm:w-auto">
+                <span id="modalTradeMath">0 sh × 80 Z = 0 Z</span>
+              </div>
+              <button onclick="executeModalTrade()" id="btnExecuteModalTrade" class="w-full sm:w-auto px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                <span id="btnExecuteModalTradeText">Execute Market Buy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- OHLC Candlestick Preview (Screenshot 2 exact look) -->
+        <div class="p-3 rounded-xl bg-surface2/30 border border-border space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <div class="font-bold text-primary flex items-center gap-1.5">
+              <i data-lucide="trending-up" class="w-3.5 h-3.5 text-accent"></i>
+              <span>Price Action (OHLC)</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-surface2 text-muted font-mono">BKK UTC+7</span>
+            </div>
+            <div class="flex gap-1">
+              <span class="px-2 py-0.5 rounded bg-accent text-black font-bold text-[10px] font-mono">1D</span>
+              <span class="px-2 py-0.5 rounded bg-surface2 text-muted text-[10px] font-mono">1W</span>
+              <span class="px-2 py-0.5 rounded bg-surface2 text-muted text-[10px] font-mono">1M</span>
+              <span class="px-2 py-0.5 rounded bg-surface2 text-muted text-[10px] font-mono">ALL</span>
+            </div>
+          </div>
+
+          <!-- Candlestick representation -->
+          <div class="w-full h-36 bg-black/40 rounded-lg p-2 flex items-end justify-between gap-1 border border-border/50">
+            <div class="w-3 bg-danger h-24 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-success h-16 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-danger h-20 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-danger h-28 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-success h-22 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-danger h-32 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-success h-18 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-danger h-14 rounded-xs mx-auto"></div>
+            <div class="w-3 bg-success h-10 rounded-xs mx-auto"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-muted">
+            <span>TradingView Core • UTC+7</span>
+            <span class="text-accent">Live 80 Z</span>
+          </div>
+        </div>
+
+        <!-- Municipal Heritage / Lore (Screenshot 2 Match) -->
+        <div class="p-3.5 rounded-xl bg-surface2/30 border border-border space-y-1.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-info"></i>
+            <span>Municipal Profile & Heritage</span>
+          </div>
+          <p id="modalLoreText" class="text-xs text-muted leading-relaxed">
+            The bustling desert commerce nexus connecting foreign caravans and Sograt spice merchants. High volatility driven by exotic relic salvage and desert oasis caravan trade.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-4 py-2.5 border-t border-border bg-surface2/60 flex items-center justify-between text-[10px] font-mono text-muted shrink-0">
+        <span>MSE Regulatory Bureau • Midgard Gazette</span>
+        <span>Press ESC to close</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden p-3 rounded-lg bg-surface border border-success/40 text-success shadow-2xl text-xs font-mono flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-success animate-ping"></span>
+    <span id="toastMessage">Trade executed successfully.</span>
+  </div>
+
+  <!-- Javascript Logic -->
+  <script>
+    lucide.createIcons();
+
+    let currentTab = 'leisure';
+    let isInternetOnline = true;
+    let isCharOffline = true;
+    let playerLiquidZeny = 4250000;
+
+    const stockData = {
+      'MOR': { name: 'Morroc Oasis Trading', type: 'MUNICIPAL EQUITY', location: 'Morroc (Sograt Desert)', price: 80, shares: 395738, dividend: 3, lore: 'The bustling desert commerce nexus connecting foreign caravans and Sograt spice merchants. High volatility driven by exotic relic salvage and desert oasis caravan trade.' },
+      'PRN': { name: 'Prontera Royal Guild', type: 'MUNICIPAL EQUITY', location: 'Prontera (Capitol)', price: 120, shares: 50000, dividend: 4, lore: 'The royal crown corporation controlling agricultural tithes, knight armories, and guild castle logistics.' }
+    };
+
+    let activeModalTicker = 'MOR';
+    let activeTradeAction = 'BUY';
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.getElementById('stage-leisure').classList.add('hidden');
+      document.getElementById('stage-finance').classList.add('hidden');
+      document.getElementById('stage-character').classList.add('hidden');
+      
+      const targetStage = document.getElementById(`stage-${tabId}`);
+      if (targetStage) targetStage.classList.remove('hidden');
+
+      // Update Nav Buttons
+      ['character', 'finance', 'leisure', 'progression', 'bounties', 'gacha'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        if (btn) {
+          btn.classList.remove('bg-accent/15', 'text-accent', 'border', 'border-accent/30', 'shadow-sm');
+          btn.classList.add('text-muted');
+          const indicator = btn.querySelector('.bg-accent.rounded-r');
+          if (indicator) indicator.remove();
+        }
+      });
+
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-muted');
+        activeBtn.classList.add('bg-accent/15', 'text-accent', 'border', 'border-accent/30', 'shadow-sm');
+        activeBtn.innerHTML += '<span class="absolute -left-2 top-2.5 bottom-2.5 w-1 bg-accent rounded-r"></span>';
+      }
+    }
+
+    function toggleInternetAccess() {
+      isInternetOnline = !isInternetOnline;
+      const mediaBadge = document.getElementById('mediaNetworkBadge');
+      const iframe = document.getElementById('youtubeIframe');
+      const fallback = document.getElementById('offlineMediaFallback');
+      const railNetIcon = document.getElementById('railNetIcon');
+
+      if (isInternetOnline) {
+        mediaBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-success"></span> Online Stream';
+        mediaBadge.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded bg-success/10 border border-success/20 text-success text-[10px] font-mono';
+        iframe.classList.remove('hidden');
+        fallback.classList.add('hidden');
+        railNetIcon.parentElement.classList.remove('text-danger');
+        railNetIcon.parentElement.classList.add('text-success');
+        railNetIcon.setAttribute('data-lucide', 'wifi');
+        showToast('Internet reachability verified: LoFi Radio online.');
+      } else {
+        mediaBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-danger"></span> Offline';
+        mediaBadge.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded bg-danger/10 border border-danger/20 text-danger text-[10px] font-mono';
+        iframe.classList.add('hidden');
+        fallback.classList.remove('hidden');
+        railNetIcon.parentElement.classList.remove('text-success');
+        railNetIcon.parentElement.classList.add('text-danger');
+        railNetIcon.setAttribute('data-lucide', 'wifi-off');
+        showToast('Offline mode: Stream paused. Offline rest intact.');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleCharOnlineStatus() {
+      isCharOffline = !isCharOffline;
+      const dot = document.getElementById('charOnlineDot');
+      const pill = document.getElementById('charOnlinePill');
+      const banner = document.getElementById('concurrencyLockBanner');
+      const submitBtn = document.getElementById('btnExecuteModalTrade');
+
+      if (isCharOffline) {
+        dot.className = 'absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-zinc-600 ring-2 ring-surface';
+        pill.className = 'text-[9px] px-1.5 py-0.2 rounded bg-surface2 text-zinc-400 border border-border font-mono';
+        pill.textContent = 'OFFLINE (EXPEDITION ACTIVE)';
+        if (banner) {
+          banner.className = 'p-2.5 rounded-lg border flex items-center justify-between text-[11px] font-mono bg-success/10 border-success/30 text-success';
+          banner.innerHTML = '<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-success"></span><span>Hero <strong>Offline</strong>: Direct Web Trading Active</span></div><span class="text-[10px] text-muted">Safe Mutex</span>';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        }
+        showToast('Hero logged out: Offline Expedition active.');
+      } else {
+        dot.className = 'absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-success ring-2 ring-surface animate-pulse';
+        pill.className = 'text-[9px] px-1.5 py-0.2 rounded bg-success/20 text-success border border-success/30 font-mono font-bold';
+        pill.textContent = 'ONLINE IN-GAME';
+        if (banner) {
+          banner.className = 'p-2.5 rounded-lg border flex items-center justify-between text-[11px] font-mono bg-accent/10 border-accent/30 text-accent';
+          banner.innerHTML = '<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span><span>Hero <strong>Online In-Game</strong>: Web Trade Locked</span></div><span class="text-[10px] text-accent font-bold">Locked</span>';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        }
+        showToast('Hero Online in-game: Web Trading locked to prevent race condition.');
+      }
+    }
+
+    function changeTrack(videoId, title) {
+      if (!isInternetOnline) {
+        showToast('Connect to internet first to change stream track.');
+        return;
+      }
+      const iframe = document.getElementById('youtubeIframe');
+      iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+      showToast(`Loaded soundscape: ${title}`);
+    }
+
+    let isTradeDrawerOpen = false;
+
+    function toggleTradeDrawer(targetAction) {
+      if (!isTradeDrawerOpen) {
+        isTradeDrawerOpen = true;
+        setTradeAction(targetAction);
+        document.getElementById('modalTradeDrawer').classList.remove('hidden');
+      } else if (activeTradeAction === targetAction) {
+        closeTradeDrawer();
+      } else {
+        setTradeAction(targetAction);
+      }
+      updateTriggerButtons();
+    }
+
+    function closeTradeDrawer() {
+      isTradeDrawerOpen = false;
+      document.getElementById('modalTradeDrawer').classList.add('hidden');
+      updateTriggerButtons();
+    }
+
+    function updateTriggerButtons() {
+      const btnBuy = document.getElementById('btnTriggerBuy');
+      const btnSell = document.getElementById('btnTriggerSell');
+      const buyChev = document.getElementById('triggerBuyChevron');
+      const sellChev = document.getElementById('triggerSellChevron');
+
+      if (isTradeDrawerOpen && activeTradeAction === 'BUY') {
+        btnBuy.className = 'px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-emerald-500 text-black border-emerald-500 font-extrabold shadow-md ring-2 ring-emerald-500/30';
+        if (buyChev) {
+          buyChev.setAttribute('data-lucide', 'chevron-up');
+          buyChev.className = 'w-4 h-4 text-black';
+        }
+      } else {
+        btnBuy.className = 'px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-emerald-500/50';
+        if (buyChev) {
+          buyChev.setAttribute('data-lucide', 'chevron-down');
+          buyChev.className = 'w-4 h-4 text-muted';
+        }
+      }
+
+      if (isTradeDrawerOpen && activeTradeAction === 'SELL') {
+        btnSell.className = 'px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-rose-500 text-white border-rose-500 font-extrabold shadow-md ring-2 ring-rose-500/30';
+        if (sellChev) {
+          sellChev.setAttribute('data-lucide', 'chevron-up');
+          sellChev.className = 'w-4 h-4 text-white';
+        }
+      } else {
+        btnSell.className = 'px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-rose-500/50';
+        if (sellChev) {
+          sellChev.setAttribute('data-lucide', 'chevron-down');
+          sellChev.className = 'w-4 h-4 text-muted';
+        }
+      }
+      lucide.createIcons();
+    }
+
+    function openStockDetailModal(ticker, name, type, price, shares, dividend) {
+      activeModalTicker = ticker;
+      document.getElementById('modalTicker').textContent = ticker;
+      document.getElementById('modalName').textContent = name;
+      document.getElementById('modalPrice').textContent = `${price} Z`;
+      document.getElementById('modalDiv').textContent = `${dividend} Z`;
+      document.getElementById('modalSharesHeldLabel').textContent = stockData[ticker].shares.toLocaleString();
+      document.getElementById('modalLoreText').textContent = stockData[ticker].lore;
+      
+      document.getElementById('inputShares').value = '';
+      document.getElementById('inputTotalZeny').value = '';
+      updateTradeSummary();
+      closeTradeDrawer();
+
+      if (!isCharOffline) {
+        const submitBtn = document.getElementById('btnExecuteModalTrade');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        }
+      }
+
+      document.getElementById('stockDetailModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeStockDetailModal() {
+      document.getElementById('stockDetailModal').classList.add('hidden');
+      closeTradeDrawer();
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target.id === 'stockDetailModal') closeStockDetailModal();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeStockDetailModal();
+    });
+
+    function setTradeAction(action) {
+      activeTradeAction = action;
+      const zenyLabel = document.getElementById('modalZenyLabel');
+      const submitBtn = document.getElementById('btnExecuteModalTrade');
+      const submitText = document.getElementById('btnExecuteModalTradeText');
+      const modeDot = document.getElementById('drawerModeDot');
+      const modeLabel = document.getElementById('drawerModeLabel');
+
+      if (action === 'BUY') {
+        if (zenyLabel) zenyLabel.textContent = 'Total Budget (Zeny)';
+        if (submitBtn) {
+          submitBtn.className = 'w-full sm:w-auto px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer';
+        }
+        if (submitText) submitText.textContent = 'Execute Market Buy';
+        if (modeDot) modeDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        if (modeLabel) {
+          modeLabel.className = 'font-mono font-extrabold uppercase text-emerald-400';
+          modeLabel.textContent = 'BUY (ACQUIRE SHARES)';
+        }
+      } else {
+        if (zenyLabel) zenyLabel.textContent = 'Total Proceeds (Zeny)';
+        if (submitBtn) {
+          submitBtn.className = 'w-full sm:w-auto px-5 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer';
+        }
+        if (submitText) submitText.textContent = 'Execute Market Sell';
+        if (modeDot) modeDot.className = 'w-2 h-2 rounded-full bg-rose-400';
+        if (modeLabel) {
+          modeLabel.className = 'font-mono font-extrabold uppercase text-rose-400';
+          modeLabel.textContent = 'SELL (LIQUIDATE TO ZENY)';
+        }
+      }
+      handleSharesChange();
+      updateTriggerButtons();
+    }
+
+    function handleSharesChange() {
+      const sharesInput = document.getElementById('inputShares');
+      const zenyInput = document.getElementById('inputTotalZeny');
+      const shares = parseInt(sharesInput.value, 10) || 0;
+      const price = stockData[activeModalTicker].price;
+      const total = shares * price;
+      zenyInput.value = total > 0 ? total : '';
+      updateTradeSummary();
+    }
+
+    function handleZenyChange() {
+      const sharesInput = document.getElementById('inputShares');
+      const zenyInput = document.getElementById('inputTotalZeny');
+      const zeny = parseInt(zenyInput.value, 10) || 0;
+      const price = stockData[activeModalTicker].price;
+      const shares = Math.floor(zeny / price);
+      sharesInput.value = shares > 0 ? shares : '';
+      updateTradeSummary();
+    }
+
+    function applyPercentage(pct) {
+      const sharesInput = document.getElementById('inputShares');
+      const price = stockData[activeModalTicker].price;
+
+      if (activeTradeAction === 'BUY') {
+        const availableZeny = playerLiquidZeny * pct;
+        const maxShares = Math.floor(availableZeny / price);
+        sharesInput.value = maxShares;
+      } else {
+        const held = stockData[activeModalTicker].shares;
+        const sellShares = Math.floor(held * pct);
+        sharesInput.value = sellShares;
+      }
+      handleSharesChange();
+    }
+
+    function updateTradeSummary() {
+      const shares = parseInt(document.getElementById('inputShares').value, 10) || 0;
+      const price = stockData[activeModalTicker].price;
+      const total = shares * price;
+      document.getElementById('modalTradeMath').textContent = `${shares.toLocaleString()} sh × ${price} Z = ${total.toLocaleString()} Z`;
+    }
+
+    function executeModalTrade() {
+      if (!isCharOffline) {
+        showToast('Trade blocked: Character is currently Online in-game.');
+        return;
+      }
+      const shares = parseInt(document.getElementById('inputShares').value, 10) || 0;
+      if (shares <= 0) {
+        showToast('Please enter a valid share amount.');
+        return;
+      }
+      const price = stockData[activeModalTicker].price;
+      const totalCost = shares * price;
+
+      if (activeTradeAction === 'BUY') {
+        if (playerLiquidZeny < totalCost) {
+          showToast('Insufficient Zeny balance.');
+          return;
+        }
+        playerLiquidZeny -= totalCost;
+        stockData[activeModalTicker].shares += shares;
+        showToast(`Bought ${shares.toLocaleString()} ${activeModalTicker} for ${totalCost.toLocaleString()} Z.`);
+      } else {
+        if (stockData[activeModalTicker].shares < shares) {
+          showToast('Insufficient shares held.');
+          return;
+        }
+        playerLiquidZeny += totalCost;
+        stockData[activeModalTicker].shares -= shares;
+        showToast(`Sold ${shares.toLocaleString()} ${activeModalTicker} for ${totalCost.toLocaleString()} Z.`);
+      }
+
+      // Update Top Bar & Cards
+      document.getElementById('topBarZeny').textContent = `${playerLiquidZeny.toLocaleString()} Z`;
+      document.getElementById('modalLiquidZenyLabel').textContent = `${(playerLiquidZeny / 1000000).toFixed(2)}M Z`;
+      document.getElementById('modalSharesHeldLabel').textContent = stockData[activeModalTicker].shares.toLocaleString();
+      
+      if (activeModalTicker === 'MOR') {
+        document.getElementById('cardMorShares').textContent = `${stockData.MOR.shares.toLocaleString()} sh`;
+        document.getElementById('cardMorHeldSub').textContent = stockData.MOR.shares.toLocaleString();
+        document.getElementById('cardMorInvested').textContent = `${(stockData.MOR.shares * 80).toLocaleString()} Z`;
+      }
+      if (activeModalTicker === 'PRN') {
+        document.getElementById('cardPrnShares').textContent = `${stockData.PRN.shares.toLocaleString()} sh`;
+      }
+
+      document.getElementById('inputShares').value = '';
+      document.getElementById('inputTotalZeny').value = '';
+      updateTradeSummary();
+    }
+
+    function simulateSync() {
+      const icon = document.getElementById('syncIcon');
+      icon.classList.add('animate-spin');
+      setTimeout(() => {
+        icon.classList.remove('animate-spin');
+        showToast('Realm data synchronized with primary database.');
+      }, 600);
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    let secs = 45;
+    setInterval(() => {
+      if (isCharOffline) {
+        secs = (secs + 1) % 60;
+        document.getElementById('liveSecondsTicker').textContent = secs < 10 ? '0' + secs : secs;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

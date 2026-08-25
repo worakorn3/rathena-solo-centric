@@ -1,4 +1,4 @@
-import { query } from "../db/pool";
+import { query, primaryExecute, primaryQueryOne } from "../db/pool";
 import {
   BankData,
   NetWorthSummary,
@@ -10,6 +10,7 @@ import {
   DailyBounty,
   StockCandle,
   StockHistoryResponse,
+  TradeStockResponse,
   getJobName
 } from "@rathena/shared";
 
@@ -557,5 +558,162 @@ export class EconomyService {
         candles: [],
       };
     }
+  }
+
+  /**
+   * Execute direct stock market trade (BUY or SELL)
+   * Enforces OFFLINE status lock (char.online === 0) to eliminate map-server cache race conditions.
+   * All mutations execute on Primary Database (3306) via primaryExecute.
+   */
+  static async executeTrade(
+    accountId: number,
+    charId: number,
+    ticker: string,
+    action: "BUY" | "SELL",
+    rawShares: number
+  ): Promise<TradeStockResponse> {
+    const shares = Math.floor(Number(rawShares));
+    if (!shares || shares <= 0) {
+      return { success: false, error: "Invalid share quantity specified." };
+    }
+
+    const tradeAction = (action || "").toUpperCase() as "BUY" | "SELL";
+    if (tradeAction !== "BUY" && tradeAction !== "SELL") {
+      return { success: false, error: "Invalid trade action. Must be BUY or SELL." };
+    }
+
+    const cleanTicker = (ticker || "").trim().toUpperCase();
+
+    // 1. Verify character ownership and OFFLINE status
+    const char = await primaryQueryOne<{
+      char_id: number;
+      name: string;
+      zeny: number;
+      online: number;
+    }>(
+      "SELECT char_id, name, zeny, online FROM `char` WHERE char_id = ? AND account_id = ?",
+      [charId, accountId]
+    );
+
+    if (!char) {
+      return {
+        success: false,
+        error: "Character not found or does not belong to this account.",
+      };
+    }
+
+    if (char.online === 1) {
+      return {
+        success: false,
+        error: "Character is currently logged into the game. Please log out before trading via Web Terminal to prevent state desync.",
+      };
+    }
+
+    // 2. Fetch live price and active status
+    const stock = await primaryQueryOne<{
+      ticker: string;
+      name: string;
+      price: number;
+      enabled: number;
+    }>(
+      "SELECT ticker, name, price, enabled FROM `solo_stock_market` WHERE ticker = ?",
+      [cleanTicker]
+    );
+
+    if (!stock || stock.enabled !== 1) {
+      return {
+        success: false,
+        error: `Stock ticker '${cleanTicker}' is not available for trading.`,
+      };
+    }
+
+    const price = Number(stock.price) || 0;
+    if (price <= 0) {
+      return {
+        success: false,
+        error: `Invalid market price for '${cleanTicker}'.`,
+      };
+    }
+
+    // 3. BUY Execution
+    if (tradeAction === "BUY") {
+      const totalCost = shares * price;
+      if (Number(char.zeny) < totalCost) {
+        return {
+          success: false,
+          error: `Insufficient Zeny. Required: ${totalCost.toLocaleString()} Z, Available: ${Number(char.zeny).toLocaleString()} Z.`,
+        };
+      }
+
+      await primaryExecute(
+        "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND zeny >= ?",
+        [totalCost, charId, totalCost]
+      );
+
+      await primaryExecute(
+        "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE shares = shares + VALUES(shares), total_cost = total_cost + VALUES(total_cost)",
+        [accountId, cleanTicker, shares, totalCost]
+      );
+
+      const remainingZeny = Number(char.zeny) - totalCost;
+
+      return {
+        success: true,
+        message: `Purchased ${shares.toLocaleString()} ${cleanTicker} shares for ${totalCost.toLocaleString()} Z.`,
+        executedShares: shares,
+        pricePerShare: price,
+        totalAmount: totalCost,
+        remainingZeny,
+      };
+    }
+
+    // 4. SELL Execution
+    const holding = await primaryQueryOne<{
+      shares: number;
+      total_cost: number;
+    }>(
+      "SELECT shares, total_cost FROM `solo_stock_player` WHERE account_id = ? AND ticker = ?",
+      [accountId, cleanTicker]
+    );
+
+    if (!holding || Number(holding.shares) < shares) {
+      return {
+        success: false,
+        error: `Insufficient shares held. Available: ${holding ? Number(holding.shares).toLocaleString() : 0}, Requested: ${shares.toLocaleString()}.`,
+      };
+    }
+
+    const proceeds = shares * price;
+
+    await primaryExecute(
+      "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+      [proceeds, charId]
+    );
+
+    const remainingShares = Number(holding.shares) - shares;
+    if (remainingShares <= 0) {
+      await primaryExecute(
+        "DELETE FROM `solo_stock_player` WHERE account_id = ? AND ticker = ?",
+        [accountId, cleanTicker]
+      );
+    } else {
+      const costReduction = Math.round((shares / Number(holding.shares)) * Number(holding.total_cost));
+      const newTotalCost = Math.max(0, Number(holding.total_cost) - costReduction);
+      await primaryExecute(
+        "UPDATE `solo_stock_player` SET shares = ?, total_cost = ? WHERE account_id = ? AND ticker = ?",
+        [remainingShares, newTotalCost, accountId, cleanTicker]
+      );
+    }
+
+    const remainingZeny = Number(char.zeny) + proceeds;
+
+    return {
+      success: true,
+      message: `Sold ${shares.toLocaleString()} ${cleanTicker} shares for ${proceeds.toLocaleString()} Z.`,
+      executedShares: shares,
+      pricePerShare: price,
+      totalAmount: proceeds,
+      remainingZeny,
+    };
   }
 }

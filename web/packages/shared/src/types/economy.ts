@@ -187,4 +187,22 @@ export function getAssetVocabulary(assetType?: string): AssetVocabulary {
   return ASSET_VOCABULARY.EQUITY;
 }
 
+export interface TradeStockPayload {
+  ticker: string;
+  action: "BUY" | "SELL";
+  shares: number;
+  charId: number;
+}
+
+export interface TradeStockResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  executedShares?: number;
+  pricePerShare?: number;
+  totalAmount?: number;
+  remainingZeny?: number;
+  updatedHolding?: StockHolding;
+}
+
 

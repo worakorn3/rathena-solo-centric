@@ -67,4 +67,35 @@ describe("Database Replica & Read-Only Safety Tests", () => {
     expect(data.success).toBe(true);
     expect(Array.isArray(data.activeEvents)).toBe(true);
   });
+
+  it("should reject unauthorized trade requests without JWT", async () => {
+    const response = await app.handle(
+      new Request("http://localhost:4000/api/economy/trade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticker: "PRT",
+          action: "BUY",
+          shares: 10,
+          charId: 150000,
+        }),
+      })
+    );
+    expect(response.status).toBe(401);
+    const data = (await response.json()) as any;
+    expect(data.success).toBe(false);
+  });
+
+  it("should validate trade parameters and fail safely on invalid character or online status", async () => {
+    // Attempt trade with nonexistent or invalid account directly via EconomyService
+    const result = await EconomyService.executeTrade(
+      9999999,
+      9999999,
+      "PRT",
+      "BUY",
+      100
+    );
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
 });

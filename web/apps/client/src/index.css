@@ -36,6 +36,51 @@
   40%, 80% { transform: translateX(3px); }
 }
 
+@keyframes gacha-tumble-1 {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(28px, -45px, 0) rotate(140deg) scale(1.05); }
+  50% { transform: translate3d(-35px, -60px, 0) rotate(290deg) scale(0.95); }
+  75% { transform: translate3d(-15px, 20px, 0) rotate(420deg) scale(1.02); }
+  100% { transform: translate3d(0, 0, 0) rotate(720deg); }
+}
+
+@keyframes gacha-tumble-2 {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(-32px, -35px, 0) rotate(-160deg) scale(0.92); }
+  50% { transform: translate3d(40px, -55px, 0) rotate(-310deg) scale(1.08); }
+  75% { transform: translate3d(18px, 15px, 0) rotate(-450deg) scale(0.98); }
+  100% { transform: translate3d(0, 0, 0) rotate(-720deg); }
+}
+
+@keyframes gacha-tumble-3 {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  30% { transform: translate3d(36px, -20px, 0) rotate(220deg); }
+  60% { transform: translate3d(-28px, -40px, 0) rotate(460deg); }
+  85% { transform: translate3d(10px, -10px, 0) rotate(610deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(720deg); }
+}
+
+@keyframes gacha-float-subtle {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50% { transform: translateY(-3px) rotate(calc(var(--rot, 0deg) + 3deg)); }
+}
+
+.animate-gacha-spin-1 {
+  animation: gacha-tumble-1 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-gacha-spin-2 {
+  animation: gacha-tumble-2 0.75s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-gacha-spin-3 {
+  animation: gacha-tumble-3 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+.animate-gacha-idle {
+  animation: gacha-float-subtle 3.5s ease-in-out infinite;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

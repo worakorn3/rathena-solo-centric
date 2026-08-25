@@ -12,10 +12,13 @@ import { KillTracker } from "./components/tracking/KillTracker";
 import { PublicSearch } from "./components/armory/PublicSearch";
 import { BountyBoard } from "./components/economy/BountyBoard";
 import { GachaAltar } from "./components/gacha/GachaAltar";
+import { LeisureView } from "./components/leisure/LeisureView";
+import { GlobalAudioDock } from "./components/leisure/GlobalAudioDock";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { LoginModal } from "./components/auth/LoginModal";
 import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { useAuth } from "./context/AuthContext";
+import { AudioProvider } from "./context/AudioContext";
 import { api } from "./lib/api";
 import {
   CharacterDetail,
@@ -29,6 +32,7 @@ import { Coins, Shield, Skull, Target, User, Sparkles } from "lucide-react";
 const VALID_TABS: Record<string, NavTab> = {
   character: "CHARACTER",
   finance: "FINANCE",
+  leisure: "LEISURE",
   progression: "PROGRESSION",
   bounties: "BOUNTIES",
   gacha: "GACHA",
@@ -40,7 +44,7 @@ const getTabFromHash = (): NavTab => {
   return VALID_TABS[hash] || "CHARACTER";
 };
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
   const { user, openLoginModal, logout } = useAuth();
   // ponytail: url hash persistence for active tab across reload & back/forward history
   const [activeTab, setActiveTab] = useState<NavTab>(getTabFromHash);
@@ -333,7 +337,25 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* ==================== TAB 3: 📜 SOLO PROGRESSION & HUNT TRACKER ==================== */}
+        {/* ==================== TAB 3: ☕ LEISURE & OFFLINE PROGRESSION ==================== */}
+        <div
+          className={
+            activeTab === "LEISURE"
+              ? "flex-1 min-h-0 flex flex-col"
+              : "fixed -left-[99999px] -top-[99999px] w-1 h-1 opacity-0 pointer-events-none overflow-hidden"
+          }
+        >
+          <ErrorBoundary>
+            <LeisureView
+              characters={characters}
+              selectedCharId={selectedCharId}
+              selectedCharDetail={selectedCharDetail}
+              onSelectChar={setSelectedCharId}
+            />
+          </ErrorBoundary>
+        </div>
+
+        {/* ==================== TAB 4: 📜 SOLO PROGRESSION & HUNT TRACKER ==================== */}
         {activeTab === "PROGRESSION" && (
           <div className="flex-1 min-h-0 flex flex-col">
             {user && progression ? (
@@ -383,10 +405,21 @@ export const App: React.FC = () => {
         )}
       </main>
 
+      {/* Persistent Global Background Audio Dock */}
+      <GlobalAudioDock activeTab={activeTab} onNavigateTab={setActiveTab} />
+
       {/* Global Modals */}
       <LoginModal />
       <PublicSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       {isAdminVaultOpen && <AdminVaultWindow onClose={() => setIsAdminVaultOpen(false)} />}
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AudioProvider>
+      <AppContent />
+    </AudioProvider>
   );
 };

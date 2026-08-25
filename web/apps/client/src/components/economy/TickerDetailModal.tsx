@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   X,
   Landmark,
@@ -15,21 +15,30 @@ import {
   Loader2,
   Cpu,
   Layers,
+  AlertCircle,
+  CheckCircle2,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   StockMarketQuote,
   TickerNewsResponse,
+  TradeStockResponse,
+  CharacterSummary,
+  NetWorthSummary,
   MUNICIPAL_LORE,
   CRYPTO_LORE,
   getAssetVocabulary,
 } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { api } from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import { CandlestickChart } from "./CandlestickChart";
 
 interface TickerDetailModalProps {
   quote: StockMarketQuote | null;
   onClose: () => void;
+  onTradeSuccess?: () => void;
 }
 
 const getCategoryBadge = (category: string) => {
@@ -82,9 +91,28 @@ const getCategoryBadge = (category: string) => {
 export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
   quote,
   onClose,
+  onTradeSuccess,
 }) => {
+  const { user } = useAuth();
   const [newsData, setNewsData] = useState<TickerNewsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Expandable Trading Form State (expand when clicking Buy or Sell)
+  const [isTradeExpanded, setIsTradeExpanded] = useState<boolean>(false);
+  const [tradeAction, setTradeAction] = useState<"BUY" | "SELL">("BUY");
+  const [sharesInput, setSharesInput] = useState<string>("");
+  const [zenyInput, setZenyInput] = useState<string>("");
+  const [isSubmittingTrade, setIsSubmittingTrade] = useState(false);
+  const [tradeFeedback, setTradeFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  // User character & portfolio holdings for trading verification
+  const [characters, setCharacters] = useState<CharacterSummary[]>([]);
+  const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
+  const [netWorth, setNetWorth] = useState<NetWorthSummary | null>(null);
+  const shareInputRef = useRef<HTMLInputElement | null>(null);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -95,6 +123,35 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  const loadPlayerData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [charsRes, nwRes] = await Promise.all([
+        api.get<{ success: boolean; characters: CharacterSummary[] }>("/api/character/my-characters"),
+        api.get<{ success: boolean; data: NetWorthSummary }>("/api/economy/net-worth"),
+      ]);
+      if (charsRes.success && charsRes.characters.length > 0) {
+        setCharacters(charsRes.characters);
+        setSelectedCharId((prev) =>
+          prev && charsRes.characters.some((c) => c.charId === prev)
+            ? prev
+            : charsRes.characters[0].charId
+        );
+      }
+      if (nwRes.success) {
+        setNetWorth(nwRes.data);
+      }
+    } catch (err) {
+      console.error("Failed to load user character data for trading:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && quote) {
+      loadPlayerData();
+    }
+  }, [user, quote, loadPlayerData]);
+
   // Fetch real-time active and historical triggered Black Swan news when quote changes
   useEffect(() => {
     if (!quote) {
@@ -104,6 +161,9 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
 
     let isMounted = true;
     setIsLoading(true);
+    setTradeFeedback(null);
+    setSharesInput("");
+    setZenyInput("");
 
     api
       .get<TickerNewsResponse>(`/api/economy/events/ticker/${quote.ticker}`)
@@ -124,8 +184,18 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     };
   }, [quote]);
 
+  // Auto-focus share input when trade form expands
+  useEffect(() => {
+    if (isTradeExpanded && shareInputRef.current) {
+      setTimeout(() => {
+        shareInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isTradeExpanded, tradeAction]);
+
   if (!quote) return null;
 
+  // Derived variables (REACT_SCOPE_INTEGRITY guardrail: must remain declared!)
   const profile = MUNICIPAL_LORE[quote.ticker];
   const cryptoProfile = CRYPTO_LORE[quote.ticker];
   const activeEvents = newsData?.activeEvents || [];
@@ -139,15 +209,158 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
 
   const vocab = getAssetVocabulary(isCrypto ? "CRYPTO" : "EQUITY");
 
+  // Selected character & holdings
+  const activeChar =
+    characters.find((c) => c.charId === selectedCharId) || (characters.length > 0 ? characters[0] : null);
+  const holding = netWorth?.holdings.find((h) => h.ticker.toUpperCase() === quote.ticker.toUpperCase());
+  const sharesHeld = holding ? holding.shares : 0;
+  const availableZeny = activeChar ? Number(activeChar.zeny) || 0 : 0;
+  const isCharOffline = activeChar ? !activeChar.online : true;
+
+  // Toggle or switch expandable trade drawer
+  const handleToggleTrade = (targetAction: "BUY" | "SELL") => {
+    setTradeFeedback(null);
+    if (!isTradeExpanded) {
+      setTradeAction(targetAction);
+      setIsTradeExpanded(true);
+    } else if (tradeAction === targetAction) {
+      setIsTradeExpanded(false);
+    } else {
+      setTradeAction(targetAction);
+    }
+  };
+
+  // Bi-directional calculations
+  const handleSharesChange = (val: string) => {
+    setSharesInput(val);
+    setTradeFeedback(null);
+    const s = parseInt(val, 10);
+    if (!s || s <= 0) {
+      setZenyInput("");
+    } else {
+      setZenyInput(String(s * quote.price));
+    }
+  };
+
+  const handleZenyChange = (val: string) => {
+    setZenyInput(val);
+    setTradeFeedback(null);
+    const z = parseInt(val, 10);
+    if (!z || z <= 0 || quote.price <= 0) {
+      setSharesInput("");
+    } else {
+      const s = Math.floor(z / quote.price);
+      setSharesInput(s > 0 ? String(s) : "");
+    }
+  };
+
+  const applyPercentage = (pct: number) => {
+    setTradeFeedback(null);
+    if (quote.price <= 0) return;
+
+    if (tradeAction === "BUY") {
+      const budget = Math.floor(availableZeny * pct);
+      const s = Math.floor(budget / quote.price);
+      setSharesInput(s > 0 ? String(s) : "");
+      setZenyInput(s > 0 ? String(s * quote.price) : "");
+    } else {
+      const s = Math.floor(sharesHeld * pct);
+      setSharesInput(s > 0 ? String(s) : "");
+      setZenyInput(s > 0 ? String(s * quote.price) : "");
+    }
+  };
+
+  // Trade Execution
+  const handleExecuteTrade = async () => {
+    if (!user) {
+      setTradeFeedback({ type: "error", message: "Please log in to trade stocks via Web Terminal." });
+      return;
+    }
+
+    if (!activeChar) {
+      setTradeFeedback({ type: "error", message: "Please select an active character for this trade." });
+      return;
+    }
+
+    if (activeChar.online) {
+      setTradeFeedback({
+        type: "error",
+        message: "Character is currently online in-game. Please log out before trading via Web Terminal.",
+      });
+      return;
+    }
+
+    const shares = parseInt(sharesInput, 10);
+    if (!shares || shares <= 0) {
+      setTradeFeedback({ type: "error", message: "Please enter a valid share quantity." });
+      return;
+    }
+
+    const totalCost = shares * quote.price;
+    if (tradeAction === "BUY" && availableZeny < totalCost) {
+      setTradeFeedback({
+        type: "error",
+        message: `Insufficient Zeny. Need ${formatZeny(totalCost)} Z, have ${formatZeny(availableZeny)} Z.`,
+      });
+      return;
+    }
+
+    if (tradeAction === "SELL" && sharesHeld < shares) {
+      setTradeFeedback({
+        type: "error",
+        message: `Insufficient shares held. Held: ${sharesHeld.toLocaleString()}, Requested: ${shares.toLocaleString()}.`,
+      });
+      return;
+    }
+
+    setIsSubmittingTrade(true);
+    setTradeFeedback(null);
+
+    try {
+      const res = await api.post<TradeStockResponse>("/api/economy/trade", {
+        ticker: quote.ticker,
+        action: tradeAction,
+        shares,
+        charId: activeChar.charId,
+      });
+
+      if (res.success) {
+        setTradeFeedback({
+          type: "success",
+          message: res.message || `Trade executed: ${tradeAction} ${shares} ${quote.ticker}.`,
+        });
+        setSharesInput("");
+        setZenyInput("");
+        await loadPlayerData();
+        if (onTradeSuccess) onTradeSuccess();
+      } else {
+        setTradeFeedback({
+          type: "error",
+          message: res.error || "Trade failed to execute.",
+        });
+      }
+    } catch (err: any) {
+      setTradeFeedback({
+        type: "error",
+        message: err.message || "Failed to execute trade. Please try again.",
+      });
+    } finally {
+      setIsSubmittingTrade(false);
+    }
+  };
+
+  const parsedShares = parseInt(sharesInput, 10) || 0;
+  const parsedTotalZeny = parsedShares * quote.price;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150 select-none"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="bento-card w-full max-w-lg max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border"
+        className="bento-card w-full max-w-xl max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border border-border bg-surface"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Title Bar */}
@@ -210,7 +423,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm custom-scrollbar">
           {/* Fundamentals Metric Strip */}
           <div className="grid grid-cols-3 gap-2 text-center font-mono">
             <div className="p-2 rounded bg-surface2/60 border border-border/70">
@@ -225,7 +438,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
               <div className="text-[10px] text-muted uppercase tracking-wider">
                 {vocab.yieldLabel}
               </div>
-              <div className="font-bold text-success mt-0.5 text-xs sm:text-sm">
+              <div className="font-bold text-accent mt-0.5 text-xs sm:text-sm">
                 {quote.dividend > 0 ? `${quote.dividend} Z` : "0 Z"}
               </div>
             </div>
@@ -243,6 +456,331 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 🚀 EXPANDABLE ACTION TRIGGER BAR: BUY OR SELL BUTTONS */}
+          {user && (
+            <div className="space-y-3">
+              {/* Trigger Bar: Buy vs Sell Action Buttons */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Buy Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleTrade("BUY")}
+                  className={`px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                    isTradeExpanded && tradeAction === "BUY"
+                      ? "bg-success text-black border-success font-extrabold shadow-md ring-2 ring-success/30"
+                      : "bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-success/50"
+                  }`}
+                  title={isTradeExpanded && tradeAction === "BUY" ? "Click to collapse buy panel" : "Click to expand buy panel"}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                        isTradeExpanded && tradeAction === "BUY"
+                          ? "bg-black/20 text-black"
+                          : "bg-success/15 text-success"
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <div className="font-bold text-xs">Buy {vocab.unitLabel}</div>
+                      <div
+                        className={`text-[9px] font-mono ${
+                          isTradeExpanded && tradeAction === "BUY"
+                            ? "text-black/80 font-semibold"
+                            : "text-muted"
+                        }`}
+                      >
+                        {formatZeny(quote.price)} Z / {vocab.unitAbbr}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[10px] font-mono hidden sm:inline-block px-1.5 py-0.5 rounded ${
+                        isTradeExpanded && tradeAction === "BUY"
+                          ? "bg-black/20 text-black font-bold"
+                          : "bg-surface text-accent font-semibold"
+                      }`}
+                    >
+                      {formatZeny(availableZeny)} Z
+                    </span>
+                    {isTradeExpanded && tradeAction === "BUY" ? (
+                      <ChevronUp className="w-4 h-4 text-black" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-muted" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Sell Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleTrade("SELL")}
+                  className={`px-3 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                    isTradeExpanded && tradeAction === "SELL"
+                      ? "bg-danger text-white border-danger font-extrabold shadow-md ring-2 ring-danger/30"
+                      : "bg-surface2/80 hover:bg-surface2 border-border text-primary hover:border-danger/50"
+                  }`}
+                  title={isTradeExpanded && tradeAction === "SELL" ? "Click to collapse sell panel" : "Click to expand sell panel"}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                        isTradeExpanded && tradeAction === "SELL"
+                          ? "bg-black/20 text-white"
+                          : "bg-danger/15 text-danger"
+                      }`}
+                    >
+                      <TrendingDown className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <div className="font-bold text-xs">Sell {vocab.unitLabel}</div>
+                      <div
+                        className={`text-[9px] font-mono ${
+                          isTradeExpanded && tradeAction === "SELL"
+                            ? "text-white/80 font-semibold"
+                            : "text-muted"
+                        }`}
+                      >
+                        Held: {sharesHeld.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[10px] font-mono hidden sm:inline-block px-1.5 py-0.5 rounded ${
+                        isTradeExpanded && tradeAction === "SELL"
+                          ? "bg-black/20 text-white font-bold"
+                          : "bg-surface text-primary font-semibold"
+                      }`}
+                    >
+                      {sharesHeld.toLocaleString()} {vocab.unitAbbr}
+                    </span>
+                    {isTradeExpanded && tradeAction === "SELL" ? (
+                      <ChevronUp className="w-4 h-4 text-white" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-muted" />
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* 📂 EXPANDED TRADING DRAWER (Opens when Buy or Sell is clicked) */}
+              {isTradeExpanded && (
+                <div className="p-4 rounded-xl bg-surface2/60 border border-border space-y-3.5 animate-in fade-in zoom-in-95 duration-150 shadow-inner">
+                  {/* Top Drawer Controls: Character Selector & Status Lock */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted font-medium">Trading Character:</span>
+                      {characters.length > 1 ? (
+                        <select
+                          value={selectedCharId || ""}
+                          onChange={(e) => setSelectedCharId(Number(e.target.value))}
+                          className="bg-surface border border-border rounded px-2 py-0.5 text-xs font-mono font-bold text-primary focus:outline-none focus:border-accent"
+                        >
+                          {characters.map((c) => (
+                            <option key={c.charId} value={c.charId}>
+                              {c.name} (Lv.{c.baseLevel}) - {formatZeny(c.zeny)} Z {c.online ? "[ONLINE]" : "[OFFLINE]"}
+                            </option>
+                          ))}
+                        </select>
+                      ) : activeChar ? (
+                        <span className="text-xs font-mono font-bold text-primary">
+                          {activeChar.name} (Lv.{activeChar.baseLevel})
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Online Lock Status Badge */}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded border flex items-center gap-1.5 ${
+                          isCharOffline
+                            ? "bg-success/10 border-success/20 text-success"
+                            : "bg-accent/15 border-accent/30 text-accent font-bold animate-pulse"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isCharOffline ? "bg-success" : "bg-accent"
+                          }`}
+                        />
+                        <span>{isCharOffline ? "Offline: Safe to Trade" : "Online: Trade Locked"}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsTradeExpanded(false)}
+                        className="p-1 text-muted hover:text-primary rounded hover:bg-surface transition-colors"
+                        title="Collapse Trade Console"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mode Indicator Strip */}
+                  <div className="flex items-center justify-between text-xs px-1">
+                    <span className="font-bold flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          tradeAction === "BUY" ? "bg-success" : "bg-danger"
+                        }`}
+                      />
+                      <span>Market Order:</span>
+                      <span
+                        className={`font-mono font-extrabold uppercase ${
+                          tradeAction === "BUY" ? "text-success" : "text-danger"
+                        }`}
+                      >
+                        {tradeAction === "BUY" ? "BUY (ACQUIRE SHARES)" : "SELL (LIQUIDATE TO ZENY)"}
+                      </span>
+                    </span>
+                    <span className="text-[11px] font-mono text-muted">
+                      Price: <strong className="text-primary">{formatZeny(quote.price)} Z</strong>
+                    </span>
+                  </div>
+
+                  {/* Bi-directional Inputs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Input: Shares */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-medium text-muted">
+                        <label htmlFor="modalTradeShares">{vocab.unitLabel} Amount</label>
+                        <span className="font-mono">
+                          Held: <strong className="text-primary font-bold">{sharesHeld.toLocaleString()}</strong>
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          ref={shareInputRef}
+                          id="modalTradeShares"
+                          type="number"
+                          min="1"
+                          value={sharesInput}
+                          onChange={(e) => handleSharesChange(e.target.value)}
+                          placeholder="0"
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-primary focus:outline-none focus:border-accent"
+                        />
+                        <span className="absolute right-2.5 top-1.5 text-[9px] font-mono text-muted uppercase">
+                          {vocab.unitAbbr}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Input: Total Zeny */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-medium text-muted">
+                        <label htmlFor="modalTradeZeny">
+                          {tradeAction === "BUY" ? "Total Budget (Zeny)" : "Total Proceeds (Zeny)"}
+                        </label>
+                        <span className="font-mono">
+                          Bal: <strong className="text-accent font-bold">{formatZeny(availableZeny)} Z</strong>
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          id="modalTradeZeny"
+                          type="number"
+                          min="0"
+                          value={zenyInput}
+                          onChange={(e) => handleZenyChange(e.target.value)}
+                          placeholder="0"
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-primary focus:outline-none focus:border-accent"
+                        />
+                        <span className="absolute right-2.5 top-1.5 text-[9px] font-mono text-muted">
+                          ZENY
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Chips */}
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className="text-[9px] font-mono text-muted uppercase">Presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyPercentage(0.25)}
+                      className="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer"
+                    >
+                      25%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPercentage(0.50)}
+                      className="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPercentage(0.75)}
+                      className="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-muted hover:text-primary transition-colors cursor-pointer"
+                    >
+                      75%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPercentage(1.00)}
+                      className="px-2 py-0.5 rounded bg-surface hover:bg-border border border-border text-[10px] font-mono text-accent font-bold transition-colors cursor-pointer"
+                    >
+                      MAX
+                    </button>
+                  </div>
+
+                  {/* Feedback Alert */}
+                  {tradeFeedback && (
+                    <div
+                      className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
+                        tradeFeedback.type === "success"
+                          ? "bg-success/15 border-success/30 text-success font-medium"
+                          : "bg-danger/15 border-danger/30 text-danger font-medium"
+                      }`}
+                    >
+                      {tradeFeedback.type === "success" ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-success" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
+                      )}
+                      <span>{tradeFeedback.message}</span>
+                    </div>
+                  )}
+
+                  {/* Summary & Submit Action */}
+                  <div className="pt-2 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    <div className="text-[11px] font-mono text-muted w-full sm:w-auto">
+                      <span>
+                        {parsedShares.toLocaleString()} {vocab.unitAbbr} × {formatZeny(quote.price)} Z ={" "}
+                        <strong className="text-primary font-bold">{formatZeny(parsedTotalZeny)} Z</strong>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExecuteTrade}
+                      disabled={isSubmittingTrade || !isCharOffline || parsedShares <= 0}
+                      className={`w-full sm:w-auto px-5 py-2 rounded-lg font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                        tradeAction === "BUY"
+                          ? "bg-success hover:bg-emerald-400 text-black"
+                          : "bg-danger hover:bg-rose-400 text-white"
+                      }`}
+                    >
+                      {isSubmittingTrade ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Executing Trade...</span>
+                        </>
+                      ) : (
+                        <span>
+                          {tradeAction === "BUY" ? "Execute Market Buy" : "Execute Market Sell"}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Interactive TradingView Candlestick Chart */}
           <CandlestickChart ticker={quote.ticker} />
@@ -359,7 +897,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
             </div>
           )}
 
-          {/* Real Historical News Dispatches (Events that Actually Happened) */}
+          {/* Real Historical News Dispatches */}
           {historicalEvents.length > 0 && (
             <div className="space-y-2 pt-1">
               <div className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold flex items-center justify-between">
