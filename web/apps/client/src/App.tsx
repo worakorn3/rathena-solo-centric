@@ -4,6 +4,7 @@ import { NetWorthCard } from "./components/economy/NetWorthCard";
 import { AssetAllocationPie } from "./components/economy/AssetAllocationPie";
 import { BankWidget } from "./components/economy/BankWidget";
 import { StockPortfolio } from "./components/economy/StockPortfolio";
+import { StockTransactionHistory } from "./components/economy/StockTransactionHistory";
 import { MarketWatch } from "./components/economy/MarketWatch";
 import { CharSelector } from "./components/character/CharSelector";
 import { StatusWindow } from "./components/character/StatusWindow";
@@ -16,6 +17,8 @@ import { LeisureView } from "./components/leisure/LeisureView";
 import { GlobalAudioDock } from "./components/leisure/GlobalAudioDock";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { LoginModal } from "./components/auth/LoginModal";
+import { LoginPage } from "./components/auth/LoginPage";
+import { RegisterPage } from "./components/auth/RegisterPage";
 import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { useAuth } from "./context/AuthContext";
 import { AudioProvider } from "./context/AudioContext";
@@ -27,7 +30,7 @@ import {
   ProgressionSummary,
   StockMarketQuote,
 } from "@rathena/shared";
-import { Coins, Shield, Skull, Target, User, Sparkles, Briefcase, Landmark, PieChart } from "lucide-react";
+import { Coins, Shield, Skull, Target, User, Sparkles, Briefcase, Landmark, PieChart, History } from "lucide-react";
 
 const VALID_TABS: Record<string, NavTab> = {
   character: "CHARACTER",
@@ -36,6 +39,8 @@ const VALID_TABS: Record<string, NavTab> = {
   progression: "PROGRESSION",
   bounties: "BOUNTIES",
   gacha: "GACHA",
+  login: "LOGIN",
+  register: "REGISTER",
 };
 
 const getTabFromHash = (): NavTab => {
@@ -59,7 +64,7 @@ export const AppContent: React.FC = () => {
   const [selectedCharDetail, setSelectedCharDetail] = useState<CharacterDetail | null>(null);
   const [progression, setProgression] = useState<ProgressionSummary | null>(null);
   const [portfolioAssetFilter, setPortfolioAssetFilter] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
-  const [portfolioTab, setPortfolioTab] = useState<"HOLDINGS" | "BANK" | "BREAKDOWN">("HOLDINGS");
+  const [portfolioTab, setPortfolioTab] = useState<"HOLDINGS" | "BANK" | "BREAKDOWN" | "HISTORY">("HOLDINGS");
 
   // Public Market Data
   const [quotes, setQuotes] = useState<StockMarketQuote[]>([]);
@@ -253,7 +258,7 @@ export const AppContent: React.FC = () => {
                 </div>
                 <div className="flex justify-center gap-3 pt-2">
                   <button
-                    onClick={openLoginModal}
+                    onClick={() => handleTabChange("LOGIN")}
                     className="bg-primary hover:bg-primary/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors"
                   >
                     Log In
@@ -321,6 +326,18 @@ export const AppContent: React.FC = () => {
                           <PieChart className="w-3.5 h-3.5 text-purple-400" />
                           <span>Allocation</span>
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioTab("HISTORY")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                            portfolioTab === "HISTORY"
+                              ? "bg-surface text-primary shadow-sm border border-border"
+                              : "text-muted hover:text-primary hover:bg-surface2/80"
+                          }`}
+                        >
+                          <History className="w-3.5 h-3.5 text-success" />
+                          <span>Ledger</span>
+                        </button>
                       </div>
                     </div>
 
@@ -332,6 +349,7 @@ export const AppContent: React.FC = () => {
                           totalNetWorth={netWorth.totalNetWorth}
                           assetClassTab={portfolioAssetFilter}
                           onAssetClassChange={setPortfolioAssetFilter}
+                          onRefresh={loadUserData}
                         />
                       )}
                       {portfolioTab === "BANK" && (
@@ -358,6 +376,11 @@ export const AppContent: React.FC = () => {
                             setPortfolioTab("HOLDINGS");
                           }}
                         />
+                      )}
+                      {portfolioTab === "HISTORY" && (
+                        <ErrorBoundary>
+                          <StockTransactionHistory className="flex-1 min-h-0" />
+                        </ErrorBoundary>
                       )}
                     </div>
                   </div>
@@ -393,7 +416,7 @@ export const AppContent: React.FC = () => {
                     </p>
                   </div>
                   <button
-                    onClick={openLoginModal}
+                    onClick={() => handleTabChange("LOGIN")}
                     className="bg-accent hover:bg-accent/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors inline-block mt-2"
                   >
                     Log In to View Your Assets
@@ -454,7 +477,7 @@ export const AppContent: React.FC = () => {
                   </p>
                 </div>
                 <button
-                  onClick={openLoginModal}
+                  onClick={() => handleTabChange("LOGIN")}
                   className="bg-danger hover:bg-danger/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors mt-2"
                 >
                   Log In to View Hunting Records
@@ -480,6 +503,24 @@ export const AppContent: React.FC = () => {
                 charZeny={selectedCharDetail?.zeny || 0}
                 onRefreshBalances={loadUserData}
               />
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {/* ==================== TAB 6: 🔐 DEDICATED LOGIN ==================== */}
+        {activeTab === "LOGIN" && (
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+            <ErrorBoundary>
+              <LoginPage onNavigate={handleTabChange} />
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {/* ==================== TAB 7: 📝 DEDICATED REGISTER ==================== */}
+        {activeTab === "REGISTER" && (
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+            <ErrorBoundary>
+              <RegisterPage onNavigate={handleTabChange} />
             </ErrorBoundary>
           </div>
         )}

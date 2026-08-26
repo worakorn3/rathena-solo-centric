@@ -238,12 +238,14 @@ L_ClaimDiv:
 
 	if (.@dest == 1) {
 		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
+		query_sql "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (" + .@account_id + ", " + getcharid(0) + ", 'ALL', 'DIVIDEND', 0, 0, " + .@net + ", " + .@tax_amt + ", 'WALLET')";
 		Zeny = Zeny + .@net;
 		callfunc "F_RecordEconomy", 2, .@net; // 2: Total Zeny Earned
 		mes "[Distribution Completed]";
 		mes "Credited ^00FF00" + .@net + "z^000000 to your wallet.";
 	} else if (.@dest == 2) {
 		query_sql "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = " + .@account_id;
+		query_sql "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (" + .@account_id + ", " + getcharid(0) + ", 'ALL', 'DIVIDEND', 0, 0, " + .@net + ", " + .@tax_amt + ", 'BANK')";
 		.@new_principal = .@bank_total_available + .@net;
 		.@now = gettimetick(2);
 		query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ", " + .@bank_interest + ") ON DUPLICATE KEY UPDATE `principal` = " + .@new_principal + ", `deposit_time` = " + .@now + ", `interest_paid_total` = `interest_paid_total` + " + .@bank_interest;
@@ -349,6 +351,7 @@ L_MenuBuy:
 	Zeny = Zeny - .@total; 
 	
 	query_sql "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (" + .@account_id + ", '" + .@cn$ + "', " + .@qty + ", " + .@subtotal + ") ON DUPLICATE KEY UPDATE shares = shares + " + .@qty + ", total_cost = total_cost + " + .@subtotal;
+	query_sql "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (" + .@account_id + ", " + getcharid(0) + ", '" + .@cn$ + "', 'BUY', " + .@qty + ", " + .@p + ", " + .@total + ", " + .@fee + ", 'WALLET')";
 	mes "[Order Executed]";
 	mes "Purchased " + .@qty + " units of " + .@cn$ + " for " + .@total + "z.";
 	next; goto L_MenuMain;
@@ -484,6 +487,9 @@ L_MenuSell:
 	} else {
 		query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / shares), pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	}
+
+	.@dest_label$ = (.@dest == 2) ? "BANK" : "WALLET";
+	query_sql "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (" + .@account_id + ", " + getcharid(0) + ", '" + .@cn$ + "', 'SELL', " + .@qty + ", " + .@p + ", " + .@net + ", " + .@fee + ", '" + .@dest_label$ + "')";
 
 	if (.@dest == 1) {
 		Zeny = Zeny + .@total_payout;

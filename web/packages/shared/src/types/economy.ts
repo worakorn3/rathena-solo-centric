@@ -16,6 +16,8 @@ export interface StockHolding {
   unrealizedPnLPercent: number;
   dividendRate: number;
   pendingDividends: number;
+  dripEnabled: boolean;
+  dripCarryover: number;
 }
 
 export interface StockMarketQuote {
@@ -236,6 +238,64 @@ export function isCryptoAsset(ticker: string, assetType?: string): boolean {
   if (assetType === "CRYPTO") return true;
   if (assetType === "EQUITY") return false;
   return (CRYPTO_TICKERS as readonly string[]).includes(ticker.toUpperCase().trim());
+}
+
+export type StockTransactionAction = "BUY" | "SELL" | "DIVIDEND" | "DRIP_BUY";
+
+export interface StockTransaction {
+  id: number;
+  accountId: number;
+  charId: number;
+  charName?: string;
+  ticker: string;
+  stockName?: string;
+  assetType: "EQUITY" | "CRYPTO";
+  action: StockTransactionAction;
+  shares: number;
+  price: number;
+  totalAmount: number;
+  fee: number;
+  destination: "WALLET" | "BANK";
+  createdAt: string;
+}
+
+export interface StockTransactionsResponse {
+  success: boolean;
+  error?: string;
+  transactions: StockTransaction[];
+  total?: number;
+}
+
+export interface DripTogglePayload {
+  ticker: string;
+  enabled: boolean;
+}
+
+export interface DripToggleResponse {
+  success: boolean;
+  error?: string;
+  ticker?: string;
+  dripEnabled?: boolean;
+  message?: string;
+}
+
+export interface HarvestDividendsPayload {
+  charId?: number;
+  ticker?: string;
+  destination?: "WALLET" | "BANK";
+}
+
+export interface HarvestDividendsResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  grossAccrued?: number;
+  taxDeduction?: number;
+  taxRate?: number;
+  netPayout?: number;
+  destination?: "WALLET" | "BANK";
+  remainingZeny?: number;
+  newBankPrincipal?: number;
 }
 
 

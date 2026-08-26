@@ -10,11 +10,19 @@ import {
   Newspaper,
   Landmark,
   Zap,
+  Sparkles,
+  ToggleLeft,
+  ToggleRight,
+  Loader2,
+  AlertCircle,
+  HelpCircle,
 } from "lucide-react";
-import { StockHolding, StockMarketQuote, getAssetVocabulary, isCryptoAsset } from "@rathena/shared";
+import { StockHolding, StockMarketQuote, getAssetVocabulary, isCryptoAsset, DripToggleResponse } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
+import { api } from "../../lib/api";
 import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
+import { DividendHarvestModal } from "./DividendHarvestModal";
 
 export type AssetClassFilter = "ALL" | "EQUITY" | "CRYPTO";
 type FilterTab = "ALL" | "GAINERS" | "LOSERS";
@@ -26,6 +34,7 @@ interface StockPortfolioProps {
   onSelectTicker?: (ticker: string) => void;
   assetClassTab?: AssetClassFilter;
   onAssetClassChange?: (tab: AssetClassFilter) => void;
+  onRefresh?: () => void;
 }
 
 export const StockPortfolio: React.FC<StockPortfolioProps> = ({
@@ -34,6 +43,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   onSelectTicker,
   assetClassTab: controlledAssetClassTab,
   onAssetClassChange,
+  onRefresh,
 }) => {
   const [internalAssetClassTab, setInternalAssetClassTab] = useState<AssetClassFilter>("ALL");
   const assetClassTab = controlledAssetClassTab !== undefined ? controlledAssetClassTab : internalAssetClassTab;
@@ -49,6 +59,8 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   const [sortBy, setSortBy] = useState<SortOption>("VALUE");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [selectedQuoteForModal, setSelectedQuoteForModal] = useState<StockMarketQuote | null>(null);
+  const [harvestModalHolding, setHarvestModalHolding] = useState<StockHolding | null | undefined>(undefined);
+  const [togglingDripTicker, setTogglingDripTicker] = useState<string | null>(null);
 
   const safeHoldings = Array.isArray(holdings) ? holdings : [];
 
@@ -67,6 +79,20 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   );
 
   const cryptoValue = totalStockValue - municipalValue;
+
+  // Calculate total pending dividends & cash-harvestable dividends (DRIP off)
+  const totalPendingDividends = useMemo(
+    () => safeHoldings.reduce((sum, h) => sum + (h.pendingDividends || 0), 0),
+    [safeHoldings]
+  );
+
+  const cashHarvestableDividends = useMemo(
+    () =>
+      safeHoldings
+        .filter((h) => !h.dripEnabled)
+        .reduce((sum, h) => sum + (h.pendingDividends || 0), 0),
+    [safeHoldings]
+  );
 
   // Calculate ratios and enrich holdings
   const enrichedHoldings = useMemo(() => {
@@ -117,6 +143,23 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     setExpandedTicker((prev) => (prev === ticker ? null : ticker));
   };
 
+  const handleToggleDrip = async (ticker: string, currentEnabled: boolean) => {
+    setTogglingDripTicker(ticker);
+    try {
+      const res = await api.post<DripToggleResponse>("/api/economy/drip/toggle", {
+        ticker,
+        enabled: !currentEnabled,
+      });
+      if (res.success && onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error("Failed to toggle DRIP:", err);
+    } finally {
+      setTogglingDripTicker(null);
+    }
+  };
+
   const municipalHoldingsCount = safeHoldings.filter((h) => !isCryptoAsset(h.ticker, h.assetType)).length;
   const cryptoHoldingsCount = safeHoldings.length - municipalHoldingsCount;
 
@@ -159,7 +202,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                 <Landmark className="w-3 h-3 text-info shrink-0" />
                 <span>Municipal Equities ({municipalHoldingsCount})</span>
               </span>
-              <span className="font-bold shrink-0">{formatZeny(municipalValue)} Z</span>
+              <span className="font-bold text-[10px]">{formatZeny(municipalValue)} Z</span>
             </button>
 
             <button
@@ -167,81 +210,102 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
               onClick={() => setAssetClassTab(assetClassTab === "CRYPTO" ? "ALL" : "CRYPTO")}
               className={`flex items-center justify-between px-2 py-1 rounded transition-all cursor-pointer border ${
                 assetClassTab === "CRYPTO"
-                  ? "bg-accent/25 border-accent text-accent font-bold ring-1 ring-accent/30"
-                  : "bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"
+                  ? "bg-amber-500/25 border-amber-500 text-amber-400 font-bold ring-1 ring-amber-500/30"
+                  : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/15"
               }`}
             >
               <span className="flex items-center gap-1 font-sans font-medium text-[9px] truncate">
-                <Zap className="w-3 h-3 text-accent shrink-0" />
+                <Zap className="w-3 h-3 text-amber-400 shrink-0" />
                 <span>Crypto Protocols ({cryptoHoldingsCount})</span>
               </span>
-              <span className="font-bold shrink-0">{formatZeny(cryptoValue)} Z</span>
+              <span className="font-bold text-[10px]">{formatZeny(cryptoValue)} Z</span>
             </button>
           </div>
 
-          {/* Top Proportion Distribution Bar */}
-          <div className="w-full h-1.5 bg-surface2 rounded-full overflow-hidden flex">
-            {enrichedHoldings.map((h) => {
-              const theme = getTickerTheme(h.ticker);
-              return (
-                <div
-                  key={`bar-${h.ticker}`}
-                  className={`h-full ${theme.fillColorClass} transition-all duration-300`}
-                  style={{ width: `${Math.max(1.5, h.stockRatio)}%` }}
-                  title={`${h.ticker}: ${h.stockRatio.toFixed(1)}%`}
-                />
-              );
-            })}
-          </div>
-
-          {/* Compact Filter + Sort Row */}
-          <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-border/40 text-[10px]">
-            {/* Category / PnL Filters */}
-            <div className="flex items-center gap-1">
-              <div className="flex items-center gap-0.5 bg-surface2/80 p-0.5 rounded border border-border/60">
-                {(["ALL", "GAINERS", "LOSERS"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setFilterTab(tab)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors ${
-                      filterTab === tab
-                        ? tab === "GAINERS"
-                          ? "bg-success/20 text-success font-bold"
-                          : tab === "LOSERS"
-                          ? "bg-danger/20 text-danger font-bold"
-                          : "bg-surface text-primary font-bold shadow-sm"
-                        : "text-muted hover:text-primary"
-                    }`}
-                  >
-                    {tab === "ALL" ? "All PnL" : tab === "GAINERS" ? "▲ Gain" : "▼ Loss"}
-                  </button>
-                ))}
+          {/* Accrued Dividends Summary & Harvest Action Banner */}
+          {totalPendingDividends > 0 && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-success/10 border border-success/30 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded bg-success/20 text-success">
+                  <Coins className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-primary flex items-center gap-1">
+                    <span>Accrued Yields:</span>
+                    <span className="font-mono text-success font-bold">
+                      +{formatZeny(totalPendingDividends)} Z
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-muted font-mono">
+                    {cashHarvestableDividends > 0 ? (
+                      <span className="text-success/90">
+                        {formatZeny(cashHarvestableDividends)} Z available to harvest (DRIP Off)
+                      </span>
+                    ) : (
+                      <span className="text-purple-300">
+                        All yields scheduled for midnight DRIP auto-reinvest
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {assetClassTab !== "ALL" && (
+              <button
+                type="button"
+                onClick={() => setHarvestModalHolding(null)}
+                disabled={cashHarvestableDividends <= 0}
+                className={`px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer ${
+                  cashHarvestableDividends > 0
+                    ? "bg-success text-black hover:bg-success/90 shadow-xs"
+                    : "bg-surface2 text-muted border border-border cursor-not-allowed opacity-60"
+                }`}
+                title={
+                  cashHarvestableDividends > 0
+                    ? "Harvest accrued dividends into Wallet or Bank"
+                    : "Toggle DRIP OFF on positions to harvest cash dividends"
+                }
+              >
+                <Coins className="w-3 h-3" />
+                <span>Harvest All Yields</span>
+              </button>
+            </div>
+          )}
+
+          {/* Filters & Sorting Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 border-t border-border/50 text-[10px]">
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-surface2/50 p-0.5 rounded border border-border">
+              {(["ALL", "GAINERS", "LOSERS"] as const).map((tab) => (
                 <button
+                  key={tab}
                   type="button"
-                  onClick={() => setAssetClassTab("ALL")}
-                  className="text-[9px] font-mono text-accent bg-accent/15 px-1.5 py-0.5 rounded border border-accent/30 hover:bg-accent/25 transition-colors"
+                  onClick={() => setFilterTab(tab)}
+                  className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                    filterTab === tab
+                      ? "bg-primary text-black font-bold shadow-xs"
+                      : "text-muted hover:text-primary"
+                  }`}
                 >
-                  Reset ({assetClassTab}) ✕
+                  {tab === "ALL"
+                    ? "All"
+                    : tab === "GAINERS"
+                    ? "Gainers"
+                    : "Losers"}
                 </button>
-              )}
+              ))}
             </div>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="text-[9px] text-muted font-sans hidden sm:inline">Sort:</span>
+            <div className="flex items-center gap-1 text-muted">
+              <span className="text-[9px]">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                aria-label="Sort portfolio assets by"
-                className="bg-surface2 border border-border text-primary text-[9px] font-mono rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-accent"
+                className="bg-surface2 border border-border rounded px-1.5 py-0.5 text-[10px] text-primary focus:outline-none focus:border-accent cursor-pointer"
               >
-                <option value="VALUE">Value ▾</option>
-                <option value="WEIGHT">Weight % ▾</option>
-                <option value="PNL">PnL % ▾</option>
+                <option value="VALUE">Market Value</option>
+                <option value="WEIGHT">Weight %</option>
+                <option value="PNL">PnL %</option>
               </select>
             </div>
           </div>
@@ -270,6 +334,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             const theme = getTickerTheme(h.ticker);
             const isExpanded = expandedTicker === h.ticker;
             const vocab = getAssetVocabulary(h.isCrypto ? "CRYPTO" : "EQUITY");
+            const isDripLoading = togglingDripTicker === h.ticker;
 
             return (
               <div
@@ -304,6 +369,11 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-primary flex items-center gap-1.5">
                         <span className="font-mono">{h.ticker}</span>
+                        {h.isCrypto && (
+                          <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[8.5px] font-mono border border-amber-400/20">
+                            CRYPTO
+                          </span>
+                        )}
                         <span className="text-[10px] text-muted font-normal truncate hidden sm:inline">
                           {h.name}
                         </span>
@@ -314,10 +384,12 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           <PieIcon className="w-2.5 h-2.5 text-accent inline shrink-0" />
                           <span>{h.stockRatio.toFixed(1)}%</span>
                         </span>
-                        {h.netWorthRatio !== null && (
-                          <span className="text-muted/70 text-[9px] hidden sm:inline">
-                            • {h.netWorthRatio.toFixed(1)}% NW
+                        {h.dripEnabled ? (
+                          <span className="inline-flex items-center gap-0.5 text-purple-400 bg-purple-500/10 px-1 py-0.2 rounded border border-purple-500/20 text-[8.5px] font-bold">
+                            <Sparkles className="w-2 h-2" /> DRIP ON
                           </span>
+                        ) : (
+                          <span className="text-muted/60 text-[8.5px]">DRIP OFF</span>
                         )}
                         <span className="text-muted/60 hidden md:inline">
                           • {h.shares.toLocaleString()} {vocab.unitAbbr}
@@ -360,7 +432,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
 
                 {/* Expandable Details Drawer */}
                 {isExpanded && (
-                  <div className="px-2.5 pb-2.5 pt-1 border-t border-border/40 bg-surface/50 text-[10px] font-mono animate-fadeIn">
+                  <div className="px-2.5 pb-2.5 pt-1 border-t border-border/40 bg-surface/50 text-[10px] font-mono animate-fadeIn space-y-2">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
                         <span className="text-[8.5px] text-muted block">
@@ -388,39 +460,101 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                       </div>
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
                         <span className="text-[8.5px] text-muted block">
-                          Total Invested
+                          Accrued Dividends
                         </span>
-                        <span className="font-bold text-primary">
-                          {formatZeny(h.avgBuyPrice * h.shares)} Z
+                        <span className="font-bold text-success">
+                          +{formatZeny(h.pendingDividends || 0)} Z
                         </span>
                       </div>
                     </div>
 
-                    {/* Secondary Metrics Bar */}
-                    <div className="mt-1.5 pt-1.5 border-t border-border/20 flex items-center justify-between text-[9px] text-muted">
+                    {/* DRIP Controls Bar */}
+                    <div className="p-2 rounded bg-surface2/50 border border-border/50 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        <div>
+                          <div className="text-[10px] font-bold text-primary flex items-center gap-1">
+                            <span>DRIP Auto-Reinvestment:</span>
+                            <span className={h.dripEnabled ? "text-success font-bold" : "text-muted"}>
+                              {h.dripEnabled ? "ENABLED" : "DISABLED"}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-muted">
+                            {h.dripEnabled
+                              ? "Dividends automatically purchase shares at midnight simulation."
+                              : "Dividends accumulate as cash; toggle on for automatic compounding."}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleDrip(h.ticker, Boolean(h.dripEnabled));
+                        }}
+                        disabled={isDripLoading}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold text-[10px] transition-all cursor-pointer ${
+                          h.dripEnabled
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30"
+                            : "bg-surface2 text-muted border border-border hover:text-primary hover:bg-surface2/80"
+                        }`}
+                        title="Toggle DRIP dividend reinvestment on/off"
+                      >
+                        {isDripLoading ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                        ) : h.dripEnabled ? (
+                          <ToggleRight className="w-4 h-4 text-purple-400" />
+                        ) : (
+                          <ToggleLeft className="w-4 h-4 text-muted" />
+                        )}
+                        <span>{h.dripEnabled ? "Disable DRIP" : "Enable DRIP"}</span>
+                      </button>
+                    </div>
+
+                    {/* Action Buttons Bar */}
+                    <div className="pt-1 border-t border-border/20 flex items-center justify-between text-[9px] text-muted">
                       <div className="flex items-center gap-2">
                         <span>
-                          PnL Amount:{" "}
-                          <strong
-                            className={
-                              h.isPositive ? "text-success" : "text-danger"
-                            }
-                          >
+                          PnL:{" "}
+                          <strong className={h.isPositive ? "text-success" : "text-danger"}>
                             {h.isPositive ? "+" : ""}
                             {formatZeny(h.unrealizedPnL)} Z
                           </strong>
                         </span>
-                        {h.pendingDividends > 0 && (
-                          <span className="text-accent font-medium flex items-center gap-0.5">
-                            <Coins className="w-2.5 h-2.5 inline" />
-                            {h.isCrypto ? "Rewards" : "Div"}: {formatZeny(h.pendingDividends)} Z
-                          </span>
-                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted/80">
-                          Weight: {h.stockRatio.toFixed(2)}%
-                        </span>
+
+                      <div className="flex items-center gap-1.5">
+                        {/* Harvest Button */}
+                        {h.pendingDividends > 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!h.dripEnabled) {
+                                setHarvestModalHolding(h);
+                              }
+                            }}
+                            disabled={Boolean(h.dripEnabled)}
+                            className={`px-2 py-0.5 rounded font-bold transition-colors flex items-center gap-1 ${
+                              !h.dripEnabled
+                                ? "bg-success/15 hover:bg-success/25 border border-success/30 text-success cursor-pointer"
+                                : "bg-surface2 text-muted border border-border cursor-not-allowed opacity-60"
+                            }`}
+                            title={
+                              h.dripEnabled
+                                ? "Cannot harvest while DRIP is active. Toggle DRIP OFF first."
+                                : "Harvest dividends to wallet or bank"
+                            }
+                          >
+                            <Coins className="w-2.5 h-2.5" />
+                            <span>
+                              {h.dripEnabled ? "DRIP Active" : `Harvest (+${formatZeny(h.pendingDividends)} Z)`}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Trade / Detail Button */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -447,7 +581,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           title="View price action, lore, and trade via Web Terminal"
                         >
                           <Newspaper className="w-2.5 h-2.5" />
-                          <span>Detail</span>
+                          <span>Trade / Detail</span>
                         </button>
                       </div>
                     </div>
@@ -459,11 +593,22 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
         )}
       </div>
 
-      {/* Standalone Ticker Details Modal if not controlled */}
+      {/* Standalone Ticker Details Modal */}
       <TickerDetailModal
         quote={selectedQuoteForModal}
         onClose={() => setSelectedQuoteForModal(null)}
+        onTradeSuccess={onRefresh}
       />
+
+      {/* Dividend Harvest Modal */}
+      {harvestModalHolding !== undefined && (
+        <DividendHarvestModal
+          holding={harvestModalHolding}
+          allHoldings={safeHoldings}
+          onClose={() => setHarvestModalHolding(undefined)}
+          onSuccess={onRefresh}
+        />
+      )}
     </div>
   );
 };

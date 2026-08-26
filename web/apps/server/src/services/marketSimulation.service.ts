@@ -304,6 +304,10 @@ export class MarketSimulationService {
             "UPDATE `solo_stock_player` SET shares = shares + ?, total_cost = total_cost + ?, pending_div = 0, drip_carryover = ? WHERE account_id = ? AND ticker = ?",
             [newShares, cost, newCarry, u.account_id, city]
           );
+          await primaryExecute(
+            "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (?, 0, ?, 'DRIP_BUY', ?, ?, ?, 0, 'WALLET')",
+            [u.account_id, city, newShares, price, cost]
+          );
         } else {
           await primaryExecute(
             "UPDATE `solo_stock_player` SET pending_div = 0, drip_carryover = ? WHERE account_id = ? AND ticker = ?",

@@ -11,6 +11,11 @@ import {
   StockCandle,
   StockHistoryResponse,
   TradeStockResponse,
+  StockTransaction,
+  StockTransactionAction,
+  StockTransactionsResponse,
+  DripToggleResponse,
+  HarvestDividendsResponse,
   isCryptoAsset,
   getJobName
 } from "@rathena/shared";
@@ -234,6 +239,8 @@ export class EconomyService {
         unrealizedPnLPercent,
         dividendRate: quote ? quote.dividend : 0,
         pendingDividends,
+        dripEnabled: Boolean(p.drip_enabled),
+        dripCarryover: Number(p.drip_carryover) || 0,
       };
     });
 
@@ -656,6 +663,11 @@ export class EconomyService {
         [accountId, cleanTicker, shares, totalRequired]
       );
 
+      await primaryExecute(
+        "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (?, ?, ?, 'BUY', ?, ?, ?, ?, 'WALLET')",
+        [accountId, charId, cleanTicker, shares, price, totalRequired, tradeFee]
+      );
+
       // Player Whale Trade Impact: Large block orders add immediate market volume and tactile price pressure
       if (shares >= 500) {
         await primaryExecute(
@@ -767,6 +779,11 @@ export class EconomyService {
         [remainingShares, newTotalCost, accountId, cleanTicker]
       );
     }
+
+    await primaryExecute(
+      "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (?, ?, ?, 'SELL', ?, ?, ?, ?, ?)",
+      [accountId, charId, cleanTicker, shares, price, netProceeds, tradeFee, targetDest]
+    );
 
     // Player Whale Trade Impact on SELL: Large dumps register volume and mild price pressure
     if (shares >= 500) {
@@ -978,5 +995,289 @@ export class EconomyService {
       totalPayout: amountToWithdraw,
       remainingZeny,
     };
+  }
+
+  /**
+   * Toggle DRIP (Dividend Reinvestment Plan) on/off for a holding
+   */
+  static async toggleDrip(
+    accountId: number,
+    ticker: string,
+    enabled: boolean
+  ): Promise<DripToggleResponse> {
+    const cleanTicker = (ticker || "").trim().toUpperCase();
+    if (!cleanTicker) {
+      return { success: false, error: "Invalid ticker specified." };
+    }
+
+    const holding = await primaryQueryOne<{ ticker: string; shares: number }>(
+      "SELECT ticker, shares FROM `solo_stock_player` WHERE account_id = ? AND ticker = ?",
+      [accountId, cleanTicker]
+    );
+
+    if (!holding || Number(holding.shares) <= 0) {
+      return { success: false, error: `You do not hold any active position in ${cleanTicker}.` };
+    }
+
+    const flag = enabled ? 1 : 0;
+    await primaryExecute(
+      "UPDATE `solo_stock_player` SET drip_enabled = ? WHERE account_id = ? AND ticker = ?",
+      [flag, accountId, cleanTicker]
+    );
+
+    return {
+      success: true,
+      ticker: cleanTicker,
+      dripEnabled: Boolean(flag),
+      message: `DRIP for ${cleanTicker} is now ${flag ? "enabled (dividends will auto-reinvest at midnight)" : "disabled (cash dividends will accumulate)"}.`,
+    };
+  }
+
+  /**
+   * Harvest accrued dividends / staking yields
+   * Precondition: DRIP must be disabled (drip_enabled === 0) for harvested positions.
+   * Calculates sovereign dividend tax (DivTaxRate from solo_stock_meta).
+   * Routes payout to character WALLET (offline check, MAX_ZENY check) or Investment BANK (1.9B ceiling).
+   * Writes immutable audit row to solo_stock_transactions.
+   */
+  static async harvestDividends(
+    accountId: number,
+    charId?: number,
+    ticker?: string,
+    destination: "WALLET" | "BANK" = "WALLET"
+  ): Promise<HarvestDividendsResponse> {
+    const cleanTicker = (ticker || "").trim().toUpperCase();
+    const targetDest = (destination || "WALLET").toUpperCase() === "BANK" ? "BANK" : "WALLET";
+
+    // 1. Fetch player positions
+    let playerRows: { ticker: string; pending_div: number; drip_enabled: number }[] = [];
+    if (cleanTicker) {
+      const row = await primaryQueryOne<{ ticker: string; pending_div: number; drip_enabled: number }>(
+        "SELECT ticker, pending_div, drip_enabled FROM `solo_stock_player` WHERE account_id = ? AND ticker = ?",
+        [accountId, cleanTicker]
+      );
+      if (!row) {
+        return { success: false, error: `No holding found for ${cleanTicker}.` };
+      }
+      playerRows = [row];
+    } else {
+      const rows = await primaryExecute(
+        "SELECT ticker, pending_div, drip_enabled FROM `solo_stock_player` WHERE account_id = ? AND pending_div > 0",
+        [accountId]
+      );
+      if (Array.isArray(rows)) {
+        playerRows = rows as any;
+      }
+    }
+
+    if (playerRows.length === 0) {
+      return { success: false, error: "No accrued dividends or staking yields to harvest." };
+    }
+
+    // 2. Enforce DRIP Precondition: Cannot harvest while DRIP is active
+    const dripActiveRows = playerRows.filter((r) => Number(r.drip_enabled) === 1);
+    if (cleanTicker && dripActiveRows.length > 0) {
+      return {
+        success: false,
+        error: `Cannot harvest dividends while DRIP is active for ${cleanTicker}. Please toggle DRIP OFF before harvesting.`,
+      };
+    }
+
+    // For harvest all, only harvest eligible positions where DRIP is OFF
+    const eligibleRows = playerRows.filter((r) => Number(r.drip_enabled) === 0 && Number(r.pending_div) > 0);
+    if (eligibleRows.length === 0) {
+      return {
+        success: false,
+        error: "All positions with accrued dividends have DRIP enabled. Please toggle DRIP OFF to harvest cash dividends.",
+      };
+    }
+
+    const grossAccrued = eligibleRows.reduce((sum, r) => sum + Number(r.pending_div), 0);
+    if (grossAccrued <= 0) {
+      return { success: false, error: "No accrued dividends available for harvest." };
+    }
+
+    // 3. Tax Calculation
+    const taxMeta = await primaryQueryOne<{ mval: number }>(
+      "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'"
+    );
+    const taxRate = taxMeta ? Number(taxMeta.mval) || 10 : 10;
+    const taxDeduction = Math.floor((grossAccrued * taxRate) / 100);
+    const netPayout = grossAccrued - taxDeduction;
+
+    if (netPayout <= 0) {
+      return { success: false, error: "Net dividend distribution amount is 0 Z." };
+    }
+
+    // 4. Character & Destination Routing
+    let remainingZeny: number | undefined = undefined;
+    let newBankPrincipal: number | undefined = undefined;
+    let targetCharId = charId ? Number(charId) : 0;
+
+    if (targetDest === "WALLET") {
+      if (!targetCharId) {
+        return { success: false, error: "A character must be selected to receive wallet dividends." };
+      }
+
+      const char = await primaryQueryOne<{ char_id: number; zeny: number; online: number }>(
+        "SELECT char_id, zeny, online FROM `char` WHERE char_id = ? AND account_id = ?",
+        [targetCharId, accountId]
+      );
+
+      if (!char) {
+        return { success: false, error: "Selected character does not belong to this account." };
+      }
+
+      if (char.online === 1) {
+        return {
+          success: false,
+          error: "Character is currently online in the game. Please log out before harvesting via Web Terminal.",
+        };
+      }
+
+      if (Number(char.zeny) + netPayout > 2100000000) {
+        return {
+          success: false,
+          error: `Dividend payout would exceed the 2,100,000,000 Zeny character wallet limit. Available space: ${(2100000000 - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination.`,
+        };
+      }
+
+      await primaryExecute(
+        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+        [netPayout, targetCharId]
+      );
+      remainingZeny = Number(char.zeny) + netPayout;
+    } else {
+      // Direct Wire to Investment Bank
+      const bank = await primaryQueryOne<{ principal: number; deposit_time: number }>(
+        "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+        [accountId]
+      );
+
+      const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
+      const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+
+      let pendingInterest = 0;
+      if (currentPrincipal > 0 && depositTime > 0) {
+        const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
+        const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
+        pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+      }
+
+      newBankPrincipal = currentPrincipal + pendingInterest + netPayout;
+      if (newBankPrincipal > 1900000000) {
+        return {
+          success: false,
+          error: `Dividend wire would exceed the 1,900,000,000 Zeny Investment Bank ceiling. Available space: ${Math.max(0, 1900000000 - (currentPrincipal + pendingInterest)).toLocaleString()} Z.`,
+        };
+      }
+
+      await primaryExecute(
+        "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
+        [accountId, newBankPrincipal, currentTimestamp, pendingInterest, pendingInterest]
+      );
+    }
+
+    // 5. Reset pending_div on harvested positions & Write Transaction Logs
+    for (const row of eligibleRows) {
+      await primaryExecute(
+        "UPDATE `solo_stock_player` SET pending_div = 0 WHERE account_id = ? AND ticker = ?",
+        [accountId, row.ticker]
+      );
+
+      const rowGross = Number(row.pending_div);
+      const rowTax = Math.floor((rowGross * taxRate) / 100);
+      const rowNet = rowGross - rowTax;
+
+      await primaryExecute(
+        "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (?, ?, ?, 'DIVIDEND', 0, 0, ?, ?, ?)",
+        [accountId, targetCharId, row.ticker, rowNet, rowTax, targetDest]
+      );
+    }
+
+    const destLabel = targetDest === "BANK" ? "wired to Investment Bank" : "credited to character wallet";
+    return {
+      success: true,
+      message: `Harvested ${netPayout.toLocaleString()} Z in net dividends (Tax: ${taxDeduction.toLocaleString()} Z @ ${taxRate}%) ${destLabel}.`,
+      grossAccrued,
+      taxDeduction,
+      taxRate,
+      netPayout,
+      destination: targetDest,
+      remainingZeny,
+      newBankPrincipal,
+    };
+  }
+
+  /**
+   * Fetch paginated & filtered stock / crypto transaction history
+   */
+  static async getStockTransactions(
+    accountId: number,
+    limit = 50,
+    ticker?: string,
+    assetType?: "EQUITY" | "CRYPTO",
+    action?: StockTransactionAction
+  ): Promise<StockTransactionsResponse> {
+    try {
+      const safeLimit = Math.min(Math.max(1, Number(limit) || 50), 100);
+      const params: any[] = [accountId];
+      let sql = `
+        SELECT 
+          t.id, t.account_id, t.char_id, t.ticker, t.action, 
+          t.shares, t.price, t.total_amount, t.fee, t.destination, t.created_at,
+          COALESCE(m.name, CONCAT(t.ticker, ' Protocol')) as stock_name,
+          COALESCE(m.asset_type, 'EQUITY') as asset_type,
+          c.name as char_name
+        FROM \`solo_stock_transactions\` t
+        LEFT JOIN \`solo_stock_market\` m ON t.ticker = m.ticker
+        LEFT JOIN \`char\` c ON t.char_id = c.char_id
+        WHERE t.account_id = ?
+      `;
+
+      if (ticker) {
+        sql += " AND t.ticker = ?";
+        params.push(ticker.trim().toUpperCase());
+      }
+      if (action) {
+        sql += " AND t.action = ?";
+        params.push(action);
+      }
+      if (assetType) {
+        sql += " AND COALESCE(m.asset_type, 'EQUITY') = ?";
+        params.push(assetType);
+      }
+
+      sql += " ORDER BY t.id DESC LIMIT ?";
+      params.push(safeLimit);
+
+      const rows = await query<any>(sql, params);
+      const transactions: StockTransaction[] = rows.map((r) => ({
+        id: Number(r.id),
+        accountId: Number(r.account_id),
+        charId: Number(r.char_id),
+        charName: r.char_name || undefined,
+        ticker: r.ticker,
+        stockName: r.stock_name,
+        assetType: r.asset_type as "EQUITY" | "CRYPTO",
+        action: r.action as StockTransactionAction,
+        shares: Number(r.shares),
+        price: Number(r.price),
+        totalAmount: Number(r.total_amount),
+        fee: Number(r.fee),
+        destination: r.destination as "WALLET" | "BANK",
+        createdAt: new Date(r.created_at).toISOString(),
+      }));
+
+      return {
+        success: true,
+        transactions,
+        total: transactions.length,
+      };
+    } catch (err) {
+      console.error("[EconomyService] getStockTransactions failed:", err);
+      return { success: false, error: "Failed to fetch transaction logs", transactions: [] };
+    }
   }
 }

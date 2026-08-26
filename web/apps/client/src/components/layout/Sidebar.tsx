@@ -15,7 +15,7 @@ import {
 import { AuthUser } from "@rathena/shared";
 import { RoIcon } from "../common/RoIcon";
 
-export type NavTab = "FINANCE" | "CHARACTER" | "LEISURE" | "PROGRESSION" | "BOUNTIES" | "GACHA";
+export type NavTab = "FINANCE" | "CHARACTER" | "LEISURE" | "PROGRESSION" | "BOUNTIES" | "GACHA" | "LOGIN" | "REGISTER";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -245,9 +245,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <button
-              onClick={openLoginModal}
-              className="w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-background flex items-center justify-center font-bold transition-colors shadow-sm"
-              title="Log In"
+              onClick={() => onTabChange("LOGIN")}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-colors shadow-sm ${
+                activeTab === "LOGIN" || activeTab === "REGISTER"
+                  ? "bg-accent text-background"
+                  : "bg-primary hover:bg-primary/90 text-background"
+              }`}
+              title="Log In / Register"
             >
               <User size={16} />
             </button>
@@ -332,8 +336,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <button
-              onClick={openLoginModal}
-              className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-background font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+              onClick={() => onTabChange("LOGIN")}
+              className={`h-8 px-3 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm ${
+                activeTab === "LOGIN" || activeTab === "REGISTER"
+                  ? "bg-accent text-background"
+                  : "bg-primary hover:bg-primary/90 text-background"
+              }`}
               title="Log In"
             >
               <User size={13} />

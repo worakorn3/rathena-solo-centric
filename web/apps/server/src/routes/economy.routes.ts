@@ -200,4 +200,98 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     }
 
     return result;
+  })
+  .get("/transactions", async ({ headers, jwt, query, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const limit = query && query.limit ? Number(query.limit) : 50;
+    const ticker = query && query.ticker ? String(query.ticker) : undefined;
+    const assetType = query && query.assetType ? (String(query.assetType) as "EQUITY" | "CRYPTO") : undefined;
+    const action = query && query.action ? (String(query.action) as any) : undefined;
+
+    const result = await EconomyService.getStockTransactions(
+      Number(payload.accountId),
+      limit,
+      ticker,
+      assetType,
+      action
+    );
+
+    return result;
+  })
+  .post("/drip/toggle", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { ticker, enabled } = (body as any) || {};
+
+    if (!ticker || enabled === undefined) {
+      set.status = 400;
+      return { success: false, error: "Missing required parameters: ticker, enabled." };
+    }
+
+    const result = await EconomyService.toggleDrip(
+      Number(payload.accountId),
+      String(ticker),
+      Boolean(enabled)
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
+  })
+  .post("/dividends/harvest", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { charId, ticker, destination } = (body as any) || {};
+
+    const result = await EconomyService.harvestDividends(
+      Number(payload.accountId),
+      charId ? Number(charId) : undefined,
+      ticker ? String(ticker) : undefined,
+      destination as "WALLET" | "BANK" | undefined
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
   });

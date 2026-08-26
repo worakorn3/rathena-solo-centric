@@ -45,6 +45,46 @@ export const authRoutes = new Elysia({ prefix: "/api/auth" })
       }),
     }
   )
+  .post(
+    "/register",
+    async ({ body, jwt, set }) => {
+      const result = await AuthService.register({
+        userid: body.userid,
+        user_pass: body.user_pass,
+        confirm_pass: body.confirm_pass,
+        email: body.email,
+        sex: body.sex,
+      });
+
+      if ("error" in result) {
+        set.status = 400;
+        return { success: false, error: result.error };
+      }
+
+      const token = await jwt.sign({
+        accountId: result.user.accountId,
+        userid: result.user.userid,
+        sex: result.user.sex,
+        groupId: result.user.groupId,
+        role: result.user.role,
+      });
+
+      return {
+        success: true,
+        token,
+        user: result.user,
+      };
+    },
+    {
+      body: t.Object({
+        userid: t.String({ minLength: 4, maxLength: 23 }),
+        user_pass: t.String({ minLength: 6, maxLength: 32 }),
+        confirm_pass: t.Optional(t.String()),
+        email: t.String(),
+        sex: t.Union([t.Literal("M"), t.Literal("F")]),
+      }),
+    }
+  )
   .get("/me", async ({ headers, jwt, set }) => {
     const authHeader = headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

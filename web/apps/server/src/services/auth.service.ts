@@ -1,6 +1,6 @@
 import crypto from "crypto";
-import { queryOne } from "../db/pool";
-import { AuthUser, LoginPayload } from "@rathena/shared";
+import { queryOne, primaryExecute } from "../db/pool";
+import { AuthUser, LoginPayload, RegisterPayload } from "@rathena/shared";
 
 interface LoginRow {
   account_id: number;
@@ -54,6 +54,79 @@ export class AuthService {
       role,
       lastLogin: row.lastlogin ? new Date(row.lastlogin).toISOString() : new Date().toISOString(),
       logincount: row.logincount || 0,
+    };
+
+    return { user };
+  }
+
+  static async register(payload: RegisterPayload): Promise<{ user: AuthUser } | { error: string }> {
+    const { userid, user_pass, confirm_pass, email, sex } = payload;
+    const trimmedUser = userid ? userid.trim() : "";
+    const trimmedEmail = email ? email.trim() : "";
+
+    if (!trimmedUser || !user_pass) {
+      return { error: "Username and password are required" };
+    }
+
+    if (trimmedUser.length < 4 || trimmedUser.length > 23) {
+      return { error: "Username must be between 4 and 23 characters" };
+    }
+
+    const userRegex = /^[a-zA-Z0-9_]+$/;
+    if (!userRegex.test(trimmedUser)) {
+      return { error: "Username can only contain letters, numbers, and underscores" };
+    }
+
+    if (user_pass.length < 6 || user_pass.length > 32) {
+      return { error: "Password must be between 6 and 32 characters" };
+    }
+
+    if (confirm_pass !== undefined && confirm_pass !== user_pass) {
+      return { error: "Passwords do not match" };
+    }
+
+    if (sex !== "M" && sex !== "F") {
+      return { error: "Invalid gender selection" };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (trimmedEmail && !emailRegex.test(trimmedEmail)) {
+      return { error: "Invalid email format" };
+    }
+
+    // Check if username already exists
+    const existing = await queryOne<LoginRow>(
+      "SELECT account_id FROM `login` WHERE userid = ? LIMIT 1",
+      [trimmedUser]
+    );
+
+    if (existing) {
+      return { error: "Username is already taken" };
+    }
+
+    // Hash password with MD5
+    const md5Pass = crypto.createHash("md5").update(user_pass).digest("hex");
+
+    // Insert into login table using primaryExecute (:3306)
+    const result = await primaryExecute(
+      "INSERT INTO `login` (`userid`, `user_pass`, `sex`, `email`, `group_id`, `state`, `character_slots`, `lastlogin`) VALUES (?, ?, ?, ?, 0, 0, 9, NOW())",
+      [trimmedUser, md5Pass, sex, trimmedEmail || ""]
+    );
+
+    const newAccountId = result.insertId;
+    if (!newAccountId) {
+      return { error: "Failed to create account" };
+    }
+
+    const user: AuthUser = {
+      accountId: newAccountId,
+      userid: trimmedUser,
+      email: trimmedEmail || "",
+      sex: sex || "M",
+      groupId: 0,
+      role: "PLAYER",
+      lastLogin: new Date().toISOString(),
+      logincount: 0,
     };
 
     return { user };

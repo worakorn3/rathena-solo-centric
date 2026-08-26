@@ -3,6 +3,14 @@ export interface LoginPayload {
   user_pass: string;
 }
 
+export interface RegisterPayload {
+  userid: string;
+  user_pass: string;
+  confirm_pass?: string;
+  email: string;
+  sex: "M" | "F";
+}
+
 export type UserRole = "ADMIN" | "GM" | "PLAYER";
 
 export interface AuthUser {
