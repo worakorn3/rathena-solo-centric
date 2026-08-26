@@ -58,6 +58,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
   const [accountFeedback, setAccountFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Backup & Restore State
+  const [backupScope, setBackupScope] = useState<"web_features" | "full">("web_features");
   const [passphrase, setPassphrase] = useState<string>(
     localStorage.getItem("rathena_backup_passphrase") || ""
   );
@@ -167,6 +168,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
       const queryParams = new URLSearchParams({
         passphrase,
         adminKey,
+        scope: backupScope,
       });
 
       const response = await fetch(`/api/admin/backup/export?${queryParams.toString()}`, {
@@ -182,7 +184,9 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
       const blob = await response.blob();
       const disposition = response.headers.get("Content-Disposition");
-      let filename = `ragnarok_save_${new Date().toISOString().slice(0, 10)}.sql.gz.enc`;
+      let filename = backupScope === "full"
+        ? `ragnarok_full_save_${new Date().toISOString().slice(0, 10)}.sql.gz.enc`
+        : `ragnarok_web_save_${new Date().toISOString().slice(0, 10)}.sql.gz.enc`;
       if (disposition && disposition.includes("filename=")) {
         const match = disposition.match(/filename="?([^"]+)"?/);
         if (match && match[1]) filename = match[1];
@@ -199,7 +203,7 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
 
       setBackupFeedback({
         type: "success",
-        text: `Savegame backup downloaded: ${filename} (${(blob.size / 1024).toFixed(1)} KB)`,
+        text: `${backupScope === "full" ? "Full Server" : "Web Features"} backup downloaded: ${filename} (${(blob.size / 1024).toFixed(1)} KB)`,
       });
     } catch (err: any) {
       setBackupFeedback({
@@ -396,6 +400,69 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
           {/* TAB 1: SAVEGAME BACKUP & RESTORE */}
           {activeTab === "backup" && (
             <div className="space-y-4">
+              {/* Backup Scope Selector */}
+              <div className="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database size={16} className="text-accent" />
+                    <span className="font-bold text-xs text-primary">
+                      Backup & Export Scope
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted bg-surface px-2 py-0.5 rounded border border-border">
+                    {backupScope === "web_features" ? "Targeted Web Snapshot" : "Full Server Dump"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBackupScope("web_features")}
+                    className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                      backupScope === "web_features"
+                        ? "bg-accent/15 border-accent text-primary shadow-sm"
+                        : "bg-surface border-border text-muted hover:text-primary hover:border-border/80"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs flex items-center gap-1.5">
+                        <span>🌐</span>
+                        <span>Web Systems & Economy</span>
+                      </span>
+                      {backupScope === "web_features" && (
+                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted leading-snug">
+                      Gacha Altar, Stash, Stock Market, Bank Accounts & Configs. Safe to restore without altering player progress.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBackupScope("full")}
+                    className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                      backupScope === "full"
+                        ? "bg-accent/15 border-accent text-primary shadow-sm"
+                        : "bg-surface border-border text-muted hover:text-primary hover:border-border/80"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs flex items-center gap-1.5">
+                        <span>📦</span>
+                        <span>Full Server Savegame</span>
+                      </span>
+                      {backupScope === "full" && (
+                        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted leading-snug">
+                      Entire rAthena database including all character levels, inventories, storage, guild records, plus web features.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               {/* Passphrase Card */}
               <div className="p-3.5 rounded-xl bg-surface2/50 border border-border space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -447,10 +514,14 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                       <div className="w-6 h-6 rounded-md bg-success/10 border border-success/20 flex items-center justify-center">
                         <Download size={14} className="text-success" />
                       </div>
-                      <span>Export Savegame Backup</span>
+                      <span>
+                        {backupScope === "full" ? "Export Full Savegame" : "Export Web Features"}
+                      </span>
                     </div>
                     <p className="text-xs text-muted leading-relaxed">
-                      Downloads a complete snapshot of your characters, inventories, storage, quest progression, and market holdings.
+                      {backupScope === "full"
+                        ? "Downloads a complete snapshot of your server: all characters, inventories, storage, quest progression, and web markets."
+                        : "Downloads a lightweight snapshot containing strictly Gacha Altar, Stash, Stock Exchange, Bank Accounts, and Server Configs."}
                     </p>
                   </div>
 
@@ -479,12 +550,16 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
                     {isExporting ? (
                       <>
                         <RefreshCw size={14} className="animate-spin" />
-                        <span>Packaging Savegame...</span>
+                        <span>Packaging Snapshot...</span>
                       </>
                     ) : (
                       <>
                         <Download size={14} />
-                        <span>Download Savegame Backup</span>
+                        <span>
+                          {backupScope === "full"
+                            ? "Download Full Server Savegame"
+                            : "Download Web Features Backup"}
+                        </span>
                       </>
                     )}
                   </button>

@@ -1,6 +1,7 @@
 # MISTAKES & ACTIVE ACTION ITEMS (HOT TIER)
 # Style: Ultra-terse, high-density, token-efficient.
-# Loaded on every turn via PreInvocation hook. Cold archive stored in MISTAKES_ARCHIVE.md.
+# Cold archive stored in MISTAKES_ARCHIVE.md.
+<!-- HARD CEILING: Max 10 domain rows (< 350 tokens). Merge or retire when adding new domains. -->
 
 ## Aggregated Invariants & Reinforced Guardrails Matrix
 | Frequency | Aggregate Domain | Core Invariants & Sub-Rules | Executable Prevention Guardrail / Action Item |

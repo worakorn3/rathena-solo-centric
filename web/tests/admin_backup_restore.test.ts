@@ -135,5 +135,53 @@ INSERT INTO \`test_save\` VALUES (1, 'HeroCharacter'), (2, 'SoloCentricProgress'
       const json = await res.json();
       expect(json.error).toContain("Missing encrypted backup file");
     });
+
+    it("exports scoped web features backup with correct scope headers and filename", async () => {
+      const res = await app.handle(
+        new Request("http://localhost/api/admin/backup/export?scope=web_features&passphrase=SecretPass123!", {
+          headers: {
+            "x-admin-key": "SoloCentricKey2026!",
+          },
+        })
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("X-Backup-Scope")).toBe("web_features");
+      const disposition = res.headers.get("Content-Disposition") || "";
+      expect(disposition).toContain("ragnarok_web_save_");
+      expect(disposition).toContain(".sql.gz.enc");
+
+      const arrayBuffer = await res.arrayBuffer();
+      const encryptedBlob = Buffer.from(arrayBuffer);
+      expect(encryptedBlob.subarray(0, 7).equals(BACKUP_MAGIC)).toBe(true);
+
+      // Decrypt and verify SQL structure
+      const decrypted = decryptBackupBuffer(encryptedBlob, "SecretPass123!");
+      const sqlContent = decrypted.toString("utf8");
+      expect(sqlContent).toContain("SET FOREIGN_KEY_CHECKS=0;");
+    });
+
+    it("exports full server savegame backup when scope=full", async () => {
+      const res = await app.handle(
+        new Request("http://localhost/api/admin/backup/export?scope=full&passphrase=SecretPass123!", {
+          headers: {
+            "x-admin-key": "SoloCentricKey2026!",
+          },
+        })
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("X-Backup-Scope")).toBe("full");
+      const disposition = res.headers.get("Content-Disposition") || "";
+      expect(disposition).toContain("ragnarok_full_save_");
+      expect(disposition).toContain(".sql.gz.enc");
+    });
+
+    it("preserves binary byte sequences with X'...' hex serialization", () => {
+      const binarySample = Buffer.from([0x00, 0xff, 0xca, 0xfe, 0xba, 0xbe]);
+      const hexSql = `INSERT INTO \`test_blob\` VALUES (1, X'${binarySample.toString("hex")}');`;
+      const encrypted = encryptBackupBuffer(hexSql, testPassphrase);
+      const decrypted = decryptBackupBuffer(encrypted, testPassphrase);
+      expect(decrypted.toString("utf8")).toBe(hexSql);
+      expect(decrypted.toString("utf8")).toContain("X'00ffcafebabe'");
+    });
   });
 });

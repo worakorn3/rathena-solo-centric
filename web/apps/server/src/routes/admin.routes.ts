@@ -58,10 +58,28 @@ export function decryptBackupBuffer(encryptedBuffer: Buffer, passphrase: string)
 /**
  * Executes a raw database dump on the primary DB
  */
-async function generateDatabaseDump(): Promise<Buffer> {
+export async function generateDatabaseDump(scope: "full" | "web_features" = "web_features"): Promise<Buffer> {
+  const tableRows = await query<{ table_name?: string; TABLE_NAME?: string }>(
+    scope === "web_features"
+      ? "SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND (table_name LIKE 'solo_%' OR table_name LIKE 'custom_%')"
+      : "SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE'",
+    [config.primaryDb.database]
+  );
+  const targetTables = tableRows
+    .map((r) => r.table_name || r.TABLE_NAME || "")
+    .filter((name) => name.length > 0);
+
+  if (targetTables.length === 0) {
+    throw new Error(
+      scope === "web_features"
+        ? "No web feature tables (solo_*, custom_*) found in database to backup."
+        : "No tables found in database to backup."
+    );
+  }
+
   // Try native mariadb-dump / mysqldump CLI first
   try {
-    const proc = Bun.spawn([
+    const dumpArgs = [
       "mariadb-dump",
       "-h", config.primaryDb.host,
       "-P", String(config.primaryDb.port),
@@ -72,7 +90,13 @@ async function generateDatabaseDump(): Promise<Buffer> {
       "--routines",
       "--triggers",
       config.primaryDb.database,
-    ], {
+    ];
+
+    if (scope === "web_features" && targetTables.length > 0) {
+      dumpArgs.push(...targetTables);
+    }
+
+    const proc = Bun.spawn(dumpArgs, {
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -80,7 +104,7 @@ async function generateDatabaseDump(): Promise<Buffer> {
     const out = await new Response(proc.stdout).arrayBuffer();
     const exitCode = await proc.exited;
 
-    if (exitCode === 0 && out.byteLength > 512) {
+    if (exitCode === 0 && out.byteLength > 256) {
       return Buffer.from(out);
     }
   } catch {
@@ -88,36 +112,46 @@ async function generateDatabaseDump(): Promise<Buffer> {
   }
 
   // Fallback SQL Dump generator for environments without mariadb-dump installed
-  const tables = await query<{ Tables_in_ragnarok: string }>(
-    `SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'`
-  );
-  
-  let sqlDump = `-- rAthena Solo-Centric Database Dump (Fallback Generator)\n-- Date: ${new Date().toISOString()}\n\nSET FOREIGN_KEY_CHECKS=0;\n\n`;
+  let sqlDump = `-- rAthena Solo-Centric Database Dump (Fallback Generator)\n-- Scope: ${scope}\n-- Date: ${new Date().toISOString()}\n\nSET FOREIGN_KEY_CHECKS=0;\n\n`;
 
-  for (const tableRow of tables) {
-    const tableName = Object.values(tableRow)[0];
-    const createRes = await query<{ "Create Table": string }>(`SHOW CREATE TABLE \`${tableName}\``);
-    if (createRes && createRes[0]) {
-      sqlDump += `DROP TABLE IF EXISTS \`${tableName}\`;\n`;
-      sqlDump += `${createRes[0]["Create Table"]};\n\n`;
-    }
+  for (const tableName of targetTables) {
+    try {
+      const createRes = await query<any>(`SHOW CREATE TABLE \`${tableName}\``);
+      const ddl = createRes && createRes[0]
+        ? createRes[0]["Create Table"] || createRes[0]["create table"] || Object.values(createRes[0])[1]
+        : "";
 
-    const rows = await query<Record<string, any>>(`SELECT * FROM \`${tableName}\``);
-    if (rows.length > 0) {
-      const columns = Object.keys(rows[0]).map((c) => `\`${c}\``).join(", ");
-      for (const row of rows) {
-        const values = Object.values(row)
-          .map((v) => {
-            if (v === null || v === undefined) return "NULL";
-            if (typeof v === "number") return v;
-            if (typeof v === "boolean") return v ? 1 : 0;
-            if (v instanceof Date) return `'${v.toISOString().slice(0, 19).replace("T", " ")}'`;
-            return `'${String(v).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
-          })
-          .join(", ");
-        sqlDump += `INSERT INTO \`${tableName}\` (${columns}) VALUES (${values});\n`;
+      if (ddl) {
+        sqlDump += `DROP TABLE IF EXISTS \`${tableName}\`;\n`;
+        sqlDump += `${ddl};\n\n`;
       }
-      sqlDump += `\n`;
+
+      const rows = await query<Record<string, any>>(`SELECT * FROM \`${tableName}\``);
+      if (rows.length > 0) {
+        const columns = Object.keys(rows[0]).map((c) => `\`${c}\``).join(", ");
+        for (const row of rows) {
+          const values = Object.values(row)
+            .map((v) => {
+              if (v === null || v === undefined) return "NULL";
+              if (typeof v === "number") return v;
+              if (typeof v === "boolean") return v ? 1 : 0;
+              if (Buffer.isBuffer(v) || v instanceof Uint8Array) {
+                return `X'${Buffer.from(v).toString("hex")}'`;
+              }
+              if (v instanceof Date) {
+              return isNaN(v.getTime())
+                ? "'0000-00-00 00:00:00'"
+                : `'${v.toISOString().slice(0, 19).replace("T", " ")}'`;
+            }
+              return `'${String(v).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+            })
+            .join(", ");
+          sqlDump += `INSERT INTO \`${tableName}\` (${columns}) VALUES (${values});\n`;
+        }
+        sqlDump += `\n`;
+      }
+    } catch (err: any) {
+      console.warn(`[Fallback Dump] Notice on table \`${tableName}\`: ${err.message}`);
     }
   }
 
@@ -177,6 +211,15 @@ async function importDatabaseSql(sqlBuffer: Buffer): Promise<void> {
     await connection.query("SET FOREIGN_KEY_CHECKS=1");
   } finally {
     connection.release();
+  }
+
+  // Non-blocking session cleanup to prevent ghost login lockouts after restore
+  try {
+    const pool = await getPrimaryDbPool();
+    await pool.query("UPDATE `char` SET `online` = 0 WHERE `online` != 0");
+    await pool.query("UPDATE `login` SET `state` = 0 WHERE `state` != 0");
+  } catch {
+    // Safe to ignore if char/login tables are not present (e.g., test or web-only env)
   }
 }
 
@@ -318,14 +361,17 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
         return { error: "Passphrase must be at least 4 characters long" };
       }
 
-      const dumpBuffer = await generateDatabaseDump();
+      const scope = (q as any)?.scope === "full" ? "full" : "web_features";
+      const dumpBuffer = await generateDatabaseDump(scope);
       const encryptedBlob = encryptBackupBuffer(dumpBuffer, passphrase);
 
       const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const filename = `ragnarok_save_${dateStr}.sql.gz.enc`;
+      const prefix = scope === "full" ? "ragnarok_full_save" : "ragnarok_web_save";
+      const filename = `${prefix}_${dateStr}.sql.gz.enc`;
 
       set.headers["Content-Type"] = "application/octet-stream";
       set.headers["Content-Disposition"] = `attachment; filename="${filename}"`;
+      set.headers["X-Backup-Scope"] = scope;
       set.headers["X-Original-Dump-Size"] = String(dumpBuffer.length);
       set.headers["X-Encrypted-Size"] = String(encryptedBlob.length);
 
@@ -333,6 +379,7 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
         headers: {
           "Content-Type": "application/octet-stream",
           "Content-Disposition": `attachment; filename="${filename}"`,
+          "X-Backup-Scope": scope,
         },
       });
     },
@@ -340,6 +387,7 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
       query: t.Object({
         passphrase: t.Optional(t.String()),
         adminKey: t.Optional(t.String()),
+        scope: t.Optional(t.Union([t.Literal("full"), t.Literal("web_features")])),
       }),
     }
   )

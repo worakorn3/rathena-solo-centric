@@ -131,11 +131,18 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 ### Phase 17: Web Gacha & Altar System (Egg Spinner, Stash, Scrap Exchange, Admin Customizer)
 | Feature | Status | Details & Specification |
 |:---|:---|:---|
-| **Egg Spinner Capsule Altar** | ⏳ [PENDING] | 3D-styled animated egg spinner machine with 4 granular banners, dynamic stock economy pricing, and live countdown timer · [Details](plans/web_gacha_system.md) |
-| **Dedicated Web Stash & RO Mail** | ⏳ [PENDING] | Won items accumulate safely in Web Stash (`solo_gacha_stash`) with selective/bulk in-game RO Mail dispatch · [Details](plans/web_gacha_system.md) |
-| **Gacha Scrap & Dismantling** | ⏳ [PENDING] | Convert duplicate/unwanted items into Gacha Shards (SSR: 100, SR: 25, R: 5) to prevent vanity clutter · [Details](plans/web_gacha_system.md) |
-| **Exclusives-Only Exchange Shop** | ⏳ [PENDING] | Spend Gacha Shards on non-gacha prestige items (Golden Wings, Sovereign Crown, Safe +11 Certs) · [Details](plans/web_gacha_system.md) |
-| **Live Admin Roster Customizer** | ⏳ [PENDING] | Full real-time management of banners, master item pools, exchange shop, and pull simulator sandbox in `AdminVaultWindow.tsx` · [Details](plans/web_gacha_system.md) |
+| **Egg Spinner Capsule Altar** | ✅ [DONE] | 3D-styled animated egg spinner machine with 4 granular banners, dynamic stock economy pricing, and live countdown timer · [Details](plans/web_gacha_system.md) |
+| **Dedicated Web Stash & RO Mail** | ✅ [DONE] | Won items accumulate safely in Web Stash (`solo_gacha_stash`) with selective/bulk in-game RO Mail dispatch · [Details](plans/web_gacha_system.md) |
+| **Gacha Scrap & Dismantling** | ✅ [DONE] | Convert duplicate/unwanted items into Gacha Shards (SSR: 100, SR: 25, R: 5) to prevent vanity clutter · [Details](plans/web_gacha_system.md) |
+| **Exclusives-Only Exchange Shop** | ✅ [DONE] | Spend Gacha Shards on non-gacha prestige items (Golden Wings, Sovereign Crown, Safe +11 Certs) · [Details](plans/web_gacha_system.md) |
+| **Live Admin Roster Customizer** | ✅ [DONE] | Full real-time management of banners, master item pools, exchange shop, and pull simulator sandbox in `AdminVaultWindow.tsx` · [Details](plans/web_gacha_system.md) |
+
+### Phase 18: Scoped Zero-Knowledge Web Features Backup & Restore
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Scoped Table Discovery Engine** | ✅ [DONE] | Dynamic table resolution via `information_schema.tables` filtering strictly `solo_*` and `custom_*` tables for `mariadb-dump` and fallback generator · [`admin.routes.ts`](../web/apps/server/src/routes/admin.routes.ts) |
+| **Binary Buffer Serialization** | ✅ [DONE] | Zero-loss SQL hex byte literal encoding (`X'...'`) for binary BLOBs in fallback dump generator · [`admin.routes.ts`](../web/apps/server/src/routes/admin.routes.ts) |
+| **Bento Scope UI & Granular Restore** | ✅ [DONE] | Dual-scope selector toggle (Web Systems & Economy vs Full Server) with scope-prefixed filenames (`ragnarok_web_save_*.sql.gz.enc`) and safe post-restore login session sanitization · [`AdminVaultWindow.tsx`](../web/apps/client/src/components/admin/AdminVaultWindow.tsx) |
 
 ---
 
