@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   BarChart3,
@@ -11,6 +11,9 @@ import {
   Search,
   User,
   LogOut,
+  Menu,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { AuthUser } from "@rathena/shared";
 import { RoIcon } from "../common/RoIcon";
@@ -41,6 +44,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   logout,
 }) => {
   const [localSpinning, setLocalSpinning] = useState(false);
+  const [isMoreDrawerOpen, setIsMoreDrawerOpen] = useState(false);
+
+  // Close More Drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isMoreDrawerOpen) {
+        setIsMoreDrawerOpen(false);
+      }
+    };
+    if (isMoreDrawerOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMoreDrawerOpen]);
 
   const handleSyncClick = async () => {
     if (onRefresh) {
@@ -352,87 +369,279 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </header>
 
       {/* ========================================================================= */}
-      {/* 3. MOBILE VIEWPORT: Fixed Bottom Navigation Tab Bar (md:hidden)           */}
+      {/* 3. MOBILE VIEWPORT: Fixed 5-Tab Navigation Bar & More Drawer (md:hidden)  */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur border-t border-border px-2 py-1 flex items-center justify-around shadow-2xl select-none pb-safe">
-        {/* Tab 1: Character / Hero */}
-        <button
-          onClick={() => onTabChange("CHARACTER")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "CHARACTER"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <UserCheck className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Hero</span>
-        </button>
+      {(() => {
+        const isMoreTabActive = activeTab === "BOUNTIES" || activeTab === "GACHA";
+        const moreTabLabel =
+          activeTab === "BOUNTIES" ? "Bounty" : activeTab === "GACHA" ? "Gacha" : "More";
 
-        {/* Tab 2: Finance */}
-        <button
-          onClick={() => onTabChange("FINANCE")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "FINANCE"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Finance</span>
-        </button>
+        return (
+          <>
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur border-t border-border px-1.5 py-1 flex items-center justify-around shadow-2xl select-none pb-safe">
+              {/* Tab 1: Character / Hero */}
+              <button
+                onClick={() => {
+                  setIsMoreDrawerOpen(false);
+                  onTabChange("CHARACTER");
+                }}
+                className={`flex-1 min-w-0 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+                  activeTab === "CHARACTER"
+                    ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+                    : "text-muted hover:text-primary border border-transparent font-medium"
+                }`}
+                title="Hero"
+              >
+                <UserCheck className="w-4 h-4 shrink-0" />
+                <span className="text-[10px] mt-0.5 tracking-tight truncate">Hero</span>
+              </button>
 
-        {/* Tab 3: Leisure */}
-        <button
-          onClick={() => onTabChange("LEISURE")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "LEISURE"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <Headphones className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Leisure</span>
-        </button>
+              {/* Tab 2: Finance */}
+              <button
+                onClick={() => {
+                  setIsMoreDrawerOpen(false);
+                  onTabChange("FINANCE");
+                }}
+                className={`flex-1 min-w-0 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+                  activeTab === "FINANCE"
+                    ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+                    : "text-muted hover:text-primary border border-transparent font-medium"
+                }`}
+                title="Finance"
+              >
+                <BarChart3 className="w-4 h-4 shrink-0" />
+                <span className="text-[10px] mt-0.5 tracking-tight truncate">Finance</span>
+              </button>
 
-        {/* Tab 4: Progression / Hunt */}
-        <button
-          onClick={() => onTabChange("PROGRESSION")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "PROGRESSION"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <Skull className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Hunt</span>
-        </button>
+              {/* Tab 3: Leisure */}
+              <button
+                onClick={() => {
+                  setIsMoreDrawerOpen(false);
+                  onTabChange("LEISURE");
+                }}
+                className={`flex-1 min-w-0 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+                  activeTab === "LEISURE"
+                    ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+                    : "text-muted hover:text-primary border border-transparent font-medium"
+                }`}
+                title="Leisure"
+              >
+                <Headphones className="w-4 h-4 shrink-0" />
+                <span className="text-[10px] mt-0.5 tracking-tight truncate">Leisure</span>
+              </button>
 
-        {/* Tab 4: Daily Bounties */}
-        <button
-          onClick={() => onTabChange("BOUNTIES")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "BOUNTIES"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <Target className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Bounty</span>
-        </button>
+              {/* Tab 4: Progression / Hunt */}
+              <button
+                onClick={() => {
+                  setIsMoreDrawerOpen(false);
+                  onTabChange("PROGRESSION");
+                }}
+                className={`flex-1 min-w-0 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
+                  activeTab === "PROGRESSION"
+                    ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+                    : "text-muted hover:text-primary border border-transparent font-medium"
+                }`}
+                title="Hunt"
+              >
+                <Skull className="w-4 h-4 shrink-0" />
+                <span className="text-[10px] mt-0.5 tracking-tight truncate">Hunt</span>
+              </button>
 
-        {/* Tab 5: Gacha Altar */}
-        <button
-          onClick={() => onTabChange("GACHA")}
-          className={`flex-1 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all ${
-            activeTab === "GACHA"
-              ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
-              : "text-muted hover:text-primary font-medium"
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Gacha</span>
-        </button>
-      </nav>
+              {/* Tab 5: More Hub / Drawer Trigger */}
+              <button
+                onClick={() => setIsMoreDrawerOpen(!isMoreDrawerOpen)}
+                className={`flex-1 min-w-0 min-h-[44px] rounded-xl flex flex-col items-center justify-center transition-all relative ${
+                  isMoreTabActive || isMoreDrawerOpen
+                    ? "bg-accent/15 text-accent border border-accent/30 font-bold shadow-sm"
+                    : "text-muted hover:text-primary border border-transparent font-medium"
+                }`}
+                title="More Activities & Hub"
+                aria-expanded={isMoreDrawerOpen}
+              >
+                {isMoreDrawerOpen ? (
+                  <X className="w-4 h-4 shrink-0 text-accent" />
+                ) : isMoreTabActive && activeTab === "BOUNTIES" ? (
+                  <Target className="w-4 h-4 shrink-0 text-accent" />
+                ) : isMoreTabActive && activeTab === "GACHA" ? (
+                  <Sparkles className="w-4 h-4 shrink-0 text-accent" />
+                ) : (
+                  <Menu className="w-4 h-4 shrink-0" />
+                )}
+                <span className="text-[10px] mt-0.5 tracking-tight truncate flex items-center gap-1">
+                  <span>{moreTabLabel}</span>
+                  {isMoreTabActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
+                  )}
+                </span>
+              </button>
+            </nav>
+
+            {/* Mobile Bottom Sheet Drawer for Secondary Activities */}
+            {isMoreDrawerOpen && (
+              <div
+                className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-150"
+                onClick={() => setIsMoreDrawerOpen(false)}
+              >
+                <div
+                  className="bg-surface border-t border-border rounded-t-2xl p-4 shadow-2xl flex flex-col gap-3.5 animate-in slide-in-from-bottom duration-200 pb-safe max-h-[80vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Drawer Handle & Header */}
+                  <div className="flex flex-col gap-1.5 border-b border-border pb-2.5">
+                    <div className="w-10 h-1 rounded-full bg-border mx-auto shrink-0 mb-1" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <RoIcon className="w-4 h-4 text-accent" />
+                        <h3 className="font-bold text-xs uppercase tracking-wider text-primary">
+                          Activities & Realm Hub
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setIsMoreDrawerOpen(false)}
+                        className="p-1 rounded-lg bg-surface2/60 hover:bg-surface2 text-muted hover:text-primary transition-colors text-xs"
+                        aria-label="Close drawer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2-Column Bento Grid of Extended Actions */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Activity 1: Daily Junk Trader Bounties */}
+                    <button
+                      onClick={() => {
+                        setIsMoreDrawerOpen(false);
+                        onTabChange("BOUNTIES");
+                      }}
+                      className={`p-3 rounded-xl border flex items-start gap-2.5 text-left transition-all group ${
+                        activeTab === "BOUNTIES"
+                          ? "bg-accent/15 border-accent/40 text-primary shadow-sm"
+                          : "bg-surface2/40 hover:bg-surface2/80 border-border/80 text-muted hover:text-primary"
+                      }`}
+                    >
+                      <div className="p-2 rounded-lg bg-accent/10 border border-accent/25 text-accent shrink-0 mt-0.5">
+                        <Target className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-primary group-hover:text-accent transition-colors flex items-center gap-1">
+                          <span>Daily Bounties</span>
+                          <ChevronRight className="w-3 h-3 text-muted/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="text-[10px] text-muted font-medium mt-0.5 line-clamp-2">
+                          Junk Trader turn-ins & boosted payouts
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Activity 2: Gacha Altar */}
+                    <button
+                      onClick={() => {
+                        setIsMoreDrawerOpen(false);
+                        onTabChange("GACHA");
+                      }}
+                      className={`p-3 rounded-xl border flex items-start gap-2.5 text-left transition-all group ${
+                        activeTab === "GACHA"
+                          ? "bg-accent/15 border-accent/40 text-primary shadow-sm"
+                          : "bg-surface2/40 hover:bg-surface2/80 border-border/80 text-muted hover:text-primary"
+                      }`}
+                    >
+                      <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-400 shrink-0 mt-0.5">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-primary group-hover:text-purple-400 transition-colors flex items-center gap-1">
+                          <span>Gacha Altar</span>
+                          <ChevronRight className="w-3 h-3 text-muted/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="text-[10px] text-muted font-medium mt-0.5 line-clamp-2">
+                          Egg Spinner machine & rewards stash
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Activity 3: Public Armory Search */}
+                    <button
+                      onClick={() => {
+                        setIsMoreDrawerOpen(false);
+                        onOpenSearch();
+                      }}
+                      className="p-3 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-info/40 text-muted hover:text-primary flex items-start gap-2.5 text-left transition-all group"
+                    >
+                      <div className="p-2 rounded-lg bg-info/10 border border-info/25 text-info shrink-0 mt-0.5">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-primary group-hover:text-info transition-colors flex items-center gap-1">
+                          <span>Armory Search</span>
+                          <ChevronRight className="w-3 h-3 text-muted/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="text-[10px] text-muted font-medium mt-0.5 line-clamp-2">
+                          Inspect player gear & builds
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Activity 4: Admin Vault (if permitted) OR Sync Data */}
+                    {onOpenAdmin ? (
+                      <button
+                        onClick={() => {
+                          setIsMoreDrawerOpen(false);
+                          onOpenAdmin();
+                        }}
+                        className="p-3 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-ro-gold/40 text-muted hover:text-primary flex items-start gap-2.5 text-left transition-all group"
+                      >
+                        <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-ro-gold shrink-0 mt-0.5">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-primary group-hover:text-ro-gold transition-colors flex items-center gap-1">
+                            <span>System Vault</span>
+                            <ChevronRight className="w-3 h-3 text-muted/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="text-[10px] text-muted font-medium mt-0.5 line-clamp-2">
+                            Admin controls & server backups
+                          </div>
+                        </div>
+                      </button>
+                    ) : onRefresh ? (
+                      <button
+                        onClick={() => {
+                          setIsMoreDrawerOpen(false);
+                          handleSyncClick();
+                        }}
+                        className="p-3 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/40 text-muted hover:text-primary flex items-start gap-2.5 text-left transition-all group"
+                      >
+                        <div className="p-2 rounded-lg bg-surface2 border border-border text-accent shrink-0 mt-0.5">
+                          <RefreshCw className={`w-4 h-4 ${spinning ? "animate-spin" : ""}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-primary group-hover:text-accent transition-colors flex items-center gap-1">
+                            <span>Live Sync</span>
+                            <ChevronRight className="w-3 h-3 text-muted/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="text-[10px] text-muted font-medium mt-0.5 line-clamp-2">
+                            Refresh realm quotes & status
+                          </div>
+                        </div>
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {/* Drawer Footer Notice */}
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-[10px] text-muted font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                      Kafra Live Network
+                    </span>
+                    <span>Tap outside to close</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </>
   );
 };

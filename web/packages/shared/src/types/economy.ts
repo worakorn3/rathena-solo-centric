@@ -113,6 +113,69 @@ export interface DailyBounty {
   mobLevel: number;
 }
 
+export interface BountyPlayerHolding {
+  itemId: number;
+  itemName: string;
+  tier: number;
+  index: number;
+  price: number;
+  mobName: string;
+  mobLevel: number;
+  inInventory: number;
+  inStorage: number;
+  totalAvailable: number;
+  potentialZeny: number;
+  isRecommended: boolean;
+}
+
+export interface BountyQuotaSummary {
+  dailyLimit: number;
+  dailySold: number;
+  remainingQuota: number;
+  lastJunkDay: number;
+  currentDayOfYear: number;
+  lifetimeSold: number;
+  lifetimeZeny: number;
+}
+
+export interface PlayerBountyInventoryResponse {
+  success: boolean;
+  error?: string;
+  character?: {
+    charId: number;
+    name: string;
+    className: string;
+    baseLevel: number;
+    zeny: number;
+    online: boolean;
+  };
+  quota?: BountyQuotaSummary;
+  recommendedOnHand?: BountyPlayerHolding[];
+  allBounties?: BountyPlayerHolding[];
+}
+
+export interface SellBountyPayload {
+  charId: number;
+  itemId: number;
+  amount: number;
+  source?: "INVENTORY" | "STORAGE" | "AUTO";
+}
+
+export interface SellBountyResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  soldItemId?: number;
+  soldItemName?: string;
+  soldAmount?: number;
+  pricePerUnit?: number;
+  payoutZeny?: number;
+  newCharZeny?: number;
+  remainingInInventory?: number;
+  remainingInStorage?: number;
+  quota?: BountyQuotaSummary;
+}
+
 export interface TickerNewsResponse {
   success: boolean;
   ticker: string;

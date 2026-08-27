@@ -1,13 +1,21 @@
+// --------------------------------------------------------------
+// Midgard Stock Exchange (MSE) - Automated CI Integration Test Suite
+// Standard: npc-test-design Pattern B (Stateful Engine) & Pattern A
+// --------------------------------------------------------------
+
 -	script	stock_exchange_test#ci	-1,{
 OnInit:
-	debugmes "Stock Exchange CI Test: Starting intensive test suite...";
+	debugmes "Stock Exchange CI Test: Starting comprehensive 11-test suite...";
 
-	// 1. Setup Mock DB Data for Isolated Tickers
-	query_sql "REPLACE INTO `solo_stock_market` (ticker, name, asset_type, price, price_old, dividend, div_acc, split_count, enabled) VALUES ('TST1', 'Test Corp 1', 'EQUITY', 100, 100, 10, 0, 0, 1), ('TST2', 'Test Corp 2', 'EQUITY', 200, 200, 20, 0, 0, 1), ('TST3', 'Test Corp 3', 'EQUITY', 900, 900, 30, 0, 0, 1), ('TST4', 'Test Corp 4', 'EQUITY', 400, 400, 40, 0, 0, 1)";
+	// ==========================================================
+	// 0. Setup Mock DB Data for Isolated Tickers & Test Accounts
+	// ==========================================================
+	query_sql "REPLACE INTO `solo_stock_market` (ticker, name, sector, archetype, asset_type, price, price_old, dividend, div_acc, split_count, enabled) VALUES ('TST1', 'Test Corp 1', 'Test', 'Value', 'EQUITY', 100, 100, 10, 0, 0, 1), ('TST2', 'Test Corp 2', 'Test', 'Growth', 'EQUITY', 200, 200, 20, 0, 0, 1), ('TST3', 'Test Corp 3', 'Test', 'Speculative', 'EQUITY', 900, 900, 30, 0, 0, 1), ('TST4', 'Test Corp 4', 'Test', 'Defensive', 'EQUITY', 400, 400, 40, 0, 0, 1)";
 	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999999, 'TST1', 10, 1000, 0, 1, 0), (999999, 'TST3', 5, 4500, 0, 0, 0)";
 
-	// 2. T1: Accrual & Ticker Isolation Verification
-	// Simulate dividend shift for TST1 and TST3
+	// ==========================================================
+	// 1. T1: Accrual & Ticker Isolation Verification
+	// ==========================================================
 	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 10) WHERE ticker = 'TST1' AND shares > 0";
 	query_sql "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * 30) WHERE ticker = 'TST3' AND shares > 0";
 
@@ -22,7 +30,9 @@ OnInit:
 	AssertEquals(150, .@pending3, "T1: TST3 pending dividend accrual (5 shares * 30z)");
 	AssertEquals(0, .@pending4, "T1: TST4 pending dividend isolation (no shares owned)");
 
-	// 3. T2: DRIP Reinvestment & Carryover Math
+	// ==========================================================
+	// 2. T2: DRIP Reinvestment & Modulo Carryover Math
+	// ==========================================================
 	// Reinvest TST1 payout (100 pending_div + 0 carryover) at price 100 -> 1 share bought, 0 carryover
 	query_sql "UPDATE `solo_stock_player` SET shares = shares + 1, total_cost = total_cost + 100, pending_div = 0, drip_carryover = 0 WHERE account_id = 999999 AND ticker = 'TST1'";
 
@@ -32,7 +42,7 @@ OnInit:
 	AssertEquals(1100, .@tc1, "T2: TST1 DRIP total cost updated (1000 + 100 = 1100)");
 	AssertEquals(0, .@carry1, "T2: TST1 DRIP carryover is 0");
 
-	// Test fractional carryover: payout of 250z at price 100z -> 2 shares bought (200z), 50z carryover
+	// Fractional carryover: payout of 250z at price 100z -> 2 shares bought (200z), 50z carryover
 	.@payout_frac = 250;
 	.@price_frac = 100;
 	.@new_shares = .@payout_frac / .@price_frac;
@@ -43,9 +53,11 @@ OnInit:
 	AssertEquals(13, .@shares1, "T2: TST1 fractional DRIP shares added (11 + 2 = 13)");
 	AssertEquals(1300, .@tc1, "T2: TST1 fractional DRIP total cost updated (1100 + 200 = 1300)");
 	AssertEquals(50, .@carry1, "T2: TST1 fractional DRIP carryover preserved (50z)");
+	AssertEquals(250, (.@new_shares * .@price_frac) + .@new_carry, "T2: DRIP value conservation invariant ((shares * price) + carry == payout)");
 
-	// 4. T3: Ticker Holdings Filtering
-	// Verify only TST1 and TST3 show up as positive holdings
+	// ==========================================================
+	// 3. T3: Ticker Holdings Filtering (Omit Zero-Share Positions)
+	// ==========================================================
 	deletearray .@held_tickers$[0], getarraysize(.@held_tickers$);
 	setarray .@all_test_tickers$[0], "TST1", "TST2", "TST3", "TST4";
 	.@num_holdings = 0;
@@ -62,7 +74,9 @@ OnInit:
 	AssertEquals("TST1", .@held_tickers$[0], "T3: 1st held ticker is TST1");
 	AssertEquals("TST3", .@held_tickers$[1], "T3: 2nd held ticker is TST3");
 
-	// 5. T4: 10:1 Stock Split Verification
+	// ==========================================================
+	// 4. T4: 10:1 Stock Split Verification
+	// ==========================================================
 	// Simulate 10:1 stock split on TST3 (900z -> 90z, 5 shares -> 50 shares)
 	query_sql "UPDATE `solo_stock_market` SET price = 90, price_old = 90, dividend = 3, split_count = split_count + 1 WHERE ticker = 'TST3'";
 	query_sql "UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = 'TST3'";
@@ -73,60 +87,210 @@ OnInit:
 	AssertEquals(4500, .@tc3, "T4: TST3 total cost basis remains unchanged after split");
 	AssertEquals(150, .@pending3_post, "T4: TST3 split left uncollected cash dividend intact (150z)");
 
-	// 6. T5: Dividend Tax Calculation
-	// Verify tax calculation against DivTaxRate metadata
+	// ==========================================================
+	// 5. T5: Brokerage Transaction Fee (1%) Parameterized Test
+	// ==========================================================
+	// Matrix: [qty, price, is_buy, expected_fee, expected_total] (Stride = 5)
+	// Buy: total = subtotal + fee
+	// Sell: net = subtotal - fee
+	setarray .@fee_cases[0],
+		100,  100, 1,   100,  10100,  // Buy 100 @ 100z: subtotal 10,000z, fee 100z -> 10,100z
+		 10,   50, 1,     5,    505,  // Buy 10 @ 50z: subtotal 500z, fee 5z -> 505z
+		  1,   80, 1,     0,     80,  // Buy 1 @ 80z: subtotal 80z, fee 0z (<100z) -> 80z
+		100,  100, 0,   100,   9900,  // Sell 100 @ 100z: subtotal 10,000z, fee 100z -> 9,900z
+		  1,   80, 0,     0,     80;  // Sell 1 @ 80z: subtotal 80z, fee 0z -> 80z
+
+	.@fee_stride = 5;
+	.@num_fee_cases = getarraysize(.@fee_cases) / .@fee_stride;
+	for (.@i = 0; .@i < .@num_fee_cases; .@i++) {
+		.@foff = .@i * .@fee_stride;
+		.@f_qty      = .@fee_cases[.@foff];
+		.@f_price    = .@fee_cases[.@foff + 1];
+		.@f_is_buy   = .@fee_cases[.@foff + 2];
+		.@f_exp_fee  = .@fee_cases[.@foff + 3];
+		.@f_exp_tot  = .@fee_cases[.@foff + 4];
+
+		.@f_subtotal = .@f_qty * .@f_price;
+		.@f_act_fee  = .@f_subtotal / 100;
+		.@f_act_tot  = .@f_is_buy ? (.@f_subtotal + .@f_act_fee) : (.@f_subtotal - .@f_act_fee);
+
+		AssertEquals(.@f_exp_fee, .@f_act_fee, "T5: Brokerage fee Case #" + .@i + " (" + .@f_qty + " @ " + .@f_price + "z)");
+		AssertEquals(.@f_exp_tot, .@f_act_tot, "T5: Total transaction amount Case #" + .@i);
+	}
+
+	// ==========================================================
+	// 6. T6: Partial Sale Average Cost Basis & Dividend Pro-rating
+	// ==========================================================
+	// Setup account 999998: 10 shares of TST2 @ 2000z cost basis (200z/sh), 200z pending dividend
+	query_sql "REPLACE INTO `solo_stock_player` (account_id, ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover) VALUES (999998, 'TST2', 10, 2000, 200, 0, 0)";
+
+	// Liquidate 4 shares (out of 10) at current price 250z
+	.@p_sell_qty = 4;
+	.@p_orig_shares = 10;
+	.@p_orig_tc = 2000;
+	.@p_orig_div = 200;
+	.@p_cur_price = 250;
+	.@p_tax_rate = 10;
+
+	.@p_subtotal = .@p_cur_price * .@p_sell_qty; // 1000z
+	.@p_fee = .@p_subtotal / 100; // 10z
+	.@p_net_proceeds = .@p_subtotal - .@p_fee; // 990z
+
+	// Pro-rate pending dividend on partial sale
+	.@p_div_gross = (.@p_orig_div * .@p_sell_qty) / .@p_orig_shares; // 80z
+	.@p_div_tax = (.@p_div_gross * .@p_tax_rate) / 100; // 8z
+	.@p_div_net = .@p_div_gross - .@p_div_tax; // 72z
+	.@p_total_received = .@p_net_proceeds + .@p_div_net; // 1062z
+
+	AssertEquals(80, .@p_div_gross, "T6: Pro-rated gross dividend on 4 shares is 80z (4/10 of 200z)");
+	AssertEquals(72, .@p_div_net, "T6: Pro-rated net dividend after 10% tax is 72z");
+	AssertEquals(1062, .@p_total_received, "T6: Total received on partial liquidation (990z net + 72z div = 1062z)");
+
+	// Execute DB partial liquidation logic
+	query_sql "UPDATE `solo_stock_player` SET total_cost = total_cost - ROUND((total_cost * " + .@p_sell_qty + ") / " + .@p_orig_shares + "), shares = shares - " + .@p_sell_qty + ", pending_div = pending_div - " + .@p_div_gross + " WHERE account_id = 999998 AND ticker = 'TST2'";
+
+	.@rem_shares = 0; .@rem_tc = 0; .@rem_div = 0;
+	query_sql "SELECT shares, total_cost, pending_div FROM `solo_stock_player` WHERE account_id = 999998 AND ticker = 'TST2'", .@rem_shares, .@rem_tc, .@rem_div;
+
+	AssertEquals(6, .@rem_shares, "T6: Remaining shares in DB (10 - 4 = 6)");
+	AssertEquals(1200, .@rem_tc, "T6: Remaining cost basis in DB (2000 - 800 = 1200z)");
+	AssertEquals(120, .@rem_div, "T6: Remaining pending dividend in DB (200 - 80 = 120z)");
+	AssertEquals(200, .@rem_tc / .@rem_shares, "T6: Conserved Average Cost Basis per share invariant (1200z / 6 = 200z/sh)");
+
+	// ==========================================================
+	// 7. T7: Dividend Tax Calculation
+	// ==========================================================
 	.@div_tax = 10;
 	query_sql "SELECT mval FROM `solo_stock_meta` WHERE mkey = 'DivTaxRate'", .@div_tax;
 	.@gross = 150;
 	.@tax_cut = (.@gross * .@div_tax) / 100;
 	.@net = .@gross - .@tax_cut;
-	AssertEquals(15, .@tax_cut, "T5: 10% tax on 150z gross dividend is 15z");
-	AssertEquals(135, .@net, "T5: Net dividend payout after 10% tax is 135z");
+	AssertEquals(15, .@tax_cut, "T7: 10% tax on 150z gross dividend is 15z");
+	AssertEquals(135, .@net, "T7: Net dividend payout after 10% tax is 135z");
+	AssertEquals(.@gross, .@net + .@tax_cut, "T7: Conservation of gross dividend (net + tax == gross)");
 
-	// Cleanup isolated test records before validating live municipal index
+	// ==========================================================
+	// 8. T8: 32-Bit Signed Integer Overflow Guard Boundary Checks
+	// ==========================================================
+	// Script Guard Formula: if (.@qty > (2000000000 / .@p)) -> rejected
+	// Matrix: [price, qty, expected_valid] (Stride = 3)
+	setarray .@oflow_cases[0],
+		  100, 1000000, 1,  // 100z * 1,000,000 = 100,000,000z <= 2B (Valid)
+		 5000,  400000, 1,  // 5,000z * 400,000 = 2,000,000,000z == 2B (Valid limit)
+		 5000,  400001, 0,  // 5,000z * 400,001 = 2,000,005,000z > 2B (Rejected)
+		50000,   40000, 1,  // 50,000z * 40,000 = 2,000,000,000z == 2B (Valid limit)
+		50000,   40001, 0;  // 50,000z * 40,001 = 2,000,050,000z > 2B (Rejected)
+
+	.@oflow_stride = 3;
+	.@num_oflow_cases = getarraysize(.@oflow_cases) / .@oflow_stride;
+	for (.@i = 0; .@i < .@num_oflow_cases; .@i++) {
+		.@o_off = .@i * .@oflow_stride;
+		.@o_price = .@oflow_cases[.@o_off];
+		.@o_qty   = .@oflow_cases[.@o_off + 1];
+		.@o_exp   = .@oflow_cases[.@o_off + 2];
+
+		.@o_is_valid = (.@o_qty <= (2000000000 / .@o_price)) ? 1 : 0;
+		AssertEquals(.@o_exp, .@o_is_valid, "T8: Integer overflow boundary check Case #" + .@i + " (" + .@o_qty + " @ " + .@o_price + "z)");
+	}
+
+	// ==========================================================
+	// 9. T9: Bank Direct Wire & Interest Crystallization
+	// ==========================================================
+	.@now = gettimetick(2);
+	.@five_days_ago = .@now - (5 * 86400);
+	// Setup bank account: 1,000,000z principal deposited 5 days ago, 0 initial interest paid total
+	query_sql "REPLACE INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (999999, 1000000, " + .@five_days_ago + ", 0)";
+
+	// Simulate wire payout of 100,000z net dividend directly to bank
+	.@wire_payout = 100000;
+	.@b_principal = 0; .@b_deposit_time = 0;
+	query_sql "SELECT `principal`, `deposit_time` FROM `solo_bank_account` WHERE `account_id` = 999999", .@b_principal, .@b_deposit_time;
+
+	.@b_elapsed = .@now - .@b_deposit_time;
+	.@b_days = .@b_elapsed / 86400;
+	if (.@b_days > 10) .@b_days = 10;
+	.@b_interest = ((.@b_principal / 100) * .@b_days) + (((.@b_principal % 100) * .@b_days) / 100); // 1% per day * 5 days = 50,000z
+
+	AssertEquals(50000, .@b_interest, "T9: 5 days accrued bank interest on 1M principal is 50,000z");
+
+	.@b_new_principal = .@b_principal + .@b_interest + .@wire_payout; // 1,150,000z
+	query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (999999, " + .@b_new_principal + ", " + .@now + ", " + .@b_interest + ") ON DUPLICATE KEY UPDATE `principal` = " + .@b_new_principal + ", `deposit_time` = " + .@now + ", `interest_paid_total` = `interest_paid_total` + " + .@b_interest;
+
+	.@post_prin = 0; .@post_time = 0; .@post_int_total = 0;
+	query_sql "SELECT `principal`, `deposit_time`, `interest_paid_total` FROM `solo_bank_account` WHERE `account_id` = 999999", .@post_prin, .@post_time, .@post_int_total;
+
+	AssertEquals(1150000, .@post_prin, "T9: Bank principal increased by interest and wire payout (1,000,000 + 50,000 + 100,000 = 1,150,000z)");
+	AssertEquals(50000, .@post_int_total, "T9: Bank accrued interest crystallized to interest_paid_total (50,000z)");
+	AssertEquals(.@now, .@post_time, "T9: Bank deposit timestamp reset to current time tick");
+
+	// ==========================================================
+	// 10. T10: Audit Transaction Ledger Logging Verification
+	// ==========================================================
+	query_sql "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (999999, 150001, 'TST1', 'BUY', 10, 100, 1010, 10, 'WALLET')";
+
+	.@t_act$ = ""; .@t_ticker$ = ""; .@t_shares = 0; .@t_price = 0; .@t_tot = 0; .@t_fee = 0; .@t_dest$ = "";
+	query_sql "SELECT action, ticker, shares, price, total_amount, fee, destination FROM `solo_stock_transactions` WHERE account_id = 999999 AND ticker = 'TST1' ORDER BY id DESC LIMIT 1", .@t_act$, .@t_ticker$, .@t_shares, .@t_price, .@t_tot, .@t_fee, .@t_dest$;
+
+	AssertEquals("BUY", .@t_act$, "T10: Audit ledger recorded action is BUY");
+	AssertEquals("TST1", .@t_ticker$, "T10: Audit ledger recorded ticker is TST1");
+	AssertEquals(10, .@t_shares, "T10: Audit ledger recorded shares is 10");
+	AssertEquals(100, .@t_price, "T10: Audit ledger recorded price is 100z");
+	AssertEquals(1010, .@t_tot, "T10: Audit ledger recorded total_amount is 1010z");
+	AssertEquals(10, .@t_fee, "T10: Audit ledger recorded fee is 10z");
+	AssertEquals("WALLET", .@t_dest$, "T10: Audit ledger recorded destination is WALLET");
+
+	// ==========================================================
+	// Cleanup Mock Records
+	// ==========================================================
 	query_sql "DELETE FROM `solo_stock_market` WHERE ticker IN ('TST1', 'TST2', 'TST3', 'TST4')";
 	query_sql "DELETE FROM `solo_stock_player` WHERE account_id IN (999999, 999998)";
+	query_sql "DELETE FROM `solo_bank_account` WHERE account_id IN (999999, 999998)";
+	query_sql "DELETE FROM `solo_stock_transactions` WHERE account_id IN (999999, 999998)";
 
-	// 7. T6: Verify All 9 Active Live Municipal Tickers (Phase 0 + Phase 1)
+	// ==========================================================
+	// 11. T11: Multi-Phase Municipal & Crypto Index Verification
+	// ==========================================================
+	// A. Verify All 9 Active Live Municipal Tickers (Phase 0 + Phase 1)
 	deletearray .@active_tickers$[0], getarraysize(.@active_tickers$);
 	deletearray .@active_names$[0], getarraysize(.@active_names$);
 	.@active_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'EQUITY' ORDER BY ticker ASC", .@active_tickers$, .@active_names$);
 
-	AssertEquals(9, .@active_count, "T6: Exactly 9 municipal stocks should be enabled (Base 5 + Schwarzwald 4)");
-	AssertEquals("ALB", .@active_tickers$[0], "T6: 1st ticker is ALB (Alberta Shipping Corp)");
-	AssertEquals("EIN", .@active_tickers$[1], "T6: 2nd ticker is EIN (Einbroch Heavy Industries)");
-	AssertEquals("GEF", .@active_tickers$[2], "T6: 3rd ticker is GEF (Geffen Arcanetech)");
-	AssertEquals("HUG", .@active_tickers$[3], "T6: 4th ticker is HUG (Hugel Racing Syndicate)");
-	AssertEquals("LHZ", .@active_tickers$[4], "T6: 5th ticker is LHZ (Rekenber Frontier Biotech)");
-	AssertEquals("MOR", .@active_tickers$[5], "T6: 6th ticker is MOR (Morroc Oasis Trading)");
-	AssertEquals("PAY", .@active_tickers$[6], "T6: 7th ticker is PAY (Payon Timber & Craft)");
-	AssertEquals("PRT", .@active_tickers$[7], "T6: 8th ticker is PRT (Prontera Capital Inc.)");
-	AssertEquals("YUN", .@active_tickers$[8], "T6: 9th ticker is YUN (Yuno Arcane Institute)");
+	AssertEquals(9, .@active_count, "T11: Exactly 9 municipal stocks should be enabled (Base 5 + Schwarzwald 4)");
+	AssertEquals("ALB", .@active_tickers$[0], "T11: 1st ticker is ALB (Alberta Shipping Corp)");
+	AssertEquals("EIN", .@active_tickers$[1], "T11: 2nd ticker is EIN (Einbroch Heavy Industries)");
+	AssertEquals("GEF", .@active_tickers$[2], "T11: 3rd ticker is GEF (Geffen Arcanetech)");
+	AssertEquals("HUG", .@active_tickers$[3], "T11: 4th ticker is HUG (Hugel Racing Syndicate)");
+	AssertEquals("LHZ", .@active_tickers$[4], "T11: 5th ticker is LHZ (Rekenber Frontier Biotech)");
+	AssertEquals("MOR", .@active_tickers$[5], "T11: 6th ticker is MOR (Morroc Oasis Trading)");
+	AssertEquals("PAY", .@active_tickers$[6], "T11: 7th ticker is PAY (Payon Timber & Craft)");
+	AssertEquals("PRT", .@active_tickers$[7], "T11: 8th ticker is PRT (Prontera Capital Inc.)");
+	AssertEquals("YUN", .@active_tickers$[8], "T11: 9th ticker is YUN (Yuno Arcane Institute)");
 
-	// 8. T7: Verify All 10 Active Live Decentralized Rune & Crypto Protocols (Phase 13)
+	// B. Verify All 10 Active Live Decentralized Rune & Crypto Protocols (Phase 13)
 	deletearray .@crypto_tickers$[0], getarraysize(.@crypto_tickers$);
 	deletearray .@crypto_names$[0], getarraysize(.@crypto_names$);
 	.@crypto_count = query_sql("SELECT ticker, name FROM `solo_stock_market` WHERE enabled = 1 AND asset_type = 'CRYPTO' ORDER BY ticker ASC", .@crypto_tickers$, .@crypto_names$);
 
-	AssertEquals(10, .@crypto_count, "T7: Exactly 10 decentralized protocols should be enabled");
-	AssertEquals("ALM", .@crypto_tickers$[0], "T7: 1st crypto ticker is ALM (Alchemax AMM Pool)");
-	AssertEquals("EMP", .@crypto_tickers$[1], "T7: 2nd crypto ticker is EMP (Emperium Shard Protocol)");
-	AssertEquals("KFX", .@crypto_tickers$[2], "T7: 3rd crypto ticker is KFX (Kafra Fast-eXchange)");
-	AssertEquals("NZN", .@crypto_tickers$[3], "T7: 4th crypto ticker is NZN (Neo-Zeny Kafra Dollar)");
-	AssertEquals("ORA", .@crypto_tickers$[4], "T7: 5th crypto ticker is ORA (Eye of Odin Oracle)");
-	AssertEquals("POR", .@crypto_tickers$[5], "T7: 6th crypto ticker is POR (King Poring Meme Standard)");
-	AssertEquals("SHD", .@crypto_tickers$[6], "T7: 7th crypto ticker is SHD (Shadow Guild Stealth Ring)");
-	AssertEquals("WRP", .@crypto_tickers$[7], "T7: 8th crypto ticker is WRP (Warp Light Protocol)");
-	AssertEquals("YMI", .@crypto_tickers$[8], "T7: 9th crypto ticker is YMI (Heart of Ymir Alchemax)");
-	AssertEquals("ZEX", .@crypto_tickers$[9], "T7: 10th crypto ticker is ZEX (Midgard Exchange Coin)");
+	AssertEquals(10, .@crypto_count, "T11: Exactly 10 decentralized protocols should be enabled");
+	AssertEquals("ALM", .@crypto_tickers$[0], "T11: 1st crypto ticker is ALM (Alchemax AMM Pool)");
+	AssertEquals("EMP", .@crypto_tickers$[1], "T11: 2nd crypto ticker is EMP (Emperium Shard Protocol)");
+	AssertEquals("KFX", .@crypto_tickers$[2], "T11: 3rd crypto ticker is KFX (Kafra Fast-eXchange)");
+	AssertEquals("NZN", .@crypto_tickers$[3], "T11: 4th crypto ticker is NZN (Neo-Zeny Kafra Dollar)");
+	AssertEquals("ORA", .@crypto_tickers$[4], "T11: 5th crypto ticker is ORA (Eye of Odin Oracle)");
+	AssertEquals("POR", .@crypto_tickers$[5], "T11: 6th crypto ticker is POR (King Poring Meme Standard)");
+	AssertEquals("SHD", .@crypto_tickers$[6], "T11: 7th crypto ticker is SHD (Shadow Guild Stealth Ring)");
+	AssertEquals("WRP", .@crypto_tickers$[7], "T11: 8th crypto ticker is WRP (Warp Light Protocol)");
+	AssertEquals("YMI", .@crypto_tickers$[8], "T11: 9th crypto ticker is YMI (Heart of Ymir Alchemax)");
+	AssertEquals("ZEX", .@crypto_tickers$[9], "T11: 10th crypto ticker is ZEX (Midgard Exchange Coin)");
 
-	// 9. T8: Verify Disabled Future Municipal Phases 2-5 Omitted from Active Index (4 + 4 + 8 + 2 = 18)
+	// C. Verify Disabled Future Municipal Phases 2-5 Omitted from Active Index (4 + 4 + 8 + 2 = 18)
 	.@disabled_count = 0;
 	query_sql("SELECT COUNT(*) FROM `solo_stock_market` WHERE enabled = 0", .@disabled_count);
-	AssertEquals(18, .@disabled_count, "T8: Exactly 18 future-phase municipal tickers should be stored as disabled (enabled = 0)");
+	AssertEquals(18, .@disabled_count, "T11: Exactly 18 future-phase municipal tickers should be stored as disabled (enabled = 0)");
 
-	debugmes "Stock Exchange CI Test: Completed successfully.";
+	debugmes "Stock Exchange CI Test: All 11 tests completed successfully.";
 	end;
 }
+
 
 

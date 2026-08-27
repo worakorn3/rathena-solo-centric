@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Junk Bounty & On-Hand Web Seller Prototype</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+    }
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+    .ro-icon {
+      image-rendering: pixelated;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-accent/20 selection:text-accent p-3 md:p-6 max-w-7xl mx-auto">
+
+  <!-- ==================== PROTOTYPE BANNER STRIP ==================== -->
+  <div class="mb-4 bg-surface2/60 border border-border px-4 py-2 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-accent animate-ping"></span>
+      <span class="font-bold text-accent">[PROTOTYPE]</span>
+      <span class="text-primary font-semibold">Daily Bounty On-Hands Recommendations & Web Selling Terminal</span>
+      <span class="bg-surface px-2 py-0.5 rounded text-[10px] text-muted border border-border">v1.1 (Zinc Aligned)</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="toggleOnlineState()" id="online-toggle-btn" class="px-2.5 py-1 rounded bg-surface hover:bg-surface2 text-[11px] border border-border flex items-center gap-1.5 transition-colors">
+        <span id="char-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="char-status-text">Simulate: Offline (Ready)</span>
+      </button>
+      <button onclick="resetDemoBalances()" class="px-2.5 py-1 rounded bg-surface hover:bg-surface2 text-[11px] text-muted hover:text-primary border border-border transition-colors">
+        Reset Demo State
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 1. TOP COMMAND HERO BAR ==================== -->
+  <div class="bento-card p-4 shrink-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative overflow-hidden mb-4">
+    <div class="absolute -right-12 -top-12 w-56 h-56 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Left: Title, Character Switcher & Status -->
+    <div class="flex items-center gap-3.5 min-w-0">
+      <div class="w-12 h-12 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center shrink-0 shadow-inner">
+        <i data-lucide="target" class="w-6 h-6 text-accent"></i>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h2 class="text-base font-bold text-primary tracking-tight flex items-center gap-1.5">
+            Daily Junk Trader Bounties
+          </h2>
+          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface2 border border-border text-muted flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3 h-3 text-accent"></i> Prontera (143, 172)
+          </span>
+          <span id="badge-online" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Character Offline · Web Trade Ready
+          </span>
+        </div>
+        <div class="text-xs text-muted mt-1 flex items-center gap-3 flex-wrap">
+          <span>Active Hunter: <strong id="hero-char-name" class="text-primary font-semibold">Valkyrie_Knight</strong> (Lv. 99 Lord Knight)</span>
+          <span class="text-border">|</span>
+          <span>Wallet: <strong id="hero-char-zeny" class="text-amber-400 font-mono font-bold">1,245,800 Z</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Quota Gauge & Reset Timer -->
+    <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 border-border/60 pt-3 lg:pt-0">
+      <!-- Reset Timer -->
+      <div class="bg-surface2/50 border border-border px-3 py-2 rounded-xl flex items-center gap-2.5">
+        <i data-lucide="clock" class="w-4 h-4 text-accent animate-pulse shrink-0"></i>
+        <div>
+          <div class="text-[8px] uppercase font-bold text-muted tracking-wider">Reset In</div>
+          <div class="font-mono text-xs font-bold text-primary" id="countdown-timer">08h 35m 12s</div>
+        </div>
+      </div>
+
+      <!-- Daily Turn-in Quota -->
+      <div class="bg-surface2/50 border border-border px-3.5 py-2 rounded-xl flex flex-col justify-center min-w-[150px]">
+        <div class="flex justify-between items-center text-[9px] uppercase font-bold text-muted mb-1">
+          <span>Daily Quota</span>
+          <span id="quota-text" class="font-mono text-accent">35 / 100 Items</span>
+        </div>
+        <div class="w-full bg-surface h-1.5 rounded-full overflow-hidden border border-border/50">
+          <div id="quota-progress-bar" class="bg-accent h-full transition-all duration-300" style="width: 35%"></div>
+        </div>
+      </div>
+
+      <!-- Lifetime Stats -->
+      <div class="hidden sm:flex bg-surface2/50 border border-border px-3.5 py-2 rounded-xl items-center gap-2.5">
+        <div>
+          <div class="text-[8px] uppercase font-bold text-muted tracking-wider">Lifetime Earnings</div>
+          <div class="font-mono text-xs font-bold text-success" id="lifetime-zeny">3,450,000 Z</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. 🔥 ON-HANDS RECOMMENDATIONS HERO SECTION ==================== -->
+  <div id="on-hand-recommendation-block" class="bento-card p-4 border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-surface to-surface mb-4 relative overflow-hidden">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-primary flex items-center gap-2">
+            <span>Recommended Items On Hand</span>
+            <span id="on-hand-count-pill" class="bg-amber-400 text-zinc-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full font-mono">3 Items in Backpack</span>
+          </h3>
+          <p class="text-xs text-muted">
+            Your active character has bounty monster loot in their inventory. Turn them in directly for high daily payouts!
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Batch Sell All Action -->
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <button onclick="openBatchSellModal()" class="w-full md:w-auto px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all">
+          <i data-lucide="coins" class="w-4 h-4"></i>
+          <span>Batch Turn-in All (<span id="total-on-hand-potential">+187,500 Z</span>)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- On Hand Cards Carousel/Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="on-hand-cards-grid">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- ==================== 3. FILTER & ALL BOUNTIES ROSTER ==================== -->
+  <div class="bento-card p-3 shrink-0 flex flex-wrap items-center justify-between gap-2.5 mb-4">
+    <!-- Tier Tabs -->
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <button onclick="setTier('all')" id="tab-tier-all" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-accent text-zinc-950 shadow-sm">
+        <span>All Bounties</span>
+        <span class="text-[10px] font-mono bg-zinc-950/20 px-1 rounded" id="tier-count-all">18</span>
+      </button>
+      <button onclick="setTier(1)" id="tab-tier-1" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Tier 1 · Novice</span>
+      </button>
+      <button onclick="setTier(2)" id="tab-tier-2" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border">
+        <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+        <span>Tier 2 · Adept</span>
+      </button>
+      <button onclick="setTier(3)" id="tab-tier-3" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span>Tier 3 · Master</span>
+      </button>
+      <button onclick="setTier(4)" id="tab-tier-4" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border">
+        <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+        <span>Tier 4 · Trans</span>
+      </button>
+      <button onclick="setTier('onhand')" id="tab-tier-onhand" class="tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border">
+        <i data-lucide="backpack" class="w-3.5 h-3.5 text-accent"></i>
+        <span>Only On Hand</span>
+        <span class="text-[10px] font-mono px-1 rounded bg-amber-400/20 text-amber-400 border border-amber-400/30 font-bold">3</span>
+      </button>
+    </div>
+
+    <!-- Search & Sort -->
+    <div class="flex items-center gap-2 w-full sm:w-auto">
+      <div class="relative flex-1 sm:w-56">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+        <input type="text" id="search-input" oninput="renderBounties()" placeholder="Search item or monster..." class="w-full bg-surface2 border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent/60 transition-colors">
+      </div>
+      <select id="sort-select" onchange="renderBounties()" class="bg-surface2 border border-border rounded-lg px-2.5 py-1.5 text-xs text-primary font-medium focus:outline-none focus:border-accent/60 cursor-pointer">
+        <option value="recommend">Sort: Recommended First</option>
+        <option value="payout_desc">Sort: Payout (High → Low)</option>
+        <option value="tier_asc">Sort: Tier & Index</option>
+        <option value="level_asc">Sort: Mob Level (Low → High)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ==================== 4. BOUNTY CARDS ROSTER ==================== -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="bounties-grid">
+    <!-- Generated dynamically via JS -->
+  </div>
+
+  <!-- ==================== 5. DIRECT SELL MODAL ==================== -->
+  <div id="sell-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm hidden animate-in fade-in duration-150">
+    <div class="bento-card w-full max-w-md p-0 overflow-hidden shadow-2xl border border-border">
+      <!-- Modal Header -->
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between bg-surface2/60">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0">
+            <img id="modal-item-icon" src="https://static.divine-pride.net/images/items/item/904.png" alt="item" class="ro-icon w-6 h-6 object-contain">
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm text-primary truncate" id="modal-item-name">Scorpion Tail</div>
+            <div class="text-[10px] font-mono text-muted flex items-center gap-2">
+              <span id="modal-item-tier">Tier 1 Bounty</span>
+              <span>·</span>
+              <span id="modal-item-id">ID #904</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeSellModal()" class="text-muted hover:text-primary transition-colors p-1.5 rounded-md hover:bg-surface2 shrink-0">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-5 space-y-4 bg-surface text-xs">
+        <!-- Target Intel -->
+        <div class="p-3 rounded-lg bg-surface2/50 border border-border flex items-center justify-between">
+          <div>
+            <div class="text-[9px] uppercase font-bold text-muted flex items-center gap-1 text-danger">
+              <i data-lucide="skull" class="w-3 h-3"></i> Target Monster
+            </div>
+            <div class="font-bold text-primary text-xs mt-0.5" id="modal-mob-name">Elusive Scorpion (Lv. 16)</div>
+          </div>
+          <div class="text-right font-mono">
+            <div class="text-[9px] uppercase font-bold text-muted">Bounty Price</div>
+            <div class="font-bold text-accent text-sm" id="modal-unit-price">850 Z / ea</div>
+          </div>
+        </div>
+
+        <!-- Inventory Location Breakdown -->
+        <div class="p-3 rounded-lg bg-surface2/30 border border-border space-y-2">
+          <div class="flex justify-between items-center text-[10px] font-bold text-muted uppercase">
+            <span>Available Stock</span>
+            <span class="font-mono text-primary font-bold" id="modal-total-avail">45 items total</span>
+          </div>
+
+          <!-- Radio Choice for Source -->
+          <div class="grid grid-cols-2 gap-2 font-mono">
+            <label class="p-2.5 rounded-lg bg-surface border border-amber-500/40 flex items-center gap-2 cursor-pointer hover:border-amber-400 transition-colors">
+              <input type="radio" name="sell_source" value="INVENTORY" checked onchange="updateModalCalc()" class="text-accent focus:ring-accent accent-amber-400">
+              <div class="text-[11px] min-w-0">
+                <div class="font-bold text-primary flex items-center gap-1">
+                  <i data-lucide="backpack" class="w-3 h-3 text-amber-400"></i> Backpack
+                </div>
+                <div class="text-[10px] text-muted" id="modal-bag-count">45 on hand</div>
+              </div>
+            </label>
+            <label class="p-2.5 rounded-lg bg-surface border border-border flex items-center gap-2 cursor-pointer hover:border-amber-400 transition-colors">
+              <input type="radio" name="sell_source" value="STORAGE" onchange="updateModalCalc()" class="text-accent focus:ring-accent accent-amber-400">
+              <div class="text-[11px] min-w-0">
+                <div class="font-bold text-primary flex items-center gap-1">
+                  <i data-lucide="archive" class="w-3 h-3 text-sky-400"></i> Storage
+                </div>
+                <div class="text-[10px] text-muted" id="modal-storage-count">120 in storage</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quantity Slider & Quick Presets -->
+        <div class="p-3 rounded-lg bg-surface2/30 border border-border space-y-2.5">
+          <div class="flex justify-between items-center text-[10px] font-bold text-muted uppercase">
+            <span>Sell Quantity</span>
+            <span class="font-mono text-accent font-bold text-sm" id="modal-qty-display">45 items</span>
+          </div>
+
+          <input type="range" id="modal-qty-slider" min="1" max="45" value="45" oninput="onSliderChange(this.value)" class="w-full accent-amber-400 cursor-pointer h-2 bg-surface2 rounded-lg">
+
+          <!-- Preset Buttons -->
+          <div class="flex items-center gap-1.5 font-mono text-[10px]">
+            <button onclick="setModalQtyPreset(1)" class="flex-1 py-1.5 rounded bg-surface hover:bg-surface2 border border-border text-muted hover:text-primary font-bold transition-colors">1x</button>
+            <button onclick="setModalQtyPreset(10)" class="flex-1 py-1.5 rounded bg-surface hover:bg-surface2 border border-border text-muted hover:text-primary font-bold transition-colors">10x</button>
+            <button onclick="setModalQtyPreset(25)" class="flex-1 py-1.5 rounded bg-surface hover:bg-surface2 border border-border text-muted hover:text-primary font-bold transition-colors">25x</button>
+            <button onclick="setModalQtyPreset('max_quota')" class="flex-1 py-1.5 rounded bg-surface hover:bg-surface2 border border-border text-accent font-bold transition-colors">Max Quota</button>
+            <button onclick="setModalQtyPreset('all')" class="flex-1 py-1.5 rounded bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-400 font-bold transition-colors">All (45)</button>
+          </div>
+
+          <!-- Payout Preview -->
+          <div class="grid grid-cols-2 gap-2 text-center font-mono pt-1">
+            <div class="p-2.5 rounded-lg bg-surface border border-border">
+              <div class="text-[9px] text-muted uppercase">Quota Consumed</div>
+              <div class="font-bold text-primary text-xs mt-0.5" id="modal-quota-consumed">45 / 65 remaining</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-surface border border-amber-500/30 bg-amber-500/5">
+              <div class="text-[9px] text-muted uppercase">Zeny Payout</div>
+              <div class="font-bold text-success text-sm mt-0.5" id="modal-total-payout">+38,250 Z</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Offline Confirmation & Action Button -->
+        <div id="modal-action-block" class="space-y-2 pt-1">
+          <button id="modal-confirm-sell-btn" onclick="executeWebSale()" class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-extrabold text-xs shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 transition-all">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            <span>Confirm Web Turn-in (<span id="modal-btn-zeny">+38,250 Z</span>)</span>
+          </button>
+          <div class="text-[10px] text-muted text-center flex items-center justify-center gap-1">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Direct database atomic transfer · Safe offline execution</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Feedback -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-surface border border-amber-400/40 text-primary px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-mono hidden animate-in fade-in slide-in-from-bottom-3 duration-200">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-accent shrink-0"></i>
+    <span id="toast-text">Transaction completed!</span>
+  </div>
+
+  <!-- ==================== JAVASCRIPT STATE & LOGIC ==================== -->
+  <script>
+    // Mock State
+    let state = {
+      isOnline: false,
+      dailySold: 35,
+      dailyLimit: 100,
+      lifetimeSold: 1420,
+      lifetimeZeny: 3450000,
+      activeChar: {
+        id: 150001,
+        name: "Valkyrie_Knight",
+        className: "Lord Knight",
+        baseLevel: 99,
+        zeny: 1245800,
+      },
+      currentTierFilter: 'all',
+      bounties: [
+        { tier: 1, index: 1, itemId: 904, itemName: "Scorpion Tail", price: 850, mobName: "Elusive Scorpion", mobLevel: 16, bagCount: 45, storageCount: 120 },
+        { tier: 1, index: 2, itemId: 939, itemName: "Bee Sting", price: 620, mobName: "Elusive Hornet", mobLevel: 11, bagCount: 20, storageCount: 0 },
+        { tier: 2, index: 1, itemId: 1010, itemName: "Orcish Voucher", price: 2100, mobName: "Furious Orc Warrior", mobLevel: 44, bagCount: 32, storageCount: 50 },
+        { tier: 2, index: 2, itemId: 928, itemName: "Snake Scale", price: 1450, mobName: "Elusive Boa", mobLevel: 32, bagCount: 0, storageCount: 80 },
+        { tier: 3, index: 1, itemId: 7005, itemName: "Skull", price: 4800, mobName: "Furious Wanderer", mobLevel: 88, bagCount: 0, storageCount: 15 },
+        { tier: 3, index: 2, itemId: 7027, itemName: "Evil Wing", price: 5400, mobName: "Furious Baphomet Jr.", mobLevel: 92, bagCount: 0, storageCount: 0 },
+        { tier: 4, index: 1, itemId: 7199, itemName: "Crystal Core", price: 9200, mobName: "Mutated Gigas", mobLevel: 125, bagCount: 0, storageCount: 0 },
+        { tier: 4, index: 2, itemId: 7201, itemName: "Dragon Canine", price: 11500, mobName: "Ancient Hydro", mobLevel: 140, bagCount: 0, storageCount: 0 },
+      ],
+      selectedBounty: null,
+      sellQty: 1,
+    };
+
+    function init() {
+      renderHeader();
+      renderOnHandsSection();
+      renderBounties();
+      lucide.createIcons();
+    }
+
+    function formatZeny(n) {
+      return Number(n).toLocaleString('en-US');
+    }
+
+    const tierThemes = {
+      1: {
+        cardBorder: "border-emerald-500/20 hover:border-emerald-500/50",
+        cardBg: "bg-emerald-950/10",
+        badge: "bg-emerald-950/40 text-emerald-400 border border-emerald-500/30",
+        dot: "bg-emerald-400",
+        label: "Tier 1 · Novice",
+        accent: "text-emerald-400",
+      },
+      2: {
+        cardBorder: "border-sky-500/20 hover:border-sky-500/50",
+        cardBg: "bg-sky-950/10",
+        badge: "bg-sky-950/40 text-sky-400 border border-sky-500/30",
+        dot: "bg-sky-400",
+        label: "Tier 2 · Adept",
+        accent: "text-sky-400",
+      },
+      3: {
+        cardBorder: "border-amber-500/20 hover:border-amber-500/50",
+        cardBg: "bg-amber-950/10",
+        badge: "bg-amber-950/40 text-amber-400 border border-amber-500/30",
+        dot: "bg-amber-400",
+        label: "Tier 3 · Master",
+        accent: "text-amber-400",
+      },
+      4: {
+        cardBorder: "border-purple-500/20 hover:border-purple-500/50",
+        cardBg: "bg-purple-950/10",
+        badge: "bg-purple-950/40 text-purple-400 border border-purple-500/30",
+        dot: "bg-purple-400",
+        label: "Tier 4 · Trans",
+        accent: "text-purple-400",
+      },
+      5: {
+        cardBorder: "border-indigo-500/20 hover:border-indigo-500/50",
+        cardBg: "bg-indigo-950/10",
+        badge: "bg-indigo-950/40 text-indigo-400 border border-indigo-500/30",
+        dot: "bg-indigo-400",
+        label: "Tier 5 · 3rd Class",
+        accent: "text-indigo-400",
+      },
+      6: {
+        cardBorder: "border-rose-500/20 hover:border-rose-500/50",
+        cardBg: "bg-rose-950/10",
+        badge: "bg-rose-950/40 text-rose-400 border border-rose-500/30",
+        dot: "bg-rose-400",
+        label: "Tier 6 · 4th Class",
+        accent: "text-rose-400",
+      },
+    };
+
+    function renderHeader() {
+      document.getElementById('hero-char-name').innerText = state.activeChar.name;
+      document.getElementById('hero-char-zeny').innerText = formatZeny(state.activeChar.zeny) + " Z";
+      document.getElementById('quota-text').innerText = `${state.dailySold} / ${state.dailyLimit} Items`;
+      const pct = Math.min(100, Math.round((state.dailySold / state.dailyLimit) * 100));
+      document.getElementById('quota-progress-bar').style.width = `${pct}%`;
+      document.getElementById('lifetime-zeny').innerText = formatZeny(state.lifetimeZeny) + " Z";
+
+      // Status indicator
+      const badge = document.getElementById('badge-online');
+      const dot = document.getElementById('char-status-dot');
+      const text = document.getElementById('char-status-text');
+
+      if (state.isOnline) {
+        badge.className = "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-950/40 text-rose-400 border border-rose-500/30 flex items-center gap-1";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Character Online In-Game · Web Selling Locked';
+        dot.className = "w-2 h-2 rounded-full bg-rose-400";
+        text.innerText = "Simulate: Online (Locked)";
+      } else {
+        badge.className = "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center gap-1";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Character Offline · Web Trade Ready';
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        text.innerText = "Simulate: Offline (Ready)";
+      }
+    }
+
+    function renderOnHandsSection() {
+      const onHandList = state.bounties.filter(b => b.bagCount > 0);
+      const container = document.getElementById('on-hand-cards-grid');
+      const pill = document.getElementById('on-hand-count-pill');
+      const potentialZenyEl = document.getElementById('total-on-hand-potential');
+      const block = document.getElementById('on-hand-recommendation-block');
+
+      if (onHandList.length === 0) {
+        block.classList.add('hidden');
+        return;
+      }
+      block.classList.remove('hidden');
+
+      const totalItems = onHandList.reduce((sum, b) => sum + b.bagCount, 0);
+      const totalPotentialZeny = onHandList.reduce((sum, b) => sum + (b.bagCount * b.price), 0);
+
+      pill.innerText = `${onHandList.length} Items (${totalItems} total in Bag)`;
+      potentialZenyEl.innerText = `+${formatZeny(totalPotentialZeny)} Z`;
+
+      container.innerHTML = onHandList.map(b => {
+        const potential = b.bagCount * b.price;
+        return `
+          <div class="bento-card bg-surface2/50 border-amber-500/30 p-3 flex flex-col justify-between hover:border-amber-400 transition-all group">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-lg bg-surface border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <img src="https://static.divine-pride.net/images/items/item/${b.itemId}.png" alt="${b.itemName}" class="ro-icon w-6 h-6 object-contain" onerror="this.src='https://via.placeholder.com/24?text=?'">
+                </div>
+                <div class="min-w-0">
+                  <div class="font-bold text-xs text-primary group-hover:text-amber-400 transition-colors truncate">${b.itemName}</div>
+                  <div class="text-[10px] font-mono text-muted flex items-center gap-1">
+                    <span class="text-amber-400 font-bold">${b.bagCount}x on hand</span>
+                    <span>·</span>
+                    <span>Tier ${b.tier}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/20 shrink-0">
+                ${formatZeny(b.price)} z/ea
+              </span>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-border/80 flex items-center justify-between text-xs font-mono">
+              <span class="text-success font-bold">+${formatZeny(potential)} Z</span>
+              <button onclick="openSellModal(${b.itemId})" class="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-[11px] flex items-center gap-1 transition-colors">
+                <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                <span>Sell Now</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBounties() {
+      const q = document.getElementById('search-input').value.toLowerCase().trim();
+      const sort = document.getElementById('sort-select').value;
+      const container = document.getElementById('bounties-grid');
+
+      let list = state.bounties.filter(b => {
+        if (state.currentTierFilter === 'onhand') return b.bagCount > 0;
+        if (state.currentTierFilter !== 'all' && b.tier !== Number(state.currentTierFilter)) return false;
+        if (q && !b.itemName.toLowerCase().includes(q) && !b.mobName.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      list.sort((a, b) => {
+        if (sort === 'recommend') {
+          // Put on-hand items first, then higher price
+          if ((b.bagCount > 0) !== (a.bagCount > 0)) return b.bagCount > 0 ? 1 : -1;
+          return b.price - a.price;
+        }
+        if (sort === 'payout_desc') return b.price - a.price;
+        if (sort === 'level_asc') return a.mobLevel - b.mobLevel;
+        return a.tier - b.tier || a.index - b.index;
+      });
+
+      document.getElementById('tier-count-all').innerText = state.bounties.length;
+
+      container.innerHTML = list.map(b => {
+        const theme = tierThemes[b.tier] || tierThemes[1];
+        const hasOnHand = b.bagCount > 0;
+        const hasStorage = b.storageCount > 0;
+        const total = b.bagCount + b.storageCount;
+
+        return `
+          <div class="bento-card p-3.5 flex flex-col justify-between ${hasOnHand ? 'border-amber-500/40 bg-amber-500/5' : `${theme.cardBg} ${theme.cardBorder}`} transition-all">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded ${theme.badge}">
+                      ${theme.label}
+                    </span>
+                    ${hasOnHand ? '<span class="text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 border border-amber-400/40 flex items-center gap-0.5"><i data-lucide="backpack" class="w-2.5 h-2.5"></i> In Bag (' + b.bagCount + ')</span>' : ''}
+                  </div>
+                  <h4 class="font-bold text-sm text-primary mt-1">${b.itemName}</h4>
+                  <div class="text-[11px] text-muted flex items-center gap-1 mt-0.5">
+                    <i data-lucide="skull" class="w-3 h-3 text-danger shrink-0"></i>
+                    <span>${b.mobName} (Lv. ${b.mobLevel})</span>
+                  </div>
+                </div>
+
+                <div class="w-11 h-11 rounded-lg bg-surface2 border border-border flex items-center justify-center shrink-0">
+                  <img src="https://static.divine-pride.net/images/items/item/${b.itemId}.png" alt="${b.itemName}" class="ro-icon w-6 h-6 object-contain" onerror="this.src='https://via.placeholder.com/24?text=?'">
+                </div>
+              </div>
+
+              <!-- Inventory Intel -->
+              <div class="my-2.5 px-2.5 py-1.5 rounded bg-surface2/60 border border-border/80 flex items-center justify-between text-[10px] font-mono">
+                <span class="text-muted">Bag: <strong class="${hasOnHand ? 'text-amber-400 font-bold' : 'text-primary'}">${b.bagCount}</strong> | Storage: <strong class="${hasStorage ? 'text-sky-400 font-bold' : 'text-primary'}">${b.storageCount}</strong></span>
+                <span class="${theme.accent} font-bold text-xs">${formatZeny(b.price)} z/ea</span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-border/80 flex items-center justify-between text-xs font-mono">
+              <span class="text-[10px] text-muted">100x Max: <strong class="text-success">${formatZeny(b.price * 100)}z</strong></span>
+              ${total > 0 ? `
+                <button onclick="openSellModal(${b.itemId})" class="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-1 transition-colors shadow">
+                  <i data-lucide="coins" class="w-3.5 h-3.5"></i>
+                  <span>Sell from Web</span>
+                </button>
+              ` : `
+                <button disabled class="px-2.5 py-1 rounded bg-surface2 text-muted/50 border border-border/50 text-[10px] font-medium cursor-not-allowed">
+                  None in Bag/Storage
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function setTier(tier) {
+      state.currentTierFilter = tier;
+      document.querySelectorAll('.tier-tab').forEach(el => {
+        el.className = "tier-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-surface2/60 text-muted hover:text-primary hover:bg-surface2 border border-border";
+      });
+      const activeBtn = document.getElementById(`tab-tier-${tier}`);
+      if (activeBtn) {
+        activeBtn.className = "tier-tab px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-accent text-zinc-950 shadow-sm";
+      }
+      renderBounties();
+    }
+
+    function openSellModal(itemId) {
+      const b = state.bounties.find(x => x.itemId === itemId);
+      if (!b) return;
+      state.selectedBounty = b;
+
+      document.getElementById('modal-item-name').innerText = b.itemName;
+      document.getElementById('modal-item-id').innerText = `ID #${b.itemId}`;
+      document.getElementById('modal-item-tier').innerText = `Tier ${b.tier} Bounty`;
+      document.getElementById('modal-item-icon').src = `https://static.divine-pride.net/images/items/item/${b.itemId}.png`;
+      document.getElementById('modal-mob-name').innerText = `${b.mobName} (Lv. ${b.mobLevel})`;
+      document.getElementById('modal-unit-price').innerText = `${formatZeny(b.price)} Z / ea`;
+      document.getElementById('modal-bag-count').innerText = `${b.bagCount} on hand`;
+      document.getElementById('modal-storage-count').innerText = `${b.storageCount} in storage`;
+      document.getElementById('modal-total-avail').innerText = `${b.bagCount + b.storageCount} items total`;
+
+      // Set initial qty
+      const defaultSource = b.bagCount > 0 ? "INVENTORY" : "STORAGE";
+      const radios = document.getElementsByName('sell_source');
+      radios[0].checked = (defaultSource === "INVENTORY");
+      radios[1].checked = (defaultSource === "STORAGE");
+
+      updateModalCalc();
+      document.getElementById('sell-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeSellModal() {
+      document.getElementById('sell-modal').classList.add('hidden');
+    }
+
+    function updateModalCalc() {
+      if (!state.selectedBounty) return;
+      const b = state.selectedBounty;
+      const source = document.querySelector('input[name="sell_source"]:checked').value;
+      const avail = source === "INVENTORY" ? b.bagCount : b.storageCount;
+      const remainingQuota = Math.max(0, state.dailyLimit - state.dailySold);
+
+      const maxSellable = Math.min(avail, remainingQuota);
+      const slider = document.getElementById('modal-qty-slider');
+      slider.max = Math.max(1, avail);
+
+      if (state.sellQty > avail || state.sellQty === 0) {
+        state.sellQty = Math.max(1, maxSellable);
+      }
+      slider.value = state.sellQty;
+
+      document.getElementById('modal-qty-display').innerText = `${state.sellQty} items`;
+      document.getElementById('modal-quota-consumed').innerText = `${state.sellQty} / ${remainingQuota} remaining`;
+      const payout = state.sellQty * b.price;
+      document.getElementById('modal-total-payout').innerText = `+${formatZeny(payout)} Z`;
+      document.getElementById('modal-btn-zeny').innerText = `+${formatZeny(payout)} Z`;
+
+      const btn = document.getElementById('modal-confirm-sell-btn');
+      if (state.isOnline) {
+        btn.disabled = true;
+        btn.className = "w-full py-2.5 rounded-xl bg-surface2 text-muted border border-border text-xs font-bold cursor-not-allowed";
+        btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4 text-danger"></i> Character Online: Log Out to Trade`;
+      } else if (avail <= 0) {
+        btn.disabled = true;
+        btn.className = "w-full py-2.5 rounded-xl bg-surface2 text-muted border border-border text-xs font-bold cursor-not-allowed";
+        btn.innerHTML = `No items in selected source`;
+      } else if (state.sellQty > remainingQuota) {
+        btn.disabled = true;
+        btn.className = "w-full py-2.5 rounded-xl bg-surface2 text-muted border border-border text-xs font-bold cursor-not-allowed";
+        btn.innerHTML = `Exceeds Daily Quota (${remainingQuota} left)`;
+      } else {
+        btn.disabled = false;
+        btn.className = "w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-extrabold text-xs shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 transition-all cursor-pointer";
+        btn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i> Confirm Web Turn-in (+${formatZeny(payout)} Z)`;
+      }
+      lucide.createIcons();
+    }
+
+    function onSliderChange(val) {
+      state.sellQty = Number(val);
+      updateModalCalc();
+    }
+
+    function setModalQtyPreset(preset) {
+      if (!state.selectedBounty) return;
+      const b = state.selectedBounty;
+      const source = document.querySelector('input[name="sell_source"]:checked').value;
+      const avail = source === "INVENTORY" ? b.bagCount : b.storageCount;
+      const remainingQuota = Math.max(0, state.dailyLimit - state.dailySold);
+
+      if (preset === 'all') {
+        state.sellQty = avail;
+      } else if (preset === 'max_quota') {
+        state.sellQty = Math.min(avail, remainingQuota);
+      } else {
+        state.sellQty = Math.min(Number(preset), avail);
+      }
+      updateModalCalc();
+    }
+
+    function executeWebSale() {
+      if (state.isOnline || !state.selectedBounty) return;
+      const b = state.selectedBounty;
+      const source = document.querySelector('input[name="sell_source"]:checked').value;
+      const qty = state.sellQty;
+      const payout = qty * b.price;
+
+      // Apply mutations
+      if (source === "INVENTORY") {
+        b.bagCount -= qty;
+      } else {
+        b.storageCount -= qty;
+      }
+      state.dailySold += qty;
+      state.lifetimeSold += qty;
+      state.lifetimeZeny += payout;
+      state.activeChar.zeny += payout;
+
+      closeSellModal();
+      renderHeader();
+      renderOnHandsSection();
+      renderBounties();
+      showToast(`Successfully sold ${qty}x ${b.itemName} for +${formatZeny(payout)} Z!`);
+    }
+
+    function openBatchSellModal() {
+      if (state.isOnline) {
+        showToast("Character is online in-game. Please log out first!");
+        return;
+      }
+      const onHandList = state.bounties.filter(b => b.bagCount > 0);
+      let totalQty = 0;
+      let totalPayout = 0;
+      const remainingQuota = Math.max(0, state.dailyLimit - state.dailySold);
+
+      for (const b of onHandList) {
+        const canSell = Math.min(b.bagCount, remainingQuota - totalQty);
+        if (canSell > 0) {
+          b.bagCount -= canSell;
+          totalQty += canSell;
+          totalPayout += canSell * b.price;
+        }
+      }
+
+      state.dailySold += totalQty;
+      state.lifetimeSold += totalQty;
+      state.lifetimeZeny += totalPayout;
+      state.activeChar.zeny += totalPayout;
+
+      renderHeader();
+      renderOnHandsSection();
+      renderBounties();
+      showToast(`Batch sold ${totalQty} items for +${formatZeny(totalPayout)} Z!`);
+    }
+
+    function toggleOnlineState() {
+      state.isOnline = !state.isOnline;
+      renderHeader();
+      if (state.selectedBounty) updateModalCalc();
+    }
+
+    function resetDemoBalances() {
+      state.dailySold = 35;
+      state.activeChar.zeny = 1245800;
+      state.bounties[0].bagCount = 45;
+      state.bounties[0].storageCount = 120;
+      state.bounties[1].bagCount = 20;
+      state.bounties[2].bagCount = 32;
+      state.bounties[2].storageCount = 50;
+      renderHeader();
+      renderOnHandsSection();
+      renderBounties();
+      showToast("Demo balances reset to initial state.");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+      lucide.createIcons();
+    }
+
+    // Modal Escape Key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSellModal();
+    });
+
+    // Run
+    init();
+  </script>
+</body>
+</html>

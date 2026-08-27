@@ -20,6 +20,7 @@ import { LoginModal } from "./components/auth/LoginModal";
 import { LoginPage } from "./components/auth/LoginPage";
 import { RegisterPage } from "./components/auth/RegisterPage";
 import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
+import { PullToRefresh } from "./components/common/PullToRefresh";
 import { useAuth } from "./context/AuthContext";
 import { AudioProvider } from "./context/AudioContext";
 import { api } from "./lib/api";
@@ -110,9 +111,9 @@ export const AppContent: React.FC = () => {
     }
   }, []);
 
-  const loadUserData = useCallback(async () => {
+  const loadUserData = useCallback(async (silent = false) => {
     if (!user) return;
-    setIsRefreshing(true);
+    if (!silent) setIsRefreshing(true);
     try {
       const [nwRes, charsRes, progRes] = await Promise.all([
         api.get<{ success: boolean; data: NetWorthSummary }>("/api/economy/net-worth"),
@@ -131,9 +132,9 @@ export const AppContent: React.FC = () => {
       }
     } catch (err) {
       console.error("Failed to refresh user data:", err);
-      throw err;
+      if (!silent) throw err;
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
   }, [user, selectedCharId]);
 
@@ -166,6 +167,41 @@ export const AppContent: React.FC = () => {
     }
   }, [user, loadUserData]);
 
+  // Periodic background polling for market ticks on desktop only (30s)
+  useEffect(() => {
+    // Disable interval on mobile devices: rely exclusively on action triggers & user focus
+    const isMobile =
+      typeof window !== "undefined" &&
+      (window.innerWidth < 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    if (isMobile) return;
+
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      if (user) {
+        loadUserData(true);
+      } else {
+        loadPublicData();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user, loadUserData, loadPublicData]);
+
+  // Immediate refresh when browser tab regains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        if (user) {
+          loadUserData(true);
+        } else {
+          loadPublicData();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [user, loadUserData, loadPublicData]);
+
   const handleTabChange = (tab: NavTab) => {
     setActiveTab(tab);
     window.location.hash = tab.toLowerCase();
@@ -197,8 +233,12 @@ export const AppContent: React.FC = () => {
       />
 
       {/* 2. MAIN STAGE (Mobile: smooth vertical scroll; Desktop: zero body scrolling cockpit) */}
-      <main className="flex-1 min-w-0 h-auto md:h-screen md:overflow-hidden p-3 md:p-4 pb-20 md:pb-4 relative flex flex-col">
-        {/* ==================== TAB 1: ⚔️ HERO / CHARACTER & GEAR ==================== */}
+      <main className="flex-1 min-w-0 h-auto md:h-screen md:overflow-hidden p-3 md:p-4 pb-24 md:pb-4 overflow-x-hidden relative flex flex-col">
+        <PullToRefresh
+          onRefresh={user ? loadUserData : loadPublicData}
+          isRefreshing={isRefreshing}
+        >
+          {/* ==================== TAB 1: ⚔️ HERO / CHARACTER & GEAR ==================== */}
         {activeTab === "CHARACTER" && (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             {user ? (
@@ -396,6 +436,7 @@ export const AppContent: React.FC = () => {
                       cryptoMood={netWorth.cryptoMood}
                       cryptoDrift={netWorth.cryptoDrift}
                       latestEvent={netWorth.latestEvent}
+                      onTradeSuccess={() => loadUserData(true)}
                     />
                   </div>
                 </div>
@@ -433,6 +474,7 @@ export const AppContent: React.FC = () => {
                     cryptoMood={cryptoMood}
                     cryptoDrift={cryptoDrift}
                     latestEvent={latestEvent}
+                    onTradeSuccess={loadPublicData}
                   />
                 </div>
               </div>
@@ -490,7 +532,17 @@ export const AppContent: React.FC = () => {
         {/* ==================== TAB 4: 🎯 DAILY BOUNTIES ==================== */}
         {activeTab === "BOUNTIES" && (
           <div className="flex-1 min-h-0 flex flex-col">
-            <BountyBoard />
+            <ErrorBoundary>
+              <BountyBoard
+                characters={characters}
+                selectedCharId={selectedCharId}
+                selectedCharDetail={selectedCharDetail}
+                onSelectChar={setSelectedCharId}
+                onRefreshUserData={loadUserData}
+                user={user}
+                onOpenLoginModal={openLoginModal}
+              />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -524,6 +576,7 @@ export const AppContent: React.FC = () => {
             </ErrorBoundary>
           </div>
         )}
+        </PullToRefresh>
       </main>
 
       {/* Persistent Global Background Audio Dock */}

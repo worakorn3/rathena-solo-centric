@@ -64,6 +64,18 @@ OnInit:
 	.@payout = .@test_price * .@actual_sell;
 	AssertEquals(100000, .@payout, "T4: Payout calculation (20 * 5000z = 100,000z)");
 
+	// 5. T5: Inventory vs Storage Split Turn-in Arithmetic
+	.@test_in_bag = 15;
+	.@test_in_stor = 25;
+	.@test_total_avail = .@test_in_bag + .@test_in_stor;
+	AssertEquals(40, .@test_total_avail, "T5: Total items available across bag and storage (15 + 25 = 40)");
+
+	.@test_sell_qty = 20; // Player sells 20 items
+	.@test_from_bag = min(.@test_sell_qty, .@test_in_bag);
+	.@test_from_stor = .@test_sell_qty - .@test_from_bag;
+	AssertEquals(15, .@test_from_bag, "T5: Cascade deduction pulls all 15 from bag first");
+	AssertEquals(5, .@test_from_stor, "T5: Cascade deduction pulls remaining 5 from storage");
+
 	debugmes "Junk Trader CI Test: Completed successfully.";
 	end;
 }

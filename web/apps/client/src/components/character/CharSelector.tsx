@@ -65,40 +65,44 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
   }
 
   return (
-    <div className="bento-card p-3 shrink-0 flex items-center justify-between gap-4 relative z-40">
+    <div className="bento-card p-2.5 sm:p-3 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 relative z-40">
       {/* Left: Active Hero Dropdown Trigger */}
-      <div className="flex items-center gap-3" ref={dropdownRef}>
+      <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-start min-w-0" ref={dropdownRef}>
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1.5 shrink-0">
           <Users className="w-3.5 h-3.5 text-accent" /> Roster:
         </span>
 
         {/* ACTIVE CHARACTER TRIGGER PILL */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-initial min-w-0">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-surface2 border border-accent/60 text-accent font-bold text-xs shadow-sm hover:border-accent transition-all group focus:outline-none"
+            className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2.5 px-2.5 py-1.5 rounded-lg bg-surface2 border border-accent/60 text-accent font-bold text-xs shadow-sm hover:border-accent transition-all group focus:outline-none min-w-0"
             aria-expanded={isOpen}
             aria-label="Select character from roster"
           >
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                selectedChar?.online
-                  ? "bg-success shadow-[0_0_8px_#4ade80]"
-                  : "bg-accent animate-pulse"
-              }`}
-            />
-            <span className="text-primary font-bold">{selectedChar?.name}</span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface border border-border text-primary">
-              {selectedChar?.className}
-            </span>
-            <span className="text-[10px] font-mono text-muted">
-              (Lv {selectedChar?.baseLevel}/{selectedChar?.jobLevel})
-            </span>
-            <span className="text-[9px] font-mono font-semibold bg-background px-1.5 py-0.2 rounded text-muted border border-border ml-1">
-              {characters.length} Heroes
-            </span>
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  selectedChar?.online
+                    ? "bg-success shadow-[0_0_8px_#4ade80]"
+                    : "bg-accent animate-pulse"
+                }`}
+              />
+              <span className="text-primary font-bold truncate max-w-[100px] xs:max-w-[130px] sm:max-w-none">
+                {selectedChar?.name}
+              </span>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface border border-border text-primary shrink-0">
+                {selectedChar?.className}
+              </span>
+              <span className="text-[10px] font-mono text-muted shrink-0">
+                (Lv {selectedChar?.baseLevel}/{selectedChar?.jobLevel})
+              </span>
+              <span className="hidden sm:inline-block text-[9px] font-mono font-semibold bg-background px-1.5 py-0.2 rounded text-muted border border-border ml-0.5 shrink-0">
+                {characters.length} Heroes
+              </span>
+            </div>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-muted group-hover:text-accent transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-muted group-hover:text-accent transition-transform duration-200 shrink-0 ml-1 ${
                 isOpen ? "rotate-180" : ""
               }`}
             />
@@ -106,7 +110,7 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
 
           {/* FLOATING DROPDOWN CARD MENU */}
           {isOpen && (
-            <div className="absolute left-0 top-full mt-2 w-80 sm:w-96 bento-card bg-surface p-3 shadow-2xl border-accent/40 rounded-xl flex flex-col gap-2 z-50 animate-in fade-in duration-150">
+            <div className="absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] max-w-sm sm:w-96 bento-card bg-surface p-3 shadow-2xl border-accent/40 rounded-xl flex flex-col gap-2 z-50 animate-in fade-in duration-150">
               {/* Search Bar */}
               <div className="flex items-center gap-2 bg-surface2 px-2.5 py-1.5 rounded-lg border border-border">
                 <Search className="w-3.5 h-3.5 text-muted shrink-0" />
@@ -248,8 +252,8 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
 
       {/* Right: Liquid Zeny & Offline Status Badge */}
       {selectedChar && (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-surface2/60 border border-border px-3 py-1 rounded-md text-xs">
+        <div className="flex items-center justify-between md:justify-end gap-2 sm:gap-3 w-full md:w-auto border-t md:border-t-0 border-border/40 pt-2 md:pt-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface2/60 border border-border px-2.5 sm:px-3 py-1 rounded-md text-xs">
             <span className="text-[10px] font-bold text-muted uppercase">
               Zeny:
             </span>
@@ -258,15 +262,20 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
             </span>
           </div>
 
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface2 text-muted border border-border text-[10px] font-bold">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface2 text-muted border border-border text-[10px] font-bold shrink-0">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 selectedChar.online ? "bg-success" : "bg-muted"
               }`}
             />
-            {selectedChar.online
-              ? "Online"
-              : "Offline (Expedition Active)"}
+            {selectedChar.online ? (
+              "Online"
+            ) : (
+              <>
+                <span className="sm:hidden">Offline (Resting)</span>
+                <span className="hidden sm:inline">Offline (Expedition Active)</span>
+              </>
+            )}
           </span>
         </div>
       )}

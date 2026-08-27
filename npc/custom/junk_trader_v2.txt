@@ -207,8 +207,16 @@ S_TradeTier:
 		.@id = getd("$JunkT" + .@t + "_" + .@i);
 		.@price = getd("$JunkPriceT" + .@t + "_" + .@i);
 		if (.@id > 0) {
-			mes .@i + ". ^0000FF" + getitemname(.@id) + "^000000: ^00FF00" + .@price + "z^000000";
-			.@sell_menu$ = .@sell_menu$ + "Sell " + getitemname(.@id) + " (" + countitem(.@id) + " in bag):";
+			.@in_bag = countitem(.@id);
+			.@in_stor = storagecountitem(.@id);
+			if (.@in_stor < 0) .@in_stor = 0;
+			mes .@i + ". ^0000FF" + getitemname(.@id) + "^000000: ^00FF00" + .@price + "z^000000 [Bag: " + .@in_bag + " | Storage: " + .@in_stor + "]";
+			.@sell_menu$ = .@sell_menu$ + "Sell " + getitemname(.@id) + " (Bag " + .@in_bag + " - Storage " + .@in_stor + "):";
+			if (.@i % 3 == 0 && .@i < $JunkRosterSize) {
+				next;
+				mes "[Daily Junk Merchant]";
+				mes "Active Bounties for Tier " + .@t + " (Cont.):";
+			}
 		}
 	}
 	next;
@@ -230,17 +238,21 @@ S_TradeTier:
 	.@target_price = getd("$JunkPriceT" + .@t + "_" + .@sell_choice);
 
 	.@in_bag = countitem(.@target_id);
-	if (.@in_bag <= 0) {
+	.@in_stor = storagecountitem(.@target_id);
+	if (.@in_stor < 0) .@in_stor = 0;
+	.@total_avail = .@in_bag + .@in_stor;
+
+	if (.@total_avail <= 0) {
 		mes "[Daily Junk Merchant]";
-		mes "You do not have any ^0000FF" + getitemname(.@target_id) + "^000000 in your inventory.";
+		mes "You do not have any ^0000FF" + getitemname(.@target_id) + "^000000 in your inventory or storage.";
 		close;
 	}
 
 	.@remaining_quota = .@limit - #DailyJunkSold;
 	mes "[Daily Junk Merchant]";
-	mes "Item: ^0000FF" + getitemname(.@target_id) + "^000000";
-	mes "Price: ^00FF00" + .@target_price + "z each^000000";
-	mes "You have: ^0000FF" + .@in_bag + "^000000 (Remaining Quota: ^00FF00" + .@remaining_quota + "^000000)";
+	mes "Item: ^0000FF" + getitemname(.@target_id) + "^000000 (" + .@target_price + "z each)";
+	mes "Inventory: ^0000FF" + .@in_bag + "^000000 | Storage: ^0000FF" + .@in_stor + "^000000";
+	mes "Remaining Quota: ^00FF00" + .@remaining_quota + " items^000000";
 	mes "How many would you like to sell?";
 	next;
 
@@ -257,13 +269,22 @@ S_TradeTier:
 		close;
 	}
 
-	if (.@qty > .@in_bag) {
+	if (.@qty > .@total_avail) {
 		mes "[Daily Junk Merchant]";
-		mes "You don't have that many ^0000FF" + getitemname(.@target_id) + "^000000!";
+		mes "You don't have that many ^0000FF" + getitemname(.@target_id) + "^000000 in bag or storage!";
 		close;
 	}
 
-	delitem .@target_id, .@qty;
+	.@from_bag = min(.@qty, .@in_bag);
+	.@from_stor = .@qty - .@from_bag;
+
+	if (.@from_bag > 0) {
+		delitem .@target_id, .@from_bag;
+	}
+	if (.@from_stor > 0) {
+		storagedelitem .@target_id, .@from_stor;
+	}
+
 	.@payout = .@target_price * .@qty;
 	Zeny += .@payout;
 	#DailyJunkSold += .@qty;
@@ -277,7 +298,9 @@ S_TradeTier:
 	mes "[Daily Junk Merchant]";
 	mes "Thank you for the business!";
 	mes "Sold: ^0000FF" + .@qty + "x " + getitemname(.@target_id) + "^000000";
-	mes "Payout: ^00FF00+" + .@payout + "z^000000";
-	mes "Remaining Daily Limit: ^0000FF" + (.@limit - #DailyJunkSold) + "^000000";
+	if (.@from_stor > 0) {
+		mes "Source: ^0000FF" + .@from_bag + " Bag^000000, ^0000FF" + .@from_stor + " Storage^000000";
+	}
+	mes "Payout: ^00FF00+" + .@payout + "z^000000 (Remaining: ^0000FF" + (.@limit - #DailyJunkSold) + "^000000)";
 	close;
 }

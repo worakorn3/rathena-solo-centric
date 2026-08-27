@@ -17,6 +17,7 @@ interface MarketWatchProps {
   latestEvent?: StockEventLog | null;
   selectedTicker?: string | null;
   onSelectTicker?: (ticker: string | null) => void;
+  onTradeSuccess?: () => void;
 }
 
 const getMoodString = (mood?: number) => {
@@ -34,6 +35,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   latestEvent,
   selectedTicker,
   onSelectTicker,
+  onTradeSuccess,
 }) => {
   // Derive effective municipal sentiment:
   // 1. explicit equitiesMood if > 0
@@ -282,6 +284,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
         <TickerDetailModal
           quote={activeQuote}
           onClose={() => handleSelectQuote(null)}
+          onTradeSuccess={onTradeSuccess}
         />
       </ErrorBoundary>
     </div>

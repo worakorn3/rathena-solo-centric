@@ -78,6 +78,69 @@ export const economyRoutes = new Elysia({ prefix: "/api/economy" })
     const bounties = await EconomyService.getDailyBounties();
     return { success: true, bounties };
   })
+  .get("/bounties/inventory/:charId", async ({ headers, jwt, params, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const charId = parseInt(params.charId, 10);
+    if (isNaN(charId)) {
+      set.status = 400;
+      return { success: false, error: "Invalid character ID" };
+    }
+
+    const result = await EconomyService.getPlayerBounties(Number(payload.accountId), charId);
+    if (!result.success) {
+      set.status = 400;
+    }
+    return result;
+  })
+  .post("/bounties/sell", async ({ body, headers, jwt, set }) => {
+    const authHeader = headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      set.status = 401;
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = await jwt.verify(token);
+
+    if (!payload || !payload.accountId) {
+      set.status = 401;
+      return { success: false, error: "Invalid token" };
+    }
+
+    const { charId, itemId, amount, source } = (body as any) || {};
+
+    if (!charId || !itemId || !amount) {
+      set.status = 400;
+      return { success: false, error: "Missing required sell parameters: charId, itemId, amount." };
+    }
+
+    const result = await EconomyService.sellBountyItem(
+      Number(payload.accountId),
+      Number(charId),
+      Number(itemId),
+      Number(amount),
+      source as "INVENTORY" | "STORAGE" | "AUTO" | undefined
+    );
+
+    if (!result.success) {
+      set.status = 400;
+    }
+
+    return result;
+  })
   .get("/net-worth", async ({ headers, jwt, set }) => {
     const authHeader = headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -485,7 +485,7 @@ L_MenuSell:
 	if (.@qty == .@s) {
 		query_sql "UPDATE `solo_stock_player` SET shares = 0, total_cost = 0, pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	} else {
-		query_sql "UPDATE `solo_stock_player` SET shares = shares - " + .@qty + ", total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / shares), pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+		query_sql "UPDATE `solo_stock_player` SET total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / " + .@s + "), shares = shares - " + .@qty + ", pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	}
 
 	.@dest_label$ = (.@dest == 2) ? "BANK" : "WALLET";

@@ -1,4 +1,4 @@
-import { query, primaryExecute, primaryQueryOne } from "../db/pool";
+import { query, queryOne, primaryExecute, primaryQuery, primaryQueryOne } from "../db/pool";
 import {
   BankData,
   NetWorthSummary,
@@ -8,6 +8,10 @@ import {
   StockHolding,
   StockMarketQuote,
   DailyBounty,
+  BountyPlayerHolding,
+  BountyQuotaSummary,
+  PlayerBountyInventoryResponse,
+  SellBountyResponse,
   StockCandle,
   StockHistoryResponse,
   TradeStockResponse,
@@ -19,6 +23,13 @@ import {
   isCryptoAsset,
   getJobName
 } from "@rathena/shared";
+
+export function getRAthenaDayOfYear(date = new Date()): number {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = (date.getTime() - start.getTime()) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay) - 1; // 0 to 365
+}
 
 // Ponytail: Metadata (names, sectors, lore) is loaded dynamically from `solo_stock_market`
 
@@ -473,6 +484,325 @@ export class EconomyService {
     } catch (err) {
       console.error("[EconomyService] Failed to fetch daily bounties", err);
       return [];
+    }
+  }
+
+  /**
+   * Get player inventory matching active daily bounties with recommendations and quota
+   */
+  static async getPlayerBounties(accountId: number, charId: number): Promise<PlayerBountyInventoryResponse> {
+    try {
+      // 1. Fetch character info
+      const charRow = await queryOne<{
+        char_id: number;
+        name: string;
+        class: number;
+        base_level: number;
+        zeny: number;
+        online: number;
+      }>(
+        "SELECT `char_id`, `name`, `class`, `base_level`, `zeny`, `online` FROM `char` WHERE `char_id` = ? AND `account_id` = ? LIMIT 1",
+        [charId, accountId]
+      );
+
+      if (!charRow) {
+        return { success: false, error: "Character not found or does not belong to this account." };
+      }
+
+      // 2. Fetch Daily Quota Variables
+      const accRegRows = await query<{ key: string; value: number }>(
+        "SELECT `key`, `value` FROM `acc_reg_num` WHERE `account_id` = ? AND `key` IN ('#DailyJunkSold', '#LastJunkDay', '#TotalJunkSold', '#LifetimeZenyEarned')",
+        [accountId]
+      );
+
+      let rawDailySold = 0;
+      let lastJunkDay = -1;
+      let lifetimeSold = 0;
+      let lifetimeZeny = 0;
+
+      for (const r of accRegRows) {
+        if (r.key === "#DailyJunkSold") rawDailySold = Number(r.value) || 0;
+        if (r.key === "#LastJunkDay") lastJunkDay = Number(r.value);
+        if (r.key === "#TotalJunkSold") lifetimeSold = Number(r.value) || 0;
+        if (r.key === "#LifetimeZenyEarned") lifetimeZeny = Number(r.value) || 0;
+      }
+
+      const currentDayOfYear = getRAthenaDayOfYear();
+      const dailySold = (lastJunkDay === currentDayOfYear) ? rawDailySold : 0;
+      const dailyLimit = 100;
+      const remainingQuota = Math.max(0, dailyLimit - dailySold);
+
+      // 3. Fetch Inventory items on hand (equip = 0)
+      const invRows = await query<{ nameid: number; total_amount: number }>(
+        "SELECT `nameid`, SUM(`amount`) as `total_amount` FROM `inventory` WHERE `char_id` = ? AND `equip` = 0 GROUP BY `nameid`",
+        [charId]
+      );
+      const invMap = new Map<number, number>();
+      for (const r of invRows) {
+        invMap.set(Number(r.nameid), Number(r.total_amount) || 0);
+      }
+
+      // 4. Fetch Storage items (equip = 0)
+      const storRows = await query<{ nameid: number; total_amount: number }>(
+        "SELECT `nameid`, SUM(`amount`) as `total_amount` FROM `storage` WHERE `account_id` = ? AND `equip` = 0 GROUP BY `nameid`",
+        [accountId]
+      );
+      const storMap = new Map<number, number>();
+      for (const r of storRows) {
+        storMap.set(Number(r.nameid), Number(r.total_amount) || 0);
+      }
+
+      // 5. Fetch Daily Bounties and annotate
+      const dailyBounties = await this.getDailyBounties();
+      const allBounties: BountyPlayerHolding[] = dailyBounties.map((b) => {
+        const inInventory = invMap.get(b.itemId) || 0;
+        const inStorage = storMap.get(b.itemId) || 0;
+        const totalAvailable = inInventory + inStorage;
+        const potentialZeny = inInventory * b.price;
+        const isRecommended = inInventory > 0;
+
+        return {
+          ...b,
+          inInventory,
+          inStorage,
+          totalAvailable,
+          potentialZeny,
+          isRecommended,
+        };
+      });
+
+      const recommendedOnHand = allBounties.filter((b) => b.inInventory > 0);
+
+      return {
+        success: true,
+        character: {
+          charId: charRow.char_id,
+          name: charRow.name,
+          className: getJobName(charRow.class),
+          baseLevel: charRow.base_level,
+          zeny: Number(charRow.zeny) || 0,
+          online: Boolean(charRow.online),
+        },
+        quota: {
+          dailyLimit,
+          dailySold,
+          remainingQuota,
+          lastJunkDay,
+          currentDayOfYear,
+          lifetimeSold,
+          lifetimeZeny,
+        },
+        recommendedOnHand,
+        allBounties,
+      };
+    } catch (err) {
+      console.error("[EconomyService] Failed to get player bounty inventory", err);
+      return { success: false, error: "Internal error retrieving bounty inventory." };
+    }
+  }
+
+  /**
+   * Execute Direct Web Bounty Sale
+   * Mutates primary DB: inventory/storage -> char.zeny -> acc_reg_num (#DailyJunkSold, etc.)
+   */
+  static async sellBountyItem(
+    accountId: number,
+    charId: number,
+    itemId: number,
+    rawAmount: number,
+    source: "INVENTORY" | "STORAGE" | "AUTO" = "INVENTORY"
+  ): Promise<SellBountyResponse> {
+    const amount = Math.floor(Number(rawAmount));
+    if (!amount || amount <= 0) {
+      return { success: false, error: "Invalid item quantity specified." };
+    }
+
+    try {
+      // 1. Verify character ownership and OFFLINE status
+      const char = await primaryQueryOne<{
+        char_id: number;
+        name: string;
+        zeny: number;
+        online: number;
+      }>(
+        "SELECT `char_id`, `name`, `zeny`, `online` FROM `char` WHERE `char_id` = ? AND `account_id` = ?",
+        [charId, accountId]
+      );
+
+      if (!char) {
+        return { success: false, error: "Character not found or does not belong to this account." };
+      }
+
+      if (char.online === 1) {
+        return {
+          success: false,
+          error: "Character is currently logged into the game. Please log out before turning in bounties via Web Terminal to prevent state desync.",
+        };
+      }
+
+      // 2. Verify item is in today's active bounty roster
+      const bounties = await this.getDailyBounties();
+      const bounty = bounties.find((b) => b.itemId === itemId);
+      if (!bounty) {
+        return {
+          success: false,
+          error: "This item is not currently active on today's Junk Trader bounty roster.",
+        };
+      }
+
+      // 3. Verify Quota
+      const accRegRows = await primaryQuery<{ key: string; value: number }>(
+        "SELECT `key`, `value` FROM `acc_reg_num` WHERE `account_id` = ? AND `key` IN ('#DailyJunkSold', '#LastJunkDay', '#TotalJunkSold', '#LifetimeZenyEarned')",
+        [accountId]
+      );
+      let rawDailySold = 0;
+      let lastJunkDay = -1;
+      let lifetimeSold = 0;
+      let lifetimeZeny = 0;
+
+      for (const r of accRegRows) {
+        if (r.key === "#DailyJunkSold") rawDailySold = Number(r.value) || 0;
+        if (r.key === "#LastJunkDay") lastJunkDay = Number(r.value);
+        if (r.key === "#TotalJunkSold") lifetimeSold = Number(r.value) || 0;
+        if (r.key === "#LifetimeZenyEarned") lifetimeZeny = Number(r.value) || 0;
+      }
+
+      const currentDayOfYear = getRAthenaDayOfYear();
+      const dailySold = (lastJunkDay === currentDayOfYear) ? rawDailySold : 0;
+      const dailyLimit = 100;
+      const remainingQuota = Math.max(0, dailyLimit - dailySold);
+
+      if (amount > remainingQuota) {
+        return {
+          success: false,
+          error: `Turn-in amount (${amount}) exceeds your remaining daily quota (${remainingQuota} items remaining today).`,
+        };
+      }
+
+      // 4. Verify & Deduct items from Inventory or Storage
+      const selectedSource = (source || "INVENTORY").toUpperCase() as "INVENTORY" | "STORAGE" | "AUTO";
+      let totalInBag = 0;
+      let totalInStorage = 0;
+
+      const invStacks = await primaryQuery<{ id: number; amount: number }>(
+        "SELECT `id`, `amount` FROM `inventory` WHERE `char_id` = ? AND `nameid` = ? AND `equip` = 0 ORDER BY `amount` DESC",
+        [charId, itemId]
+      );
+      totalInBag = invStacks.reduce((s, row) => s + Number(row.amount), 0);
+
+      const storStacks = await primaryQuery<{ id: number; amount: number }>(
+        "SELECT `id`, `amount` FROM `storage` WHERE `account_id` = ? AND `nameid` = ? AND `equip` = 0 ORDER BY `amount` DESC",
+        [accountId, itemId]
+      );
+      totalInStorage = storStacks.reduce((s, row) => s + Number(row.amount), 0);
+
+      if (selectedSource === "INVENTORY" && totalInBag < amount) {
+        return {
+          success: false,
+          error: `Insufficient item quantity in backpack (available: ${totalInBag}, requested: ${amount}).`,
+        };
+      }
+
+      if (selectedSource === "STORAGE" && totalInStorage < amount) {
+        return {
+          success: false,
+          error: `Insufficient item quantity in storage (available: ${totalInStorage}, requested: ${amount}).`,
+        };
+      }
+
+      if (selectedSource === "AUTO" && (totalInBag + totalInStorage) < amount) {
+        return {
+          success: false,
+          error: `Insufficient total items in backpack and storage (available: ${totalInBag + totalInStorage}, requested: ${amount}).`,
+        };
+      }
+
+      // Execute item deductions
+      let remainingToDeduct = amount;
+
+      if (selectedSource === "INVENTORY" || selectedSource === "AUTO") {
+        for (const stack of invStacks) {
+          if (remainingToDeduct <= 0) break;
+          const stackAmt = Number(stack.amount);
+          if (stackAmt <= remainingToDeduct) {
+            await primaryExecute("DELETE FROM `inventory` WHERE `id` = ?", [stack.id]);
+            remainingToDeduct -= stackAmt;
+            totalInBag -= stackAmt;
+          } else {
+            await primaryExecute("UPDATE `inventory` SET `amount` = `amount` - ? WHERE `id` = ?", [remainingToDeduct, stack.id]);
+            totalInBag -= remainingToDeduct;
+            remainingToDeduct = 0;
+          }
+        }
+      }
+
+      if (remainingToDeduct > 0 && (selectedSource === "STORAGE" || selectedSource === "AUTO")) {
+        for (const stack of storStacks) {
+          if (remainingToDeduct <= 0) break;
+          const stackAmt = Number(stack.amount);
+          if (stackAmt <= remainingToDeduct) {
+            await primaryExecute("DELETE FROM `storage` WHERE `id` = ?", [stack.id]);
+            remainingToDeduct -= stackAmt;
+            totalInStorage -= stackAmt;
+          } else {
+            await primaryExecute("UPDATE `storage` SET `amount` = `amount` - ? WHERE `id` = ?", [remainingToDeduct, stack.id]);
+            totalInStorage -= remainingToDeduct;
+            remainingToDeduct = 0;
+          }
+        }
+      }
+
+      // 5. Credit Zeny & Update Quota
+      const payout = amount * bounty.price;
+      const newZeny = Number(char.zeny) + payout;
+
+      await primaryExecute("UPDATE `char` SET `zeny` = ? WHERE `char_id` = ?", [newZeny, charId]);
+
+      const newDailySold = dailySold + amount;
+      const newLifetimeSold = lifetimeSold + amount;
+      const newLifetimeZeny = lifetimeZeny + payout;
+
+      await primaryExecute(
+        "REPLACE INTO `acc_reg_num` (`account_id`, `key`, `index`, `value`) VALUES (?, '#DailyJunkSold', 0, ?)",
+        [accountId, newDailySold]
+      );
+      await primaryExecute(
+        "REPLACE INTO `acc_reg_num` (`account_id`, `key`, `index`, `value`) VALUES (?, '#LastJunkDay', 0, ?)",
+        [accountId, currentDayOfYear]
+      );
+      await primaryExecute(
+        "REPLACE INTO `acc_reg_num` (`account_id`, `key`, `index`, `value`) VALUES (?, '#TotalJunkSold', 0, ?)",
+        [accountId, newLifetimeSold]
+      );
+      await primaryExecute(
+        "REPLACE INTO `acc_reg_num` (`account_id`, `key`, `index`, `value`) VALUES (?, '#LifetimeZenyEarned', 0, ?)",
+        [accountId, newLifetimeZeny]
+      );
+
+      return {
+        success: true,
+        message: `Successfully turned in ${amount}x ${bounty.itemName} for +${payout.toLocaleString()} Zeny!`,
+        soldItemId: itemId,
+        soldItemName: bounty.itemName,
+        soldAmount: amount,
+        pricePerUnit: bounty.price,
+        payoutZeny: payout,
+        newCharZeny: newZeny,
+        remainingInInventory: Math.max(0, totalInBag),
+        remainingInStorage: Math.max(0, totalInStorage),
+        quota: {
+          dailyLimit,
+          dailySold: newDailySold,
+          remainingQuota: Math.max(0, dailyLimit - newDailySold),
+          lastJunkDay: currentDayOfYear,
+          currentDayOfYear,
+          lifetimeSold: newLifetimeSold,
+          lifetimeZeny: newLifetimeZeny,
+        },
+      };
+    } catch (err) {
+      console.error("[EconomyService] Failed to execute web bounty sell", err);
+      return { success: false, error: "Failed to process bounty turn-in transaction." };
     }
   }
 
