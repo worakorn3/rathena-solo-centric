@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Header Total P/L Prototype</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+    }
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-accent/20 selection:text-accent p-3 md:p-6 max-w-7xl mx-auto">
+
+  <!-- ==================== PROTOTYPE CONTROL STRIP ==================== -->
+  <div class="mb-4 bg-surface2/70 border border-border px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
+      <span class="font-bold text-accent">[PROTOTYPE]</span>
+      <span class="text-primary font-semibold">Finance Header: Total P/L Metric Integration</span>
+      <span class="bg-surface px-2 py-0.5 rounded text-[10px] text-muted border border-border">v1.0 (Zinc Bento)</span>
+    </div>
+
+    <!-- Live State Toggles -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-muted text-[11px] font-sans">Simulate State:</span>
+      <button onclick="setState('PROFIT')" id="btn-profit" class="px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/40 font-bold transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="trending-up" class="w-3 h-3"></i> Big Gain (+14.8%)
+      </button>
+      <button onclick="setState('LOSS')" id="btn-loss" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-danger hover:bg-danger/10 border border-border transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="trending-down" class="w-3 h-3"></i> Drawdown (-7.2%)
+      </button>
+      <button onclick="setState('NEUTRAL')" id="btn-neutral" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="minus" class="w-3 h-3"></i> Neutral / 0 Z
+      </button>
+      <button onclick="setState('EMPTY')" id="btn-empty" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="briefcase" class="w-3 h-3"></i> 0 Positions
+      </button>
+    </div>
+  </div>
+
+  <!-- Variant Selector Bar -->
+  <div class="mb-5 flex items-center justify-between bg-surface p-1.5 rounded-xl border border-border">
+    <div class="flex items-center gap-2 text-xs font-medium px-2 text-muted">
+      <i data-lucide="layout" class="w-4 h-4 text-accent"></i>
+      <span>Layout Options:</span>
+    </div>
+    <div class="flex items-center gap-1">
+      <button onclick="setVariant('A')" id="var-a-btn" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-surface2 text-primary border border-border transition-all flex items-center gap-1.5">
+        <span>Option A (Recommended: Balanced Stat Card)</span>
+      </button>
+      <button onclick="setVariant('B')" id="var-b-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
+        <span>Option B (Inline Hero Badge)</span>
+      </button>
+      <button onclick="setVariant('C')" id="var-c-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
+        <span>Option C (Sleek 3-Metric Hub)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== HEADER PREVIEW CONTAINER ==================== -->
+  <div class="space-y-4">
+    <div class="flex items-center justify-between text-xs text-muted font-mono px-1">
+      <span>PREVIEW: FINANCE TAB HEADER (NetWorthCard.tsx)</span>
+      <span id="variant-indicator" class="text-accent font-bold">Option A: Balanced Stat Card (Recommended)</span>
+    </div>
+
+    <!-- 1. OPTION A (RECOMMENDED: Balanced Dedicated Stat Card in Header) -->
+    <div id="variant-a" class="block">
+      <div class="bento-card p-3.5 sm:p-4 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden">
+        <!-- Background subtle glow -->
+        <div id="optA-glow" class="absolute -right-8 -top-8 w-44 h-44 bg-success/5 rounded-full blur-3xl pointer-events-none transition-all duration-300"></div>
+
+        <!-- Left: North Star Hero Metric (Net Worth) -->
+        <div class="flex items-center gap-3 sm:gap-3.5">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
+          </div>
+          <div>
+            <div class="text-[10px] font-bold text-muted uppercase tracking-wider">
+              Total Global Net Worth
+            </div>
+            <div class="text-xl sm:text-2xl font-black font-mono text-primary flex items-baseline gap-1.5 mt-0.5">
+              <span id="optA-networth">142,850,200</span>
+              <span class="text-accent text-xs font-sans font-bold">Zeny</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center / Right: Total P/L Metric + Positions Counter -->
+        <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 border-t sm:border-t-0 border-border/60 pt-2.5 sm:pt-0 shrink-0">
+          
+          <!-- TOTAL P/L STAT CARD (Medium Balanced Size - Not too small or big) -->
+          <div id="optA-pnl-card" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-success/10 border border-success/30 transition-all">
+            <div id="optA-pnl-icon-box" class="w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center shrink-0">
+              <i id="optA-pnl-icon" data-lucide="trending-up" class="w-4 h-4 text-success"></i>
+            </div>
+            <div>
+              <div class="text-[9px] font-bold text-muted uppercase tracking-wider font-sans flex items-center gap-1">
+                <span>Total Portfolio P/L</span>
+              </div>
+              <div class="flex items-baseline gap-1.5 mt-0.5">
+                <span id="optA-pnl-amount" class="text-sm sm:text-base font-bold font-mono text-success">
+                  +18,450,200 Z
+                </span>
+                <span id="optA-pnl-percent" class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-success/20 text-success border border-success/30">
+                  +14.8%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Positions Counter Shortcut -->
+          <button
+            type="button"
+            class="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
+            title="View Active Positions"
+          >
+            <div class="w-7 h-7 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+              <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info"></i>
+            </div>
+            <div>
+              <div class="text-[9px] text-muted font-bold uppercase font-sans">
+                Positions
+              </div>
+              <div id="optA-positions" class="font-bold text-primary text-xs font-mono">
+                8 Assets
+              </div>
+            </div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. OPTION B (Inline Hero Sub-Metric Pill) -->
+    <div id="variant-b" class="hidden">
+      <div class="bento-card p-3.5 sm:p-4 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden">
+        <!-- Left: Hero Net Worth with P/L Badge directly inline/adjacent -->
+        <div class="flex items-center gap-3 sm:gap-3.5">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-muted uppercase tracking-wider">Total Global Net Worth</span>
+              <!-- Small Inline Badge -->
+              <span id="optB-pnl-badge" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-success/15 border border-success/30 text-success text-[10px] font-mono font-bold">
+                <i id="optB-badge-icon" data-lucide="trending-up" class="w-2.5 h-2.5"></i>
+                <span id="optB-badge-text">+14.8% P/L</span>
+              </span>
+            </div>
+            <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
+              <div class="text-xl sm:text-2xl font-black font-mono text-primary flex items-baseline gap-1">
+                <span id="optB-networth">142,850,200</span>
+                <span class="text-accent text-xs font-sans font-bold">Zeny</span>
+              </div>
+              <div id="optB-pnl-secondary" class="text-xs sm:text-sm font-bold font-mono text-success flex items-center gap-1">
+                <span id="optB-pnl-amount">(+18,450,200 Z)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Positions Button -->
+        <div class="flex items-center gap-2 border-t sm:border-t-0 border-border/60 pt-2 sm:pt-0 shrink-0">
+          <button
+            type="button"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
+          >
+            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info shrink-0"></i>
+            <div>
+              <div class="text-[8px] text-muted font-bold uppercase font-sans">Positions</div>
+              <div id="optB-positions" class="font-bold text-primary text-[11px] font-mono">8 Assets</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. OPTION C (Sleek 3-Metric Hub) -->
+    <div id="variant-c" class="hidden">
+      <div class="bento-card p-3 sm:p-3.5 shrink-0 grid grid-cols-1 sm:grid-cols-3 gap-3 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
+        <!-- Col 1: Net Worth -->
+        <div class="flex items-center gap-3 pr-2">
+          <div class="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="coins" class="w-4.5 h-4.5 text-accent"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Global Net Worth</div>
+            <div class="text-lg sm:text-xl font-bold font-mono text-primary flex items-baseline gap-1">
+              <span id="optC-networth">142,850,200</span>
+              <span class="text-accent text-[11px] font-sans font-bold">Z</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2: Total Unrealized P/L -->
+        <div class="flex items-center gap-3 pt-2 sm:pt-0 sm:px-3">
+          <div id="optC-pnl-icon-box" class="w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
+            <i id="optC-pnl-icon" data-lucide="trending-up" class="w-4 h-4 text-success"></i>
+          </div>
+          <div>
+            <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Portfolio Return (P/L)</div>
+            <div class="flex items-baseline gap-1.5">
+              <span id="optC-pnl-amount" class="text-sm sm:text-base font-bold font-mono text-success">
+                +18,450,200 Z
+              </span>
+              <span id="optC-pnl-percent" class="text-[10px] font-mono font-bold text-success">
+                (+14.8%)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3: Positions & Yields -->
+        <div class="flex items-center justify-between pt-2 sm:pt-0 sm:pl-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+              <i data-lucide="briefcase" class="w-4 h-4 text-info"></i>
+            </div>
+            <div>
+              <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Active Holdings</div>
+              <div id="optC-positions" class="text-sm font-bold font-mono text-primary">8 Positions</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono text-muted bg-surface2 px-2 py-1 rounded border border-border">
+            Equities & Crypto
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FULL CONTEXT PREVIEW: REST OF FINANCE TAB ==================== -->
+    <div class="pt-2">
+      <div class="text-[11px] font-mono text-muted mb-2 flex items-center gap-1.5">
+        <i data-lucide="eye" class="w-3.5 h-3.5 text-accent"></i>
+        <span>CONTEXTUAL SCALE COMPARISON (Positions & Market Watch Grid)</span>
+      </div>
+
+      <!-- Mock Finance Stage Split -->
+      <div class="grid grid-cols-12 gap-3 opacity-90 pointer-events-none">
+        <!-- Left: Holdings Preview -->
+        <div class="col-span-12 lg:col-span-5 flex flex-col gap-2">
+          <!-- Segmented bar -->
+          <div class="flex items-center justify-between p-1 bg-surface2/60 rounded-xl border border-border text-xs font-mono">
+            <div class="flex-1 text-center py-1 bg-surface rounded-lg font-bold text-primary border border-border">
+              Positions (8)
+            </div>
+            <div class="flex-1 text-center py-1 text-muted">Bank Vault</div>
+            <div class="flex-1 text-center py-1 text-muted">Allocation</div>
+            <div class="flex-1 text-center py-1 text-muted">Ledger</div>
+          </div>
+
+          <!-- Sample Position Row 1 -->
+          <div class="bento-card p-3 space-y-2">
+            <div class="flex items-center justify-between text-xs border-b border-border pb-1.5">
+              <span class="font-bold text-primary flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-mono font-black text-[10px] flex items-center justify-center border border-blue-500/40">PRO</span>
+                <span>PRONTERA (PRO)</span>
+              </span>
+              <div class="text-right">
+                <div class="font-mono font-bold text-primary">32,500,000 Z</div>
+                <div class="text-[10px] font-mono font-bold text-success">+12.5% (+3,611,100)</div>
+              </div>
+            </div>
+
+            <!-- Sample Position Row 2 -->
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-primary flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-black text-[10px] flex items-center justify-center border border-amber-500/40">EMP</span>
+                <span>EMPERIUM PROTOCOL (EMP)</span>
+              </span>
+              <div class="text-right">
+                <div class="font-mono font-bold text-primary">28,400,000 Z</div>
+                <div class="text-[10px] font-mono font-bold text-success">+24.8% (+5,654,000)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Market Watch Preview -->
+        <div class="col-span-12 lg:col-span-7">
+          <div class="bento-card p-4 h-full flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-border pb-2">
+              <span class="text-xs font-bold text-primary uppercase">Midgard Stock Exchange (MSE) Live Terminal</span>
+              <span class="text-[10px] font-mono text-success flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-success animate-ping"></span> Live Market Feed
+              </span>
+            </div>
+            <div class="py-6 text-center text-xs text-muted font-mono">
+              [Stock Trading Candlesticks & Live Market Depth Preview]
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    let currentState = 'PROFIT';
+    let currentVariant = 'A';
+
+    const states = {
+      PROFIT: {
+        networth: '142,850,200',
+        pnlRaw: 18450200,
+        pnlText: '+18,450,200 Z',
+        pnlPercent: '+14.8%',
+        pnlSecondary: '(+18,450,200 Z)',
+        positions: '8 Assets',
+        type: 'success'
+      },
+      LOSS: {
+        networth: '89,200,000',
+        pnlRaw: -7120000,
+        pnlText: '-7,120,000 Z',
+        pnlPercent: '-7.2%',
+        pnlSecondary: '(-7,120,000 Z)',
+        positions: '6 Assets',
+        type: 'danger'
+      },
+      NEUTRAL: {
+        networth: '50,000,000',
+        pnlRaw: 0,
+        pnlText: '0 Z',
+        pnlPercent: '0.0%',
+        pnlSecondary: '(0 Z)',
+        positions: '2 Assets',
+        type: 'neutral'
+      },
+      EMPTY: {
+        networth: '15,000,000',
+        pnlRaw: 0,
+        pnlText: '0 Z',
+        pnlPercent: '0.0%',
+        pnlSecondary: '(No Positions)',
+        positions: '0 Assets',
+        type: 'neutral'
+      }
+    };
+
+    function setState(st) {
+      currentState = st;
+      const data = states[st];
+
+      // Update button highlights
+      ['profit', 'loss', 'neutral', 'empty'].forEach(id => {
+        const btn = document.getElementById('btn-' + id);
+        if (id === st.toLowerCase()) {
+          btn.className = "px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/40 font-bold transition-all text-[11px] flex items-center gap-1";
+        } else {
+          btn.className = "px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1";
+        }
+      });
+
+      // Update OPTION A
+      document.getElementById('optA-networth').textContent = data.networth;
+      document.getElementById('optA-positions').textContent = data.positions;
+      document.getElementById('optA-pnl-amount').textContent = data.pnlText;
+      document.getElementById('optA-pnl-percent').textContent = data.pnlPercent;
+
+      const optACard = document.getElementById('optA-pnl-card');
+      const optAIconBox = document.getElementById('optA-pnl-icon-box');
+      const optAIcon = document.getElementById('optA-pnl-icon');
+      const optAAmt = document.getElementById('optA-pnl-amount');
+      const optAPct = document.getElementById('optA-pnl-percent');
+      const optAGlow = document.getElementById('optA-glow');
+
+      if (data.type === 'success') {
+        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-success/10 border border-success/30 transition-all";
+        optAIconBox.className = "w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center shrink-0";
+        optAIcon.setAttribute('data-lucide', 'trending-up');
+        optAIcon.className = "w-4 h-4 text-success";
+        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-success";
+        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-success/20 text-success border border-success/30";
+        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-success/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
+      } else if (data.type === 'danger') {
+        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-danger/10 border border-danger/30 transition-all";
+        optAIconBox.className = "w-7 h-7 rounded-lg bg-danger/20 flex items-center justify-center shrink-0";
+        optAIcon.setAttribute('data-lucide', 'trending-down');
+        optAIcon.className = "w-4 h-4 text-danger";
+        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-danger";
+        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-danger/20 text-danger border border-danger/30";
+        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-danger/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
+      } else {
+        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-surface2/40 border border-border/60 transition-all";
+        optAIconBox.className = "w-7 h-7 rounded-lg bg-surface2 flex items-center justify-center shrink-0";
+        optAIcon.setAttribute('data-lucide', 'minus');
+        optAIcon.className = "w-4 h-4 text-muted";
+        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-muted";
+        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface2 text-muted border border-border";
+        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-accent/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
+      }
+
+      // Update OPTION B
+      document.getElementById('optB-networth').textContent = data.networth;
+      document.getElementById('optB-positions').textContent = data.positions;
+      document.getElementById('optB-pnl-amount').textContent = data.pnlSecondary;
+      document.getElementById('optB-badge-text').textContent = data.pnlPercent + " P/L";
+
+      const optBBadge = document.getElementById('optB-pnl-badge');
+      const optBBadgeIcon = document.getElementById('optB-badge-icon');
+      const optBSecondary = document.getElementById('optB-pnl-secondary');
+
+      if (data.type === 'success') {
+        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-success/15 border border-success/30 text-success text-[10px] font-mono font-bold";
+        optBBadgeIcon.setAttribute('data-lucide', 'trending-up');
+        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-success flex items-center gap-1";
+      } else if (data.type === 'danger') {
+        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-danger/15 border border-danger/30 text-danger text-[10px] font-mono font-bold";
+        optBBadgeIcon.setAttribute('data-lucide', 'trending-down');
+        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-danger flex items-center gap-1";
+      } else {
+        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-surface2 border border-border text-muted text-[10px] font-mono font-bold";
+        optBBadgeIcon.setAttribute('data-lucide', 'minus');
+        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-muted flex items-center gap-1";
+      }
+
+      // Update OPTION C
+      document.getElementById('optC-networth').textContent = data.networth;
+      document.getElementById('optC-positions').textContent = data.positions;
+      document.getElementById('optC-pnl-amount').textContent = data.pnlText;
+      document.getElementById('optC-pnl-percent').textContent = `(${data.pnlPercent})`;
+
+      const optCIconBox = document.getElementById('optC-pnl-icon-box');
+      const optCIcon = document.getElementById('optC-pnl-icon');
+      const optCAmt = document.getElementById('optC-pnl-amount');
+      const optCPct = document.getElementById('optC-pnl-percent');
+
+      if (data.type === 'success') {
+        optCIconBox.className = "w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0";
+        optCIcon.setAttribute('data-lucide', 'trending-up');
+        optCIcon.className = "w-4 h-4 text-success";
+        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-success";
+        optCPct.className = "text-[10px] font-mono font-bold text-success";
+      } else if (data.type === 'danger') {
+        optCIconBox.className = "w-9 h-9 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center shrink-0";
+        optCIcon.setAttribute('data-lucide', 'trending-down');
+        optCIcon.className = "w-4 h-4 text-danger";
+        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-danger";
+        optCPct.className = "text-[10px] font-mono font-bold text-danger";
+      } else {
+        optCIconBox.className = "w-9 h-9 rounded-lg bg-surface2/60 border border-border flex items-center justify-center shrink-0";
+        optCIcon.setAttribute('data-lucide', 'minus');
+        optCIcon.className = "w-4 h-4 text-muted";
+        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-muted";
+        optCPct.className = "text-[10px] font-mono font-bold text-muted";
+      }
+
+      lucide.createIcons();
+    }
+
+    function setVariant(v) {
+      currentVariant = v;
+      ['a', 'b', 'c'].forEach(item => {
+        const el = document.getElementById('variant-' + item);
+        const btn = document.getElementById('var-' + item + '-btn');
+        if (item === v.toLowerCase()) {
+          el.className = "block";
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-surface2 text-primary border border-border transition-all flex items-center gap-1.5";
+        } else {
+          el.className = "hidden";
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5";
+        }
+      });
+
+      const titles = {
+        A: 'Option A: Balanced Stat Card (Recommended)',
+        B: 'Option B: Inline Hero Badge',
+        C: 'Option C: Sleek 3-Metric Hub'
+      };
+      document.getElementById('variant-indicator').textContent = titles[v];
+      lucide.createIcons();
+    }
+
+    // Initialize lucide icons on load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
