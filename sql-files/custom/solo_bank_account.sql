@@ -7,6 +7,19 @@ CREATE TABLE IF NOT EXISTS `solo_bank_account` (
     INDEX `idx_account_id` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `solo_bank_config` (
+    `config_key` VARCHAR(32) PRIMARY KEY,
+    `config_value` BIGINT NOT NULL,
+    `description` VARCHAR(255) DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO `solo_bank_config` (`config_key`, `config_value`, `description`) VALUES
+    ('interest_rate_bps', 100, 'Daily interest rate in basis points (100 = 1%)'),
+    ('max_accrual_days', 10, 'Maximum accumulated interest days cap'),
+    ('deposit_fee_bps', 200, 'Deposit surcharge fee in basis points (200 = 2%)'),
+    ('max_principal_limit', 1900000000, 'Maximum allowed principal balance in Zeny'),
+    ('min_deposit_zeny', 100, 'Minimum Zeny deposit amount');
+
 -- Safe idempotent backfill from legacy acc_reg_num
 INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`)
 SELECT 

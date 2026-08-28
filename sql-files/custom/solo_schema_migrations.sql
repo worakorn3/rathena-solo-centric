@@ -10,6 +10,19 @@ CREATE TABLE IF NOT EXISTS `solo_server_config` (
 INSERT IGNORE INTO `solo_server_config` (`key`, `value`) VALUES ('junk_roster_size', 5);
 INSERT IGNORE INTO `solo_server_config` (`key`, `value`) VALUES ('expedition_cap_hours', 48);
 
+CREATE TABLE IF NOT EXISTS `solo_bank_config` (
+  `config_key` VARCHAR(32) PRIMARY KEY,
+  `config_value` BIGINT NOT NULL,
+  `description` VARCHAR(255) DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO `solo_bank_config` (`config_key`, `config_value`, `description`) VALUES
+  ('interest_rate_bps', 100, 'Daily interest rate in basis points (100 = 1%)'),
+  ('max_accrual_days', 10, 'Maximum accumulated interest days cap'),
+  ('deposit_fee_bps', 200, 'Deposit surcharge fee in basis points (200 = 2%)'),
+  ('max_principal_limit', 1900000000, 'Maximum allowed principal balance in Zeny'),
+  ('min_deposit_zeny', 100, 'Minimum Zeny deposit amount');
+
 CREATE TABLE IF NOT EXISTS `solo_stock_market` (
   `ticker` VARCHAR(10) PRIMARY KEY,
   `name` VARCHAR(64) NOT NULL DEFAULT '',
