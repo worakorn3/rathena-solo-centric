@@ -36,10 +36,13 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
     principal = 0,
     pendingInterest = 0,
     daysAccrued = 0,
-    maxDays = BANK_CONFIG.MAX_ACCRUAL_DAYS,
+    maxDays = 10,
     totalPayout = 0,
     interestPaidTotal = 0,
     subdayProgressSeconds = 0,
+    interestRate = 0.01,
+    depositFeeRate = 0.02,
+    maxPrincipalLimit = 1900000000,
   } = bank || {};
 
   const progressPct = maxDays > 0 ? (daysAccrued / maxDays) * 100 : 0;
@@ -49,7 +52,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
 
   // Deposit Preview Math
   const parsedDeposit = Math.floor(Number(depositAmount) || 0);
-  const depositFee = Math.floor(parsedDeposit / BANK_CONFIG.DEPOSIT_FEE_DIVISOR);
+  const depositFee = Math.floor(parsedDeposit * depositFeeRate);
   const netDeposit = parsedDeposit - depositFee;
   const newPrincipalOnDeposit = principal + pendingInterest + netDeposit;
 
@@ -63,8 +66,8 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
       setError("Please select a character.");
       return;
     }
-    if (parsedDeposit < BANK_CONFIG.MIN_DEPOSIT_ZENY) {
-      setError(`Minimum deposit is ${BANK_CONFIG.MIN_DEPOSIT_ZENY} Zeny.`);
+    if (parsedDeposit < 100) {
+      setError("Minimum deposit is 100 Zeny.");
       return;
     }
     setIsLoading(true);
@@ -226,19 +229,19 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
             <div className="p-2.5 rounded-xl bg-surface2/20 border border-border/40 text-[11px] text-muted space-y-1">
               <div className="flex items-center justify-between text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">
                 <span>Vault Policy & Rates</span>
-                <span className="text-success font-mono">1.0% / Day</span>
+                <span className="text-success font-mono">{(interestRate * 100).toFixed(1)}% / Day</span>
               </div>
               <div className="flex justify-between">
                 <span>Daily Accrual Rate:</span>
-                <span className="font-mono text-primary">+1.0% of principal</span>
+                <span className="font-mono text-primary">+{(interestRate * 100).toFixed(1)}% of principal</span>
               </div>
               <div className="flex justify-between">
                 <span>Accrual Duration Cap:</span>
-                <span className="font-mono text-primary">10 Days (Max +10%)</span>
+                <span className="font-mono text-primary">{maxDays} Days (Max +{(interestRate * maxDays * 100).toFixed(0)}%)</span>
               </div>
               <div className="flex justify-between">
                 <span>Deposit Surcharge:</span>
-                <span className="font-mono text-warning">2.0% one-time fee</span>
+                <span className="font-mono text-warning">{(depositFeeRate * 100).toFixed(1)}% one-time fee</span>
               </div>
               <div className="flex justify-between">
                 <span>Withdrawal Surcharge:</span>
@@ -361,7 +364,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
                 {parsedDeposit > 0 && (
                   <div className="bg-surface2/20 border border-border/40 rounded-xl p-2.5 text-xs space-y-1 font-mono">
                     <div className="flex justify-between text-muted text-[11px]">
-                      <span>Deposit Surcharge (2%):</span>
+                      <span>Deposit Surcharge ({(depositFeeRate * 100).toFixed(1)}%):</span>
                       <span className="text-warning">-{formatZeny(depositFee)} Z</span>
                     </div>
                     <div className="flex justify-between text-muted text-[11px]">

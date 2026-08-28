@@ -1,6 +1,8 @@
 import { query, queryOne, primaryExecute, primaryQuery, primaryQueryOne } from "../db/pool";
 import {
   BankData,
+  BankConfig,
+  DEFAULT_BANK_CONFIG,
   NetWorthSummary,
   StockActiveEvent,
   StockEventLog,
@@ -22,7 +24,6 @@ import {
   HarvestDividendsResponse,
   isCryptoAsset,
   getJobName,
-  BANK_CONFIG,
   MAX_CHARACTER_ZENY,
   calculateBankAccrual,
 } from "@rathena/shared";
@@ -98,6 +99,48 @@ interface StockEventLogRow {
 }
 
 export class EconomyService {
+  private static cachedBankConfig: BankConfig | null = null;
+  private static bankConfigLastFetch = 0;
+
+  /**
+   * Load Bank Policy configuration dynamically from SQL (solo_bank_config).
+   * Cached for 30 seconds to minimize DB roundtrips while reflecting runtime tuning.
+   */
+  static async getBankConfig(): Promise<BankConfig> {
+    const now = Date.now();
+    if (this.cachedBankConfig && now - this.bankConfigLastFetch < 30_000) {
+      return this.cachedBankConfig;
+    }
+
+    const config: BankConfig = { ...DEFAULT_BANK_CONFIG };
+
+    try {
+      const rows = await query<{ config_key: string; config_value: number }>(
+        "SELECT `config_key`, `config_value` FROM `solo_bank_config`"
+      );
+      for (const r of rows) {
+        if (r.config_key === "interest_rate_bps") config.dailyInterestRate = Number(r.config_value) / 10000;
+        if (r.config_key === "max_accrual_days") config.maxAccrualDays = Number(r.config_value);
+        if (r.config_key === "deposit_fee_bps") {
+          config.depositFeeRate = Number(r.config_value) / 10000;
+          config.depositFeeDivisor = Number(r.config_value) > 0 ? Math.round(10000 / Number(r.config_value)) : 50;
+        }
+        if (r.config_key === "max_principal_limit") config.maxPrincipalLimit = Number(r.config_value);
+        if (r.config_key === "min_deposit_zeny") config.minDepositZeny = Number(r.config_value);
+      }
+      this.cachedBankConfig = config;
+      this.bankConfigLastFetch = now;
+    } catch {
+      // Table may not exist yet in fresh test envs; fallback to default
+    }
+
+    return config;
+  }
+
+  static clearBankConfigCache(): void {
+    this.cachedBankConfig = null;
+    this.bankConfigLastFetch = 0;
+  }
   static async getNetWorthSummary(accountId: number): Promise<NetWorthSummary> {
     // 1. Character Zeny
     const charRows = await query<CharZenyRow>(
@@ -134,13 +177,14 @@ export class EconomyService {
       // Table might not exist yet if migration is pending
     }
 
+    const bankConfig = await this.getBankConfig();
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    const accrual = calculateBankAccrual(investBalance, investTime, currentTimestamp);
+    const accrual = calculateBankAccrual(investBalance, investTime, bankConfig, currentTimestamp);
 
     const bank: BankData = {
       principal: investBalance,
-      interestRate: BANK_CONFIG.DAILY_INTEREST_RATE,
-      maxDays: BANK_CONFIG.MAX_ACCRUAL_DAYS,
+      interestRate: bankConfig.dailyInterestRate,
+      maxDays: bankConfig.maxAccrualDays,
       daysAccrued: accrual.daysAccrued,
       pendingInterest: accrual.pendingInterest,
       totalPayout: accrual.totalAvailable,
@@ -148,6 +192,8 @@ export class EconomyService {
       lastDepositDate: investTime > 0 ? new Date(investTime * 1000).toLocaleString() : "Never",
       interestPaidTotal,
       subdayProgressSeconds: accrual.subdayRemainder,
+      depositFeeRate: bankConfig.depositFeeRate,
+      maxPrincipalLimit: bankConfig.maxPrincipalLimit,
     };
 
     // 3. Stock Market Quotes
@@ -256,7 +302,7 @@ export class EconomyService {
     const stockUnrealizedPnLPercent =
       stockTotalCost > 0 ? Number(((stockUnrealizedPnL / stockTotalCost) * 100).toFixed(2)) : 0;
 
-    const totalNetWorth = liquidZeny + bankTotal + stockMarketValue;
+    const totalNetWorth = liquidZeny + accrual.totalAvailable + stockMarketValue;
 
     // 5. Active & Latest Events + Market Meta
     let activeEvents: StockActiveEvent[] = [];
@@ -288,8 +334,8 @@ export class EconomyService {
       totalNetWorth,
       liquidZeny,
       bankPrincipal: investBalance,
-      bankPendingInterest: pendingInterest,
-      bankTotal,
+      bankPendingInterest: accrual.pendingInterest,
+      bankTotal: accrual.totalAvailable,
       stockMarketValue,
       municipalMarketValue,
       cryptoMarketValue,
@@ -1067,16 +1113,17 @@ export class EconomyService {
         [accountId]
       );
 
+      const bankConfig = await this.getBankConfig();
       const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
       const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
       const currentTimestamp = Math.floor(Date.now() / 1000);
-      const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
+      const accrual = calculateBankAccrual(currentPrincipal, depositTime, bankConfig, currentTimestamp);
 
       newBankPrincipal = accrual.totalAvailable + netProceeds;
-      if (newBankPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
+      if (newBankPrincipal > bankConfig.maxPrincipalLimit) {
         return {
           success: false,
-          error: `Sale proceeds would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, BANK_CONFIG.MAX_PRINCIPAL_LIMIT - accrual.totalAvailable).toLocaleString()} Z. Sell fewer shares or withdraw from bank.`,
+          error: `Sale proceeds would exceed the ${bankConfig.maxPrincipalLimit.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, bankConfig.maxPrincipalLimit - accrual.totalAvailable).toLocaleString()} Z. Sell fewer shares or withdraw from bank.`,
         };
       }
 
@@ -1148,8 +1195,9 @@ export class EconomyService {
     amount: number
   ): Promise<BankTransactionResponse> {
     const safeAmount = Math.floor(Number(amount));
-    if (!safeAmount || safeAmount < 100) {
-      return { success: false, error: "Minimum deposit is 100 Zeny." };
+    const bankConfig = await this.getBankConfig();
+    if (!safeAmount || safeAmount < bankConfig.minDepositZeny) {
+      return { success: false, error: `Minimum deposit is ${bankConfig.minDepositZeny} Zeny.` };
     }
 
     // 1. Verify character ownership & OFFLINE status on Primary DB
@@ -1181,18 +1229,18 @@ export class EconomyService {
     const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
     const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
+    const accrual = calculateBankAccrual(currentPrincipal, depositTime, bankConfig, currentTimestamp);
 
     // 4. Calculate deposit fee
-    const fee = Math.floor(safeAmount / BANK_CONFIG.DEPOSIT_FEE_DIVISOR);
+    const fee = Math.floor(safeAmount / bankConfig.depositFeeDivisor);
     const netDeposit = safeAmount - fee;
     const newPrincipal = accrual.totalAvailable + netDeposit;
     const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - accrual.subdayRemainder) : currentTimestamp;
 
-    if (newPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
+    if (newPrincipal > bankConfig.maxPrincipalLimit) {
       return {
         success: false,
-        error: `Cannot accept deposit: New principal would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny bank limit.`,
+        error: `Cannot accept deposit: New principal would exceed the ${bankConfig.maxPrincipalLimit.toLocaleString()} Zeny bank limit.`,
       };
     }
 
@@ -1265,8 +1313,9 @@ export class EconomyService {
     }
 
     // 3. Calculate pending interest & subday remainder
+    const bankConfig = await this.getBankConfig();
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
+    const accrual = calculateBankAccrual(currentPrincipal, depositTime, bankConfig, currentTimestamp);
 
     // Determine withdrawal amount (partial vs full)
     const amountToWithdraw = requestedAmount && requestedAmount > 0
@@ -1313,9 +1362,9 @@ export class EconomyService {
 
     return {
       success: true,
-      message: `Successfully withdrew ${amountToWithdraw.toLocaleString()} Z (Interest credited: ${pendingInterest.toLocaleString()} Z).`,
+      message: `Successfully withdrew ${amountToWithdraw.toLocaleString()} Z (Interest credited: ${accrual.pendingInterest.toLocaleString()} Z).`,
       newPrincipal,
-      interestPaid: pendingInterest,
+      interestPaid: accrual.pendingInterest,
       totalPayout: amountToWithdraw,
       remainingZeny,
     };
@@ -1478,16 +1527,17 @@ export class EconomyService {
         [accountId]
       );
 
+      const bankConfig = await this.getBankConfig();
       const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
       const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
       const currentTimestamp = Math.floor(Date.now() / 1000);
-      const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
+      const accrual = calculateBankAccrual(currentPrincipal, depositTime, bankConfig, currentTimestamp);
 
       newBankPrincipal = accrual.totalAvailable + netPayout;
-      if (newBankPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
+      if (newBankPrincipal > bankConfig.maxPrincipalLimit) {
         return {
           success: false,
-          error: `Dividend wire would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, BANK_CONFIG.MAX_PRINCIPAL_LIMIT - accrual.totalAvailable).toLocaleString()} Z.`,
+          error: `Dividend wire would exceed the ${bankConfig.maxPrincipalLimit.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, bankConfig.maxPrincipalLimit - accrual.totalAvailable).toLocaleString()} Z.`,
         };
       }
 

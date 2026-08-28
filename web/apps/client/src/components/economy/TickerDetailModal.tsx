@@ -29,6 +29,7 @@ import {
   MUNICIPAL_LORE,
   CRYPTO_LORE,
   getAssetVocabulary,
+  MAX_CHARACTER_ZENY,
 } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { api } from "../../lib/api";
@@ -734,13 +735,13 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
                         </button>
                       </div>
                       <div className="text-[9px] font-mono text-muted flex justify-between pt-0.5">
-                        <span>Wallet Space: {formatZeny(Math.max(0, 2100000000 - availableZeny))} Z</span>
+                        <span>Wallet Space: {formatZeny(Math.max(0, MAX_CHARACTER_ZENY - availableZeny))} Z</span>
                         <span>
                           Bank Space:{" "}
                           {formatZeny(
                             Math.max(
                               0,
-                              1900000000 -
+                              (netWorth?.bank?.maxPrincipalLimit ?? 1900000000) -
                                 ((netWorth?.bankPrincipal || 0) +
                                   (netWorth?.bankPendingInterest || 0))
                             )

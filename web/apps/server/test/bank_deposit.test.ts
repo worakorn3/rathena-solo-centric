@@ -19,11 +19,39 @@ import { EconomyService } from "../src/services/economy.service";
 
 describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", () => {
   beforeEach(() => {
-    queryMock.mockClear();
-    queryOneMock.mockClear();
-    primaryExecuteMock.mockClear();
-    primaryQueryMock.mockClear();
-    primaryQueryOneMock.mockClear();
+    queryMock.mockReset();
+    queryOneMock.mockReset();
+    primaryExecuteMock.mockReset();
+    primaryQueryMock.mockReset();
+    primaryQueryOneMock.mockReset();
+
+    queryMock.mockImplementation(() => Promise.resolve([]));
+    queryOneMock.mockImplementation(() => Promise.resolve(null));
+    primaryExecuteMock.mockImplementation(() => Promise.resolve({ affectedRows: 1, insertId: 1 }));
+    primaryQueryMock.mockImplementation(() => Promise.resolve([]));
+    primaryQueryOneMock.mockImplementation(() => Promise.resolve(null));
+
+    EconomyService.clearBankConfigCache();
+  });
+
+  describe("Dynamic SQL Bank Config", () => {
+    it("should load custom bank parameters from solo_bank_config table", async () => {
+      queryMock.mockResolvedValueOnce([
+        { config_key: "interest_rate_bps", config_value: 200 }, // 2% daily
+        { config_key: "max_accrual_days", config_value: 15 },   // 15 days max
+        { config_key: "deposit_fee_bps", config_value: 500 },    // 5% fee (divisor 20)
+        { config_key: "max_principal_limit", config_value: 2000000000 },
+        { config_key: "min_deposit_zeny", config_value: 500 },
+      ]);
+
+      const config = await EconomyService.getBankConfig();
+      expect(config.dailyInterestRate).toBe(0.02);
+      expect(config.maxAccrualDays).toBe(15);
+      expect(config.depositFeeRate).toBe(0.05);
+      expect(config.depositFeeDivisor).toBe(20);
+      expect(config.maxPrincipalLimit).toBe(2000000000);
+      expect(config.minDepositZeny).toBe(500);
+    });
   });
 
   describe("depositBank", () => {
@@ -46,7 +74,7 @@ describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", 
         deposit_time: oneDayAndHalfAgo,
       });
 
-      // Deposit 1,000,000 Z (Fee: 20,000 Z, Net: 980,000 Z)
+      // Deposit 1,000,000 Z (Default Fee: 20,000 Z, Net: 980,000 Z)
       // Pending interest for 1 day = 10,000,000 * 0.01 * 1 = 100,000 Z
       // New principal = 10,000,000 + 100,000 + 980,000 = 11,080,000 Z
       // Preserved sub-day remainder = 43200s (12 hours)
@@ -95,7 +123,7 @@ describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", 
       expect(bankInsertCall![1][2]).toBeGreaterThanOrEqual(now - 2);
     });
 
-    it("should cap pending interest at 10 days max and clear subday remainder once capped", async () => {
+    it("should cap pending interest at max accrual days and clear subday remainder once capped", async () => {
       const now = Math.floor(Date.now() / 1000);
       const fifteenDaysAgo = now - (15 * 86400);
 
@@ -110,7 +138,7 @@ describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", 
         deposit_time: fifteenDaysAgo,
       });
 
-      // 10% max interest = 1,000,000 Z
+      // 10% max interest = 1,000,000 Z (under default 10 days cap)
       const res = await EconomyService.depositBank(1, 150001, 1000000);
       expect(res.success).toBe(true);
       expect(res.interestPaid).toBe(1000000);
@@ -210,6 +238,15 @@ describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", 
             },
           ]);
         }
+        if (sql.includes("FROM `solo_bank_config`")) {
+          return Promise.resolve([
+            { config_key: "interest_rate_bps", config_value: 100 },
+            { config_key: "max_accrual_days", config_value: 10 },
+            { config_key: "deposit_fee_bps", config_value: 200 },
+            { config_key: "max_principal_limit", config_value: 1900000000 },
+            { config_key: "min_deposit_zeny", config_value: 100 },
+          ]);
+        }
         return Promise.resolve([]);
       });
 
@@ -219,6 +256,10 @@ describe("Bank Deposit Interest Rollover & Fractional Preservation Test Suite", 
       expect(summary.bank.daysAccrued).toBe(3);
       expect(summary.bank.pendingInterest).toBe(600000); // 20M * 0.01 * 3
       expect(summary.bank.interestPaidTotal).toBe(1500000);
+      expect(summary.bank.interestRate).toBe(0.01);
+      expect(summary.bank.maxDays).toBe(10);
+      expect(summary.bank.depositFeeRate).toBe(0.02);
+      expect(summary.bank.maxPrincipalLimit).toBe(1900000000);
       expect(summary.bank.subdayProgressSeconds).toBeGreaterThanOrEqual(sixHoursSeconds - 2);
       expect(summary.bank.subdayProgressSeconds).toBeLessThanOrEqual(sixHoursSeconds + 2);
     });

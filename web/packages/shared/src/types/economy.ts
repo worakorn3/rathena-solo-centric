@@ -36,15 +36,25 @@ export interface StockMarketQuote {
   splitCount: number;
 }
 
-export const BANK_CONFIG = {
-  DAILY_INTEREST_RATE: 0.01,
-  MAX_ACCRUAL_DAYS: 10,
-  DEPOSIT_FEE_RATE: 0.02,
-  DEPOSIT_FEE_DIVISOR: 50,
-  MAX_PRINCIPAL_LIMIT: 1_900_000_000,
-  MIN_DEPOSIT_ZENY: 100,
-  SECONDS_PER_DAY: 86_400,
-} as const;
+export interface BankConfig {
+  dailyInterestRate: number; // e.g. 0.01 (100 bps)
+  maxAccrualDays: number;    // e.g. 10
+  depositFeeRate: number;    // e.g. 0.02 (200 bps)
+  depositFeeDivisor: number; // e.g. 50 (10000 / 200)
+  maxPrincipalLimit: number; // e.g. 1,900,000,000
+  minDepositZeny: number;    // e.g. 100
+  secondsPerDay: number;     // 86,400
+}
+
+export const DEFAULT_BANK_CONFIG: BankConfig = {
+  dailyInterestRate: 0.01,
+  maxAccrualDays: 10,
+  depositFeeRate: 0.02,
+  depositFeeDivisor: 50,
+  maxPrincipalLimit: 1_900_000_000,
+  minDepositZeny: 100,
+  secondsPerDay: 86_400,
+};
 
 export const MAX_CHARACTER_ZENY = 2_100_000_000;
 
@@ -59,6 +69,7 @@ export interface BankAccrualResult {
 export function calculateBankAccrual(
   principal: number,
   depositTime: number,
+  config: BankConfig = DEFAULT_BANK_CONFIG,
   currentTimestamp: number = Math.floor(Date.now() / 1000)
 ): BankAccrualResult {
   let daysAccrued = 0;
@@ -67,16 +78,16 @@ export function calculateBankAccrual(
 
   if (principal > 0 && depositTime > 0) {
     const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
-    const rawDays = Math.floor(elapsedSeconds / BANK_CONFIG.SECONDS_PER_DAY);
-    daysAccrued = Math.min(rawDays, BANK_CONFIG.MAX_ACCRUAL_DAYS);
-    pendingInterest = Math.floor(principal * BANK_CONFIG.DAILY_INTEREST_RATE * daysAccrued);
-    if (daysAccrued < BANK_CONFIG.MAX_ACCRUAL_DAYS) {
-      subdayRemainder = elapsedSeconds % BANK_CONFIG.SECONDS_PER_DAY;
+    const rawDays = Math.floor(elapsedSeconds / config.secondsPerDay);
+    daysAccrued = Math.min(rawDays, config.maxAccrualDays);
+    pendingInterest = Math.floor(principal * config.dailyInterestRate * daysAccrued);
+    if (daysAccrued < config.maxAccrualDays) {
+      subdayRemainder = elapsedSeconds % config.secondsPerDay;
     }
   }
 
   const totalAvailable = principal + pendingInterest;
-  const isCapped = daysAccrued >= BANK_CONFIG.MAX_ACCRUAL_DAYS;
+  const isCapped = daysAccrued >= config.maxAccrualDays;
 
   return {
     daysAccrued,
@@ -89,8 +100,8 @@ export function calculateBankAccrual(
 
 export interface BankData {
   principal: number;
-  interestRate: number; // e.g. 0.01 (1% per day)
-  maxDays: number; // 10 days max
+  interestRate: number; // dynamically loaded from SQL (e.g. 0.01)
+  maxDays: number; // dynamically loaded from SQL (e.g. 10)
   daysAccrued: number;
   pendingInterest: number;
   totalPayout: number;
@@ -98,6 +109,8 @@ export interface BankData {
   lastDepositDate: string;
   interestPaidTotal?: number;
   subdayProgressSeconds?: number;
+  depositFeeRate?: number; // dynamically loaded from SQL (e.g. 0.02)
+  maxPrincipalLimit?: number; // dynamically loaded from SQL (e.g. 1,900,000,000)
 }
 
 export interface NetWorthSummary {

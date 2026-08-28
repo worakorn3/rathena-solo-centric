@@ -10,16 +10,36 @@
 // ===============================================================
 
 prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
-	mes "[Midgard Investment Bank]";
-	mes "Welcome to the Midgard Sovereign Bank.";
-	mes "Deposit fee: ^FF00002%^000000";
-	mes "Interest rate: ^00FF001% per day^000000 (Max 10% accumulation)";
-	next;
-
 	.@account_id = getcharid(3);
 	.@balance = 0;
 	.@deposit_time = 0;
 	.@interest_paid_total = 0;
+
+	// Load dynamic bank configuration from SQL
+	.@interest_rate_bps = 100;
+	.@max_days = 10;
+	.@deposit_fee_bps = 200;
+	.@max_principal = 1900000000;
+	.@min_deposit = 100;
+
+	.@cfg_count = query_sql("SELECT `config_key`, `config_value` FROM `solo_bank_config`", .@cfg_keys$, .@cfg_vals);
+	for (.@i = 0; .@i < .@cfg_count; .@i++) {
+		if (.@cfg_keys$[.@i] == "interest_rate_bps") .@interest_rate_bps = .@cfg_vals[.@i];
+		else if (.@cfg_keys$[.@i] == "max_accrual_days") .@max_days = .@cfg_vals[.@i];
+		else if (.@cfg_keys$[.@i] == "deposit_fee_bps") .@deposit_fee_bps = .@cfg_vals[.@i];
+		else if (.@cfg_keys$[.@i] == "max_principal_limit") .@max_principal = .@cfg_vals[.@i];
+		else if (.@cfg_keys$[.@i] == "min_deposit_zeny") .@min_deposit = .@cfg_vals[.@i];
+	}
+
+	.@daily_pct = .@interest_rate_bps / 100;
+	.@max_pct = (.@interest_rate_bps * .@max_days) / 100;
+	.@fee_pct = .@deposit_fee_bps / 100;
+
+	mes "[Midgard Investment Bank]";
+	mes "Welcome to the Midgard Sovereign Bank.";
+	mes "Deposit fee: ^FF0000" + .@fee_pct + "%^000000";
+	mes "Interest rate: ^00FF00" + .@daily_pct + "% per day^000000 (Max " + .@max_pct + "% accumulation)";
+	next;
 	
 	// Read from dedicated table (dual-access parity with Web Portal)
 	query_sql "SELECT `principal`, `deposit_time`, `interest_paid_total` FROM `solo_bank_account` WHERE `account_id` = " + .@account_id, .@balance, .@deposit_time, .@interest_paid_total;
@@ -32,9 +52,9 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 		.@elapsed = gettimetick(2) - .@deposit_time;
 		if (.@elapsed > 0) {
 			.@days = .@elapsed / 86400; // 86400 seconds = 1 day
-			if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
-			.@interest = ((.@balance / 100) * .@days) + (((.@balance % 100) * .@days) / 100);
-			if (.@days < 10) {
+			if (.@days > .@max_days) .@days = .@max_days; // Cap interest at max days
+			.@interest = (((.@balance * .@interest_rate_bps) / 10000) * .@days);
+			if (.@days < .@max_days) {
 				.@subday_remainder = .@elapsed % 86400;
 			}
 		}
@@ -59,9 +79,9 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 			input .@amount$;
 			.@amount = callfunc("F_ParseZenyInput", .@amount$);
 			
-			if (.@amount < 100) {
+			if (.@amount < .@min_deposit) {
 				mes "[Investment Bank]";
-				mes "The minimum deposit is 100 Zeny.";
+				mes "The minimum deposit is " + F_InsertComma(.@min_deposit) + " Zeny.";
 				close;
 			}
 
@@ -71,12 +91,12 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 				close;
 			}
 
-			.@fee = .@amount / 50; // 2% fee
+			.@fee = (.@amount * .@deposit_fee_bps) / 10000;
 			.@net_deposit = .@amount - .@fee;
 
-			if (.@total_available + .@net_deposit > 1900000000) {
+			if (.@total_available + .@net_deposit > .@max_principal) {
 				mes "[Investment Bank]";
-				mes "We cannot accept this deposit. Your principal would exceed our 1,900,000,000 Zeny limit.";
+				mes "We cannot accept this deposit. Your principal would exceed our " + F_InsertComma(.@max_principal) + " Zeny limit.";
 				close;
 			}
 

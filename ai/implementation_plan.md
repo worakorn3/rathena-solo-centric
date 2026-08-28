@@ -144,12 +144,13 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Binary Buffer Serialization** | ✅ [DONE] | Zero-loss SQL hex byte literal encoding (`X'...'`) for binary BLOBs in fallback dump generator · [`admin.routes.ts`](../web/apps/server/src/routes/admin.routes.ts) |
 | **Bento Scope UI & Granular Restore** | ✅ [DONE] | Dual-scope selector toggle (Web Systems & Economy vs Full Server) with scope-prefixed filenames (`ragnarok_web_save_*.sql.gz.enc`) and safe post-restore login session sanitization · [`AdminVaultWindow.tsx`](../web/apps/client/src/components/admin/AdminVaultWindow.tsx) |
 
-### Phase 19: Bank Deposit Interest Rollover & Fractional Time Preservation
+### Phase 19: Bank Deposit Interest Rollover, Fractional Time Preservation & Dynamic SQL Bank Config
 | Feature | Status | Details & Specification |
 |:---|:---|:---|
-| **Fractional Time Offset Retention** | ⏳ [PENDING] | Preserve sub-day progress ($E_{\text{sec}} \pmod{86400}$) on deposit/wire so frequent depositors never lose accrued hours · [`investment_bank.txt`](../npc/custom/investment_bank.txt) & [`economy.service.ts`](../web/apps/server/src/services/economy.service.ts) |
-| **Lifetime Interest DB Accounting** | ⏳ [PENDING] | Atomically increment `interest_paid_total` on deposit compound rollover and dividend wires · [`solo_bank_account.sql`](../sql-files/custom/solo_bank_account.sql) |
-| **Bento Bank Widget Progress & Dialogue** | ⏳ [PENDING] | Display intra-day hourly progress countdown, lifetime interest earned, and explicit compound rollover notices · [`BankWidget.tsx`](../web/apps/client/src/components/economy/BankWidget.tsx) |
+| **Dynamic SQL Bank Config Table** | ✅ [DONE] | Single source of truth in `solo_bank_config` table for interest rate (bps), max accrual days, deposit fee (bps), max principal limit, and min deposit · [`solo_bank_account.sql`](../sql-files/custom/solo_bank_account.sql) & [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Fractional Time Offset Retention** | ✅ [DONE] | Preserve sub-day progress ($E_{\text{sec}} \pmod{86400}$) on deposit/withdrawal/wire so frequent depositors never lose accrued hours · [`investment_bank.txt`](../npc/custom/investment_bank.txt) & [`economy.service.ts`](../web/apps/server/src/services/economy.service.ts) |
+| **Lifetime Interest DB Accounting** | ✅ [DONE] | Atomically increment `interest_paid_total` on deposit compound rollover and dividend wires · [`solo_bank_account.sql`](../sql-files/custom/solo_bank_account.sql) |
+| **Bento Bank Widget Progress & Dialogue** | ✅ [DONE] | Display intra-day hourly progress countdown, lifetime interest earned, and explicit compound rollover notices · [`BankWidget.tsx`](../web/apps/client/src/components/economy/BankWidget.tsx) |
 
 
 ---
