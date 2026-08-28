@@ -38,10 +38,14 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
     daysAccrued = 0,
     maxDays = 10,
     totalPayout = 0,
+    interestPaidTotal = 0,
+    subdayProgressSeconds = 0,
   } = bank || {};
 
   const progressPct = maxDays > 0 ? (daysAccrued / maxDays) * 100 : 0;
   const isCapped = daysAccrued >= maxDays;
+  const subdayHours = Math.floor(subdayProgressSeconds / 3600);
+  const subdayMinutes = Math.floor((subdayProgressSeconds % 3600) / 60);
 
   // Deposit Preview Math
   const parsedDeposit = Math.floor(Number(depositAmount) || 0);
@@ -204,6 +208,12 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
                   style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
                 />
               </div>
+              {!isCapped && principal > 0 && (
+                <div className="flex justify-between items-center text-[10px] font-mono text-muted pt-0.5">
+                  <span>Cycle Progress ({subdayHours}h {subdayMinutes}m / 24h):</span>
+                  <span className="text-accent font-semibold">Next +1% in {23 - subdayHours}h {59 - subdayMinutes}m</span>
+                </div>
+              )}
             </div>
 
             {/* Total Accessible Balance */}
@@ -212,7 +222,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
               <span className="font-bold text-accent text-sm sm:text-base font-mono">{formatZeny(totalPayout)} Z</span>
             </div>
 
-            {/* Vault Rules / Policy */}
+            {/* Vault Rules / Policy & Lifetime Stats */}
             <div className="p-2.5 rounded-xl bg-surface2/20 border border-border/40 text-[11px] text-muted space-y-1">
               <div className="flex items-center justify-between text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">
                 <span>Vault Policy & Rates</span>
@@ -234,6 +244,12 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
                 <span>Withdrawal Surcharge:</span>
                 <span className="font-mono text-success">0% (Instant access)</span>
               </div>
+              {interestPaidTotal > 0 && (
+                <div className="flex justify-between border-t border-border/40 pt-1 mt-1 text-primary">
+                  <span>Lifetime Interest Earned:</span>
+                  <span className="font-mono font-bold text-accent">+{formatZeny(interestPaidTotal)} Z</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -355,7 +371,13 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
                     {pendingInterest > 0 && (
                       <div className="flex justify-between text-success text-[11px]">
                         <span>Compound Interest Rollover:</span>
-                        <span>+{formatZeny(pendingInterest)} Z</span>
+                        <span>+{formatZeny(pendingInterest)} Z (Added to Principal)</span>
+                      </div>
+                    )}
+                    {subdayHours > 0 && (
+                      <div className="flex justify-between text-info text-[11px]">
+                        <span>Preserved Cycle Progress:</span>
+                        <span>{subdayHours}h towards next +1%</span>
                       </div>
                     )}
                     <div className="border-t border-border/40 my-1 pt-1 flex justify-between font-bold text-primary text-[11px]">
