@@ -361,49 +361,49 @@ export const AppContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("HOLDINGS")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
                             portfolioTab === "HOLDINGS"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
                           }`}
                         >
-                          <Briefcase className="w-3.5 h-3.5 text-info" />
-                          <span>Positions ({netWorth.holdings.length})</span>
+                          <Briefcase className={`w-3.5 h-3.5 transition-colors ${portfolioTab === "HOLDINGS" ? "text-info" : "text-muted group-hover:text-info"}`} />
+                          <span>Positions</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("BANK")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
                             portfolioTab === "BANK"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
                           }`}
                         >
-                          <Landmark className="w-3.5 h-3.5 text-accent" />
+                          <Landmark className={`w-3.5 h-3.5 transition-colors ${portfolioTab === "BANK" ? "text-accent" : "text-muted group-hover:text-accent"}`} />
                           <span>Bank Vault</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("BREAKDOWN")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
                             portfolioTab === "BREAKDOWN"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
                           }`}
                         >
-                          <PieChart className="w-3.5 h-3.5 text-purple-400" />
+                          <PieChart className={`w-3.5 h-3.5 transition-colors ${portfolioTab === "BREAKDOWN" ? "text-purple-400" : "text-muted group-hover:text-purple-400"}`} />
                           <span>Allocation</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("HISTORY")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
                             portfolioTab === "HISTORY"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
                           }`}
                         >
-                          <History className="w-3.5 h-3.5 text-success" />
+                          <History className={`w-3.5 h-3.5 transition-colors ${portfolioTab === "HISTORY" ? "text-success" : "text-muted group-hover:text-success"}`} />
                           <span>Ledger</span>
                         </button>
                       </div>

@@ -136,18 +136,20 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
   return (
     <div className={`bento-card p-3 sm:p-3.5 flex flex-col ${className}`}>
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-2.5 mb-2.5">
-        <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-accent shrink-0" />
-          <h3 className="font-bold text-xs uppercase tracking-wider text-primary truncate">
-            {tickerFilter ? `${tickerFilter} Ledger` : "Order Ledger"}
-          </h3>
-          <span className="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
-            {transactions.length} Records
-          </span>
+      <div className="flex items-center justify-between gap-2 border-b border-border pb-2 mb-2.5 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <History className="w-3.5 h-3.5 text-success" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-primary whitespace-nowrap">
+              {tickerFilter ? `${tickerFilter} Ledger` : "Order Ledger"}
+            </h3>
+            <span className="text-[10px] text-muted leading-none">Trade & Dividend Activity Log</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={handleRefreshClick}
@@ -155,7 +157,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface2/60 hover:bg-surface2 text-muted hover:text-primary text-[10px] font-medium border border-border transition-all cursor-pointer disabled:opacity-50"
             title="Refresh transaction logs"
           >
-            <RefreshCw className={`w-3 h-3 text-accent transition-transform ${isLoading || spinning ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3 h-3 text-success transition-transform ${isLoading || spinning ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </button>
         </div>

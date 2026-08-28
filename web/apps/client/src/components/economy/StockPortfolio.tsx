@@ -165,21 +165,23 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
 
   return (
     <div className="bento-card p-3 sm:p-3.5 flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Header: Title + Total Portfolio Value & Positions */}
+      {/* Header: Title + Total Portfolio Value */}
       <div className="flex items-center justify-between gap-2 border-b border-border pb-2 mb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <Briefcase className="w-4 h-4 text-info shrink-0" />
-          <h3 className="font-bold text-xs uppercase tracking-wider text-primary truncate">
-            Investment Portfolio
-          </h3>
-          <span className="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
-            {safeHoldings.length} {safeHoldings.length === 1 ? "Position" : "Positions"}
-          </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+            <Briefcase className="w-3.5 h-3.5 text-info" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-primary whitespace-nowrap">
+              Investment Portfolio
+            </h3>
+            <span className="text-[10px] text-muted leading-none">Equities & Crypto Positions</span>
+          </div>
         </div>
 
         {safeHoldings.length > 0 && (
-          <div className="text-[11px] font-mono font-bold flex items-center gap-1.5 text-right">
-            <span className="text-muted text-[10px] hidden sm:inline">Total:</span>
+          <div className="text-[11px] font-mono font-bold flex items-center gap-1 text-right shrink-0 whitespace-nowrap">
+            <span className="text-muted text-[10px] hidden sm:inline font-sans font-normal">Total:</span>
             <span className="text-primary">{formatZeny(totalStockValue)} Z</span>
           </div>
         )}
