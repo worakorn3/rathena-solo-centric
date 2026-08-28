@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CharacterSummary } from "@rathena/shared";
-import { Search, ChevronDown, Compass, MapPin, Coins } from "lucide-react";
+import { Search, ChevronDown, MapPin, Coins } from "lucide-react";
 import { formatZeny } from "../../lib/assets";
 
 interface CharSelectorProps {
@@ -63,17 +63,17 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
   const isOnline = Boolean(selectedChar?.online);
 
   return (
-    <div className="bento-card p-2 sm:px-3.5 sm:py-2.5 shrink-0 flex items-center justify-between gap-3 relative z-40">
-      {/* Left: Active Hero Trigger Pill (Clean & Integrated) */}
+    <div className="bento-card p-2 sm:px-3 sm:py-2 shrink-0 flex items-center justify-between gap-3 relative z-40">
+      {/* Left: Active Hero Trigger (Identity, Class, Level & Location) */}
       <div className="relative min-w-0" ref={dropdownRef}>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 sm:gap-2.5 p-1 sm:px-2 sm:py-1 rounded-lg hover:bg-surface2/80 transition-all text-left group focus:outline-none cursor-pointer"
+          className="flex items-center gap-2 sm:gap-2.5 p-1 sm:px-1.5 rounded-lg hover:bg-surface2/80 transition-all text-left group focus:outline-none cursor-pointer"
           aria-expanded={isOpen}
           aria-label="Switch Active Character"
         >
-          {/* Avatar / Status Dot */}
+          {/* Avatar with Status Dot */}
           <div className="relative shrink-0">
             <div className="w-8 h-8 rounded-lg bg-surface2 border border-border/80 flex items-center justify-center font-bold text-xs text-accent font-mono group-hover:border-accent/60 transition-colors">
               {selectedChar?.name ? selectedChar.name.charAt(0).toUpperCase() : "H"}
@@ -82,16 +82,16 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
               className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface ${
                 isOnline
                   ? "bg-success shadow-[0_0_6px_#4ade80]"
-                  : "bg-amber-400"
+                  : "bg-muted"
               }`}
-              title={isOnline ? "Online In-Game" : "Offline (Resting)"}
+              title={isOnline ? "Online In-Game" : "Offline"}
             />
           </div>
 
-          {/* Hero Name & Job / Level Details */}
+          {/* Hero Name & Job / Level / Location Details */}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 leading-tight">
-              <span className="font-bold text-xs sm:text-sm text-primary group-hover:text-accent transition-colors truncate max-w-[110px] xs:max-w-[140px] sm:max-w-[200px]">
+              <span className="font-bold text-xs sm:text-sm text-primary group-hover:text-accent transition-colors truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[220px]">
                 {selectedChar?.name}
               </span>
               <ChevronDown
@@ -104,6 +104,15 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
               <span className="text-primary/90 font-medium">{selectedChar?.className}</span>
               <span className="opacity-40">•</span>
               <span>Lv {selectedChar?.baseLevel}/{selectedChar?.jobLevel}</span>
+              {selectedChar?.lastMap && (
+                <>
+                  <span className="opacity-40 hidden xs:inline">•</span>
+                  <span className="hidden xs:inline-flex items-center gap-0.5 text-muted/80">
+                    <MapPin className="w-2.5 h-2.5 text-info inline shrink-0" />
+                    <span>{selectedChar.lastMap}</span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </button>
@@ -135,9 +144,9 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-success" />
                   {onlineCount} Online
                 </span>
-                <span className="text-amber-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  {offlineCount} Resting
+                <span className="text-muted flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted" />
+                  {offlineCount} Offline
                 </span>
               </div>
             </div>
@@ -173,7 +182,7 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
                               ? "bg-accent"
                               : charIsOnline
                               ? "bg-success"
-                              : "bg-amber-400"
+                              : "bg-muted"
                           }`}
                         />
                         <div className="min-w-0">
@@ -203,13 +212,13 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
                         <div className="font-bold text-accent">
                           {formatZeny(char.zeny)} Z
                         </div>
-                        {charIsOnline ? (
-                          <span className="text-success text-[9px]">● Online</span>
-                        ) : (
-                          <span className="text-amber-400 text-[9px] flex items-center justify-end gap-0.5">
-                            <Compass className="w-2.5 h-2.5" /> Resting
-                          </span>
-                        )}
+                        <span
+                          className={`text-[9px] ${
+                            charIsOnline ? "text-success" : "text-muted/60"
+                          }`}
+                        >
+                          {charIsOnline ? "● Online" : "○ Offline"}
+                        </span>
                       </div>
                     </button>
                   );
@@ -225,37 +234,12 @@ export const CharSelector: React.FC<CharSelectorProps> = ({
         )}
       </div>
 
-      {/* Center: Location Tag (Clean & Subtle) */}
+      {/* Right: Character Liquid Funds (Single Clean Counter) */}
       {selectedChar && (
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted font-mono bg-surface2/40 px-2.5 py-1 rounded-md border border-border/40">
-          <MapPin className="w-3 h-3 text-info shrink-0" />
-          <span className="text-primary font-semibold">{selectedChar.lastMap}</span>
-        </div>
-      )}
-
-      {/* Right: Liquid Zeny & Status Badge (Streamlined & Breathable) */}
-      {selectedChar && (
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="flex items-center gap-1.5 bg-surface2/60 border border-border/70 px-2.5 py-1 rounded-lg text-xs font-mono">
-            <Coins className="w-3 h-3 text-accent shrink-0" />
-            <span className="font-bold text-accent">
-              {formatZeny(selectedChar.zeny)} <span className="text-[10px] opacity-70 font-sans">Z</span>
-            </span>
-          </div>
-
-          <span
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-              isOnline
-                ? "bg-success/10 text-success border-success/25"
-                : "bg-surface2 text-muted border-border"
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isOnline ? "bg-success animate-pulse" : "bg-muted"
-              }`}
-            />
-            <span>{isOnline ? "Online" : "Resting"}</span>
+        <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-surface2/50 border border-border/70 text-xs font-mono shrink-0">
+          <Coins className="w-3.5 h-3.5 text-accent shrink-0" />
+          <span className="font-bold text-accent">
+            {formatZeny(selectedChar.zeny)} <span className="text-[10px] text-muted font-sans font-normal">Z</span>
           </span>
         </div>
       )}
