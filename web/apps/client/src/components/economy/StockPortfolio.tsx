@@ -385,11 +385,19 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           <span>{h.stockRatio.toFixed(1)}%</span>
                         </span>
                         {h.dripEnabled ? (
-                          <span className="inline-flex items-center gap-0.5 text-purple-400 bg-purple-500/10 px-1 py-0.2 rounded border border-purple-500/20 text-[8.5px] font-bold">
-                            <Sparkles className="w-2 h-2" /> DRIP ON
+                          <span
+                            className="inline-flex items-center gap-0.5 text-purple-400 bg-purple-500/10 px-1 py-0.2 rounded border border-purple-500/20 text-[8.5px] font-bold"
+                            title="DRIP (Dividend Reinvestment Plan): Auto-reinvesting dividends into shares at midnight"
+                          >
+                            <Sparkles className="w-2 h-2" /> DRIP
                           </span>
                         ) : (
-                          <span className="text-muted/60 text-[8.5px]">DRIP OFF</span>
+                          <span
+                            className="text-muted/60 text-[8.5px]"
+                            title="DRIP OFF: Accumulating dividends as claimable cash"
+                          >
+                            DRIP OFF
+                          </span>
                         )}
                         <span className="text-muted/60 hidden md:inline">
                           • {h.shares.toLocaleString()} {vocab.unitAbbr}
@@ -468,23 +476,42 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                       </div>
                     </div>
 
-                    {/* DRIP Controls Bar */}
-                    <div className="p-2 rounded bg-surface2/50 border border-border/50 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                        <div>
-                          <div className="text-[10px] font-bold text-primary flex items-center gap-1">
-                            <span>DRIP Auto-Reinvestment:</span>
-                            <span className={h.dripEnabled ? "text-success font-bold" : "text-muted"}>
-                              {h.dripEnabled ? "ENABLED" : "DISABLED"}
-                            </span>
-                          </div>
-                          <div className="text-[9px] text-muted">
-                            {h.dripEnabled
-                              ? "Dividends automatically purchase shares at midnight simulation."
-                              : "Dividends accumulate as cash; toggle on for automatic compounding."}
+                    {/* DRIP Controls Bar - Streamlined with hover tooltip */}
+                    <div className="p-1.5 px-2 rounded bg-surface2/50 border border-border/50 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Sparkles className={`w-3.5 h-3.5 shrink-0 ${h.dripEnabled ? "text-purple-400" : "text-muted/60"}`} />
+                        <span className="text-[10px] font-bold text-primary flex items-center gap-1 shrink-0">
+                          <span>DRIP</span>
+                        </span>
+
+                        {/* Helper Info Tooltip */}
+                        <div className="relative group/driptip flex items-center shrink-0">
+                          <HelpCircle className="w-3 h-3 text-muted/70 hover:text-accent cursor-help transition-colors" />
+                          <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover/driptip:flex flex-col w-60 p-2 rounded-lg bg-surface border border-border text-[9.5px] font-mono text-primary shadow-2xl z-30 pointer-events-none animate-fadeIn leading-relaxed">
+                            <div className="font-bold text-accent mb-0.5 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                              <span>Dividend Reinvestment Plan</span>
+                            </div>
+                            <div className="text-muted">
+                              {h.dripEnabled
+                                ? "ENABLED: Dividends automatically purchase more shares at midnight without transaction fees."
+                                : "DISABLED: Dividends accumulate as cash to harvest to your wallet or bank."}
+                            </div>
+                            <div className="text-[8.5px] text-muted/70 mt-1 pt-1 border-t border-border/40">
+                              Toggle to switch between auto-compounding and cash payouts.
+                            </div>
                           </div>
                         </div>
+
+                        <span
+                          className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border shrink-0 ${
+                            h.dripEnabled
+                              ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                              : "bg-surface2/60 text-muted/80 border-border/40"
+                          }`}
+                        >
+                          {h.dripEnabled ? "ON" : "OFF"}
+                        </span>
                       </div>
 
                       <button
@@ -494,12 +521,16 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           handleToggleDrip(h.ticker, Boolean(h.dripEnabled));
                         }}
                         disabled={isDripLoading}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold text-[10px] transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded font-bold text-[10px] transition-all cursor-pointer border ${
                           h.dripEnabled
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30"
-                            : "bg-surface2 text-muted border border-border hover:text-primary hover:bg-surface2/80"
+                            ? "bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30 shadow-sm"
+                            : "bg-surface text-muted border-border hover:text-primary hover:bg-surface2"
                         }`}
-                        title="Toggle DRIP dividend reinvestment on/off"
+                        title={
+                          h.dripEnabled
+                            ? "Click to disable DRIP (harvest dividends as cash)"
+                            : "Click to enable DRIP (auto-reinvest dividends at midnight)"
+                        }
                       >
                         {isDripLoading ? (
                           <Loader2 className="w-3 h-3 animate-spin text-accent" />
@@ -508,7 +539,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                         ) : (
                           <ToggleLeft className="w-4 h-4 text-muted" />
                         )}
-                        <span>{h.dripEnabled ? "Disable DRIP" : "Enable DRIP"}</span>
+                        <span>{h.dripEnabled ? "DRIP Active" : "Enable"}</span>
                       </button>
                     </div>
 
