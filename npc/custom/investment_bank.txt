@@ -27,12 +27,16 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 	// Check if player has an existing balance and calculate pending interest
 	.@days = 0;
 	.@interest = 0;
+	.@subday_remainder = 0;
 	if (.@balance > 0 && .@deposit_time > 0) {
 		.@elapsed = gettimetick(2) - .@deposit_time;
 		if (.@elapsed > 0) {
 			.@days = .@elapsed / 86400; // 86400 seconds = 1 day
 			if (.@days > 10) .@days = 10; // Cap interest at 10 days (10%)
 			.@interest = ((.@balance / 100) * .@days) + (((.@balance % 100) * .@days) / 100);
+			if (.@days < 10) {
+				.@subday_remainder = .@elapsed % 86400;
+			}
 		}
 	}
 	.@total_available = .@balance + .@interest;
@@ -40,6 +44,9 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 	mes "[Investment Bank]";
 	mes "Your current principal: ^0000FF" + F_InsertComma(.@balance) + " Zeny^000000";
 	mes "Accumulated interest: ^00FF00" + F_InsertComma(.@interest) + " Zeny^000000 (" + .@days + " days)";
+	if (.@interest_paid_total > 0) {
+		mes "Lifetime interest earned: ^008800" + F_InsertComma(.@interest_paid_total) + " Zeny^000000";
+	}
 	mes "Total available: ^0000FF" + F_InsertComma(.@total_available) + " Zeny^000000";
 	next;
 
@@ -78,14 +85,23 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 			
 			.@new_principal = .@total_available + .@net_deposit;
 			.@now = gettimetick(2);
+			.@new_deposit_time = (.@balance > 0 && .@deposit_time > 0) ? (.@now - .@subday_remainder) : .@now;
 
-			// Atomic upsert into dedicated table
-			query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@now + ") ON DUPLICATE KEY UPDATE `principal` = VALUES(`principal`), `deposit_time` = VALUES(`deposit_time`)";
+			// Atomic upsert into dedicated table with compound interest audit
+			query_sql "INSERT INTO `solo_bank_account` (`account_id`, `principal`, `deposit_time`, `interest_paid_total`) VALUES (" + .@account_id + ", " + .@new_principal + ", " + .@new_deposit_time + ", " + .@interest + ") ON DUPLICATE KEY UPDATE `principal` = VALUES(`principal`), `deposit_time` = VALUES(`deposit_time`), `interest_paid_total` = `interest_paid_total` + " + .@interest;
 
 			mes "[Investment Bank]";
 			mes "You deposited " + F_InsertComma(.@amount) + " Zeny (Fee: " + F_InsertComma(.@fee) + "z).";
+			if (.@interest > 0) {
+				mes "Compounded Interest: ^00FF00+" + F_InsertComma(.@interest) + " Zeny^000000 added to principal.";
+			}
 			mes "New Principal: ^0000FF" + F_InsertComma(.@new_principal) + " Zeny^000000.";
-			mes "Your interest timer has been reset.";
+			if (.@subday_remainder > 0) {
+				.@hours = .@subday_remainder / 3600;
+				mes "Preserved Progress: ^00FF00" + .@hours + " hours^000000 toward your next interest day.";
+			} else {
+				mes "Your interest timer has started.";
+			}
 			close;
 
 		case 2:
@@ -126,7 +142,7 @@ prontera,165,180,4	script	Investment Banker	4_M_BARBER,{
 			Zeny += .@amount;
 
 			.@new_principal = .@total_available - .@amount;
-			.@new_time = (.@new_principal > 0) ? gettimetick(2) : 0;
+			.@new_time = (.@new_principal > 0) ? (gettimetick(2) - .@subday_remainder) : 0;
 			query_sql "UPDATE `solo_bank_account` SET `principal` = " + .@new_principal + ", `deposit_time` = " + .@new_time + ", `interest_paid_total` = `interest_paid_total` + " + .@interest + " WHERE `account_id` = " + .@account_id;
 
 			mes "[Investment Bank]";

@@ -45,6 +45,8 @@ export interface BankData {
   totalPayout: number;
   depositTimestamp: number;
   lastDepositDate: string;
+  interestPaidTotal?: number;
+  subdayProgressSeconds?: number;
 }
 
 export interface NetWorthSummary {
