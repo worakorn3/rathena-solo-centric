@@ -486,10 +486,17 @@ export const AppContent: React.FC = () => {
         <div
           className={
             activeTab === "LEISURE"
-              ? "flex-1 min-h-0 flex flex-col"
+              ? "flex-1 min-h-0 flex flex-col gap-3"
               : "fixed -left-[99999px] -top-[99999px] w-1 h-1 opacity-0 pointer-events-none overflow-hidden"
           }
         >
+          {user && characters.length > 0 && (
+            <CharSelector
+              characters={characters}
+              selectedCharId={selectedCharId}
+              onSelect={setSelectedCharId}
+            />
+          )}
           <ErrorBoundary>
             <LeisureView
               characters={characters}
@@ -502,9 +509,18 @@ export const AppContent: React.FC = () => {
 
         {/* ==================== TAB 4: 📜 SOLO PROGRESSION & HUNT TRACKER ==================== */}
         {activeTab === "PROGRESSION" && (
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
             {user && progression ? (
-              <KillTracker progression={progression} />
+              <>
+                {characters.length > 0 && (
+                  <CharSelector
+                    characters={characters}
+                    selectedCharId={selectedCharId}
+                    onSelect={setSelectedCharId}
+                  />
+                )}
+                <KillTracker progression={progression} />
+              </>
             ) : (
               <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
                 <div className="w-14 h-14 rounded-full bg-danger/10 border border-danger/20 mx-auto flex items-center justify-center">
@@ -529,9 +545,16 @@ export const AppContent: React.FC = () => {
           </div>
         )}
 
-        {/* ==================== TAB 4: 🎯 DAILY BOUNTIES ==================== */}
+        {/* ==================== TAB 5: 🎯 DAILY BOUNTIES ==================== */}
         {activeTab === "BOUNTIES" && (
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            {user && characters.length > 0 && (
+              <CharSelector
+                characters={characters}
+                selectedCharId={selectedCharId}
+                onSelect={setSelectedCharId}
+              />
+            )}
             <ErrorBoundary>
               <BountyBoard
                 characters={characters}
@@ -546,9 +569,16 @@ export const AppContent: React.FC = () => {
           </div>
         )}
 
-        {/* ==================== TAB 5: 🎰 GACHA ALTAR ==================== */}
+        {/* ==================== TAB 6: 🎰 GACHA ALTAR ==================== */}
         {activeTab === "GACHA" && (
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            {user && characters.length > 0 && (
+              <CharSelector
+                characters={characters}
+                selectedCharId={selectedCharId}
+                onSelect={setSelectedCharId}
+              />
+            )}
             <ErrorBoundary>
               <GachaAltar
                 charId={selectedCharId}

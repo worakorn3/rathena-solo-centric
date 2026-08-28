@@ -463,38 +463,9 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
               ) : null}
             </div>
 
-            {/* Character & Wallet Info */}
-            <div className="text-xs text-muted mt-1 flex items-center gap-2.5 flex-wrap">
-              {user && characters.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px]">Hunter:</span>
-                  <select
-                    value={activeChar?.charId || ""}
-                    onChange={(e) => {
-                      const cid = Number(e.target.value);
-                      if (onSelectChar) onSelectChar(cid);
-                    }}
-                    className="bg-surface2 border border-border rounded px-2 py-0.5 text-xs text-primary font-semibold focus:outline-none focus:border-accent cursor-pointer"
-                  >
-                    {characters.map((c) => (
-                      <option key={c.charId} value={c.charId}>
-                        {c.name} ({c.className} Lv.{c.baseLevel})
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-border">|</span>
-                  <span className="text-[11px]">
-                    Wallet:{" "}
-                    <strong className="text-amber-400 font-mono font-bold">
-                      {formatZeny(activeChar?.zeny || 0)} Z
-                    </strong>
-                  </span>
-                </div>
-              ) : (
-                <div className="text-[11px] text-muted">
-                  Hunt target monsters and turn in their loot for boosted daily payouts.
-                </div>
-              )}
+            {/* Subtitle / Description */}
+            <div className="text-xs text-muted mt-1 flex items-center gap-2 flex-wrap">
+              <span>Hunt designated monsters and turn in loot to the Prontera Junk Trader for boosted daily payouts.</span>
             </div>
           </div>
         </div>
