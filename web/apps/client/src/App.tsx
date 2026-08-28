@@ -23,7 +23,7 @@ import { RegisterPage } from "./components/auth/RegisterPage";
 import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { PullToRefresh } from "./components/common/PullToRefresh";
 import { useAuth } from "./context/AuthContext";
-import { AudioProvider } from "./context/AudioContext";
+import { AudioProvider, useAudio } from "./context/AudioContext";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { api } from "./lib/api";
 import {
@@ -218,6 +218,8 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  const { togglePlay, startRadio, hasStarted } = useAudio();
+
   // Global Keyboard Navigation & Cockpit Shortcuts Engine
   useKeyboardShortcuts({
     onNavigateTab: handleTabChange,
@@ -227,6 +229,10 @@ export const AppContent: React.FC = () => {
       else loadPublicData();
     },
     onToggleShortcuts: () => setIsShortcutsOpen((prev) => !prev),
+    onToggleAudio: () => {
+      if (!hasStarted) startRadio();
+      else togglePlay();
+    },
     characters,
     selectedCharId,
     onSelectChar: setSelectedCharId,

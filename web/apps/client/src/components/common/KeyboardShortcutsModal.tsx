@@ -46,6 +46,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         { keys: ["/"], label: "Quick Armory Search" },
         { keys: ["Ctrl", "K"], label: "Global Command / Search" },
         { keys: ["R"], label: "Sync Live Realm Data" },
+        { keys: ["M"], label: "Toggle LoFi Radio Play / Pause" },
         { keys: ["ESC"], label: "Close Modal / Dropdown" },
       ],
     },

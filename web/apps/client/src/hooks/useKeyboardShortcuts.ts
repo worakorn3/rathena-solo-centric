@@ -16,6 +16,7 @@ interface UseKeyboardShortcutsOptions {
   onOpenSearch: () => void;
   onSync: () => void;
   onToggleShortcuts: () => void;
+  onToggleAudio?: () => void;
   characters?: CharacterSummary[];
   selectedCharId?: number | null;
   onSelectChar?: (charId: number) => void;
@@ -26,6 +27,7 @@ export const useKeyboardShortcuts = ({
   onOpenSearch,
   onSync,
   onToggleShortcuts,
+  onToggleAudio,
   characters = [],
   selectedCharId,
   onSelectChar,
@@ -63,6 +65,13 @@ export const useKeyboardShortcuts = ({
       if (e.key === "?" || (e.shiftKey && e.key === "/")) {
         e.preventDefault();
         onToggleShortcuts();
+        return;
+      }
+
+      // 3. Audio Toggle: 'm' or 'M'
+      if ((e.key === "m" || e.key === "M") && !e.ctrlKey && !e.metaKey && !e.altKey && onToggleAudio) {
+        e.preventDefault();
+        onToggleAudio();
         return;
       }
 

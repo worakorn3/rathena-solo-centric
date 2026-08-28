@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Lock, X, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -8,6 +8,18 @@ export const LoginModal: React.FC = () => {
   const [user_pass, setUserPass] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isLoginModalOpen) {
+        closeLoginModal();
+      }
+    };
+    if (isLoginModalOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLoginModalOpen, closeLoginModal]);
 
   if (!isLoginModalOpen) return null;
 
@@ -33,8 +45,14 @@ export const LoginModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm">
-      <div className="bento-card w-full max-w-sm p-0 overflow-hidden shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm"
+      onClick={closeLoginModal}
+    >
+      <div
+        className="bento-card w-full max-w-sm p-0 overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Title Bar */}
         <div className="bg-surface2 border-b border-border px-3.5 py-2.5 sm:p-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
