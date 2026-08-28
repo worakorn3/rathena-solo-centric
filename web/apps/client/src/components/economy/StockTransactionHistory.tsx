@@ -29,6 +29,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
 }) => {
   const [transactions, setTransactions] = useState<StockTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [spinning, setSpinning] = useState(false);
   const [selectedAssetClass, setSelectedAssetClass] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
   const [selectedAction, setSelectedAction] = useState<"ALL" | StockTransactionAction>("ALL");
 
@@ -56,6 +57,15 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
       setIsLoading(false);
     }
   }, [tickerFilter, selectedAssetClass, selectedAction]);
+
+  const handleRefreshClick = async () => {
+    setSpinning(true);
+    try {
+      await fetchTransactions();
+    } finally {
+      setTimeout(() => setSpinning(false), 600);
+    }
+  };
 
   useEffect(() => {
     fetchTransactions();
@@ -127,7 +137,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-accent shrink-0" />
           <h3 className="font-bold text-xs uppercase tracking-wider text-primary truncate">
-            {tickerFilter ? `${tickerFilter} Transaction History` : "Stock & Crypto Order Ledger"}
+            {tickerFilter ? `${tickerFilter} Ledger` : "Order Ledger"}
           </h3>
           <span className="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
             {transactions.length} Records
@@ -137,12 +147,12 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
         <div className="flex items-center gap-1.5 self-end sm:self-auto">
           <button
             type="button"
-            onClick={fetchTransactions}
-            disabled={isLoading}
-            className="flex items-center gap-1 px-2 py-1 rounded bg-surface2 hover:bg-surface2/80 text-muted hover:text-primary text-[10px] font-medium border border-border transition-colors cursor-pointer"
+            onClick={handleRefreshClick}
+            disabled={isLoading || spinning}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface2/60 hover:bg-surface2 text-muted hover:text-primary text-[10px] font-medium border border-border transition-all cursor-pointer disabled:opacity-50"
             title="Refresh transaction logs"
           >
-            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin text-accent" : ""}`} />
+            <RefreshCw className={`w-3 h-3 text-accent transition-transform ${isLoading || spinning ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </button>
         </div>
