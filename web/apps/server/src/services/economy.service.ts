@@ -1519,10 +1519,14 @@ export class EconomyService {
       const currentTimestamp = Math.floor(Date.now() / 1000);
 
       let pendingInterest = 0;
+      let subdayRemainder = 0;
       if (currentPrincipal > 0 && depositTime > 0) {
         const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
         const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
         pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+        if (daysAccrued < 10) {
+          subdayRemainder = elapsedSeconds % 86400;
+        }
       }
 
       newBankPrincipal = currentPrincipal + pendingInterest + netPayout;
@@ -1533,9 +1537,11 @@ export class EconomyService {
         };
       }
 
+      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
+
       await primaryExecute(
         "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
-        [accountId, newBankPrincipal, currentTimestamp, pendingInterest, pendingInterest]
+        [accountId, newBankPrincipal, newDepositTime, pendingInterest, pendingInterest]
       );
     }
 
