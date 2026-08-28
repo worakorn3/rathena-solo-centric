@@ -16,6 +16,7 @@ import { GachaAltar } from "./components/gacha/GachaAltar";
 import { LeisureView } from "./components/leisure/LeisureView";
 import { GlobalAudioDock } from "./components/leisure/GlobalAudioDock";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
+import { KeyboardShortcutsModal } from "./components/common/KeyboardShortcutsModal";
 import { LoginModal } from "./components/auth/LoginModal";
 import { LoginPage } from "./components/auth/LoginPage";
 import { RegisterPage } from "./components/auth/RegisterPage";
@@ -23,6 +24,7 @@ import { AdminVaultWindow } from "./components/admin/AdminVaultWindow";
 import { PullToRefresh } from "./components/common/PullToRefresh";
 import { useAuth } from "./context/AuthContext";
 import { AudioProvider } from "./context/AudioContext";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { api } from "./lib/api";
 import {
   CharacterDetail,
@@ -56,6 +58,7 @@ export const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>(getTabFromHash);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAdminVaultOpen, setIsAdminVaultOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Authenticated Player Data State
@@ -215,6 +218,20 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  // Global Keyboard Navigation & Cockpit Shortcuts Engine
+  useKeyboardShortcuts({
+    onNavigateTab: handleTabChange,
+    onOpenSearch: () => setIsSearchOpen(true),
+    onSync: () => {
+      if (user) loadUserData();
+      else loadPublicData();
+    },
+    onToggleShortcuts: () => setIsShortcutsOpen((prev) => !prev),
+    characters,
+    selectedCharId,
+    onSelectChar: setSelectedCharId,
+  });
+
   const isUserAdmin = Boolean(user && user.groupId >= 1);
 
   return (
@@ -227,6 +244,7 @@ export const AppContent: React.FC = () => {
         isRefreshing={isRefreshing}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAdmin={isUserAdmin ? () => setIsAdminVaultOpen(true) : undefined}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
         user={user}
         openLoginModal={openLoginModal}
         logout={logout}
@@ -615,6 +633,7 @@ export const AppContent: React.FC = () => {
       {/* Global Modals */}
       <LoginModal />
       <PublicSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <KeyboardShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       {isAdminVaultOpen && <AdminVaultWindow onClose={() => setIsAdminVaultOpen(false)} />}
     </div>
   );
