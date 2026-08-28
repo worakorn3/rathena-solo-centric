@@ -115,15 +115,17 @@ export class EconomyService {
     // 2. Investment Bank Data
     let investBalance = 0;
     let investTime = 0;
+    let interestPaidTotal = 0;
 
     try {
       const bankRow = await query<any>(
-        "SELECT principal, deposit_time FROM `solo_bank_account` WHERE account_id = ?",
+        "SELECT principal, deposit_time, interest_paid_total FROM `solo_bank_account` WHERE account_id = ?",
         [accountId]
       );
       if (bankRow && bankRow.length > 0) {
         investBalance = Number(bankRow[0].principal) || 0;
         investTime = Number(bankRow[0].deposit_time) || 0;
+        interestPaidTotal = Number(bankRow[0].interest_paid_total) || 0;
       }
     } catch {
       // Table might not exist yet if migration is pending
@@ -132,12 +134,16 @@ export class EconomyService {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     let daysAccrued = 0;
     let pendingInterest = 0;
+    let subdayProgressSeconds = 0;
 
     if (investBalance > 0 && investTime > 0) {
       const elapsedSeconds = Math.max(0, currentTimestamp - investTime);
       const rawDays = Math.floor(elapsedSeconds / 86400);
       daysAccrued = Math.min(rawDays, 10); // Capped at 10% (10 days)
       pendingInterest = Math.floor((investBalance / 100) * daysAccrued);
+      if (daysAccrued < 10) {
+        subdayProgressSeconds = elapsedSeconds % 86400;
+      }
     }
 
     const bankTotal = investBalance + pendingInterest;
@@ -151,6 +157,8 @@ export class EconomyService {
       totalPayout: bankTotal,
       depositTimestamp: investTime,
       lastDepositDate: investTime > 0 ? new Date(investTime * 1000).toLocaleString() : "Never",
+      interestPaidTotal,
+      subdayProgressSeconds,
     };
 
     // 3. Stock Market Quotes
@@ -1075,10 +1083,14 @@ export class EconomyService {
 
       const currentTimestamp = Math.floor(Date.now() / 1000);
       let pendingInterest = 0;
+      let subdayRemainder = 0;
       if (currentPrincipal > 0 && depositTime > 0) {
         const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
         const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
         pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+        if (daysAccrued < 10) {
+          subdayRemainder = elapsedSeconds % 86400;
+        }
       }
 
       newBankPrincipal = currentPrincipal + pendingInterest + netProceeds;
@@ -1089,9 +1101,11 @@ export class EconomyService {
         };
       }
 
+      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
+
       await primaryExecute(
         "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
-        [accountId, newBankPrincipal, currentTimestamp, pendingInterest, pendingInterest]
+        [accountId, newBankPrincipal, newDepositTime, pendingInterest, pendingInterest]
       );
     }
 
@@ -1188,19 +1202,24 @@ export class EconomyService {
     const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
     const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
 
-    // 3. Calculate pending interest accrued so far
+    // 3. Calculate pending interest accrued so far & preserve subday remainder
     const currentTimestamp = Math.floor(Date.now() / 1000);
     let pendingInterest = 0;
+    let subdayRemainder = 0;
     if (currentPrincipal > 0 && depositTime > 0) {
       const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
       const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
       pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+      if (daysAccrued < 10) {
+        subdayRemainder = elapsedSeconds % 86400;
+      }
     }
 
     // 4. Calculate 2% deposit fee (matching script's amount / 50)
     const fee = Math.floor(safeAmount / 50);
     const netDeposit = safeAmount - fee;
     const newPrincipal = currentPrincipal + pendingInterest + netDeposit;
+    const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
 
     if (newPrincipal > 1900000000) {
       return {
@@ -1216,15 +1235,24 @@ export class EconomyService {
     );
 
     await primaryExecute(
-      "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time)",
-      [accountId, newPrincipal, currentTimestamp]
+      "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
+      [accountId, newPrincipal, newDepositTime, pendingInterest, pendingInterest]
     );
 
     const remainingZeny = Number(char.zeny) - safeAmount;
 
+    let message = `Successfully deposited ${safeAmount.toLocaleString()} Z. Fee paid: ${fee.toLocaleString()} Z. New principal: ${newPrincipal.toLocaleString()} Z.`;
+    if (pendingInterest > 0) {
+      message += ` Compounded interest: +${pendingInterest.toLocaleString()} Z.`;
+    }
+    if (subdayRemainder > 0) {
+      const hours = Math.floor(subdayRemainder / 3600);
+      message += ` Preserved ${hours}h towards next interest day.`;
+    }
+
     return {
       success: true,
-      message: `Successfully deposited ${safeAmount.toLocaleString()} Z. Fee paid: ${fee.toLocaleString()} Z. New principal: ${newPrincipal.toLocaleString()} Z.`,
+      message,
       newPrincipal,
       feePaid: fee,
       interestPaid: pendingInterest,
@@ -1268,11 +1296,12 @@ export class EconomyService {
       return { success: false, error: "You have no active funds to withdraw." };
     }
 
-    // 3. Calculate pending interest
+    // 3. Calculate pending interest & subday remainder
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
     const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
     const pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
+    const subdayRemainder = daysAccrued < 10 ? (elapsedSeconds % 86400) : 0;
     const totalAvailable = currentPrincipal + pendingInterest;
 
     // Determine withdrawal amount (partial vs full)
@@ -1307,11 +1336,12 @@ export class EconomyService {
         [pendingInterest, accountId]
       );
     } else {
-      // Partial withdrawal: roll accrued interest into principal, deduct withdrawn amount, reset timer
+      // Partial withdrawal: roll accrued interest into principal, deduct withdrawn amount, preserve subday remainder
       newPrincipal = totalAvailable - amountToWithdraw;
+      const newDepositTime = currentTimestamp - subdayRemainder;
       await primaryExecute(
         "UPDATE `solo_bank_account` SET principal = ?, deposit_time = ?, interest_paid_total = interest_paid_total + ? WHERE account_id = ?",
-        [newPrincipal, currentTimestamp, pendingInterest, accountId]
+        [newPrincipal, newDepositTime, pendingInterest, accountId]
       );
     }
 
