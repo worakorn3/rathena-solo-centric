@@ -21,7 +21,10 @@ import {
   DripToggleResponse,
   HarvestDividendsResponse,
   isCryptoAsset,
-  getJobName
+  getJobName,
+  BANK_CONFIG,
+  MAX_CHARACTER_ZENY,
+  calculateBankAccrual,
 } from "@rathena/shared";
 
 export function getRAthenaDayOfYear(date = new Date()): number {
@@ -132,33 +135,19 @@ export class EconomyService {
     }
 
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    let daysAccrued = 0;
-    let pendingInterest = 0;
-    let subdayProgressSeconds = 0;
-
-    if (investBalance > 0 && investTime > 0) {
-      const elapsedSeconds = Math.max(0, currentTimestamp - investTime);
-      const rawDays = Math.floor(elapsedSeconds / 86400);
-      daysAccrued = Math.min(rawDays, 10); // Capped at 10% (10 days)
-      pendingInterest = Math.floor((investBalance / 100) * daysAccrued);
-      if (daysAccrued < 10) {
-        subdayProgressSeconds = elapsedSeconds % 86400;
-      }
-    }
-
-    const bankTotal = investBalance + pendingInterest;
+    const accrual = calculateBankAccrual(investBalance, investTime, currentTimestamp);
 
     const bank: BankData = {
       principal: investBalance,
-      interestRate: 0.01,
-      maxDays: 10,
-      daysAccrued,
-      pendingInterest,
-      totalPayout: bankTotal,
+      interestRate: BANK_CONFIG.DAILY_INTEREST_RATE,
+      maxDays: BANK_CONFIG.MAX_ACCRUAL_DAYS,
+      daysAccrued: accrual.daysAccrued,
+      pendingInterest: accrual.pendingInterest,
+      totalPayout: accrual.totalAvailable,
       depositTimestamp: investTime,
       lastDepositDate: investTime > 0 ? new Date(investTime * 1000).toLocaleString() : "Never",
       interestPaidTotal,
-      subdayProgressSeconds,
+      subdayProgressSeconds: accrual.subdayRemainder,
     };
 
     // 3. Stock Market Quotes
@@ -1059,10 +1048,10 @@ export class EconomyService {
 
     if (targetDest === "WALLET") {
       // Wallet 2.1B cap protection
-      if (Number(char.zeny) + netProceeds > 2100000000) {
+      if (Number(char.zeny) + netProceeds > MAX_CHARACTER_ZENY) {
         return {
           success: false,
-          error: `Sale proceeds would exceed the 2,100,000,000 Zeny wallet limit. Available space: ${(2100000000 - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination or sell fewer shares.`,
+          error: `Sale proceeds would exceed the ${MAX_CHARACTER_ZENY.toLocaleString()} Zeny wallet limit. Available space: ${(MAX_CHARACTER_ZENY - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination or sell fewer shares.`,
         };
       }
 
@@ -1080,32 +1069,22 @@ export class EconomyService {
 
       const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
       const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
-
       const currentTimestamp = Math.floor(Date.now() / 1000);
-      let pendingInterest = 0;
-      let subdayRemainder = 0;
-      if (currentPrincipal > 0 && depositTime > 0) {
-        const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
-        const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
-        pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
-        if (daysAccrued < 10) {
-          subdayRemainder = elapsedSeconds % 86400;
-        }
-      }
+      const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
 
-      newBankPrincipal = currentPrincipal + pendingInterest + netProceeds;
-      if (newBankPrincipal > 1900000000) {
+      newBankPrincipal = accrual.totalAvailable + netProceeds;
+      if (newBankPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
         return {
           success: false,
-          error: `Sale proceeds would exceed the 1,900,000,000 Zeny Investment Bank ceiling. Available space: ${Math.max(0, 1900000000 - (currentPrincipal + pendingInterest)).toLocaleString()} Z. Sell fewer shares or withdraw from bank.`,
+          error: `Sale proceeds would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, BANK_CONFIG.MAX_PRINCIPAL_LIMIT - accrual.totalAvailable).toLocaleString()} Z. Sell fewer shares or withdraw from bank.`,
         };
       }
 
-      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
+      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - accrual.subdayRemainder) : currentTimestamp;
 
       await primaryExecute(
         "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
-        [accountId, newBankPrincipal, newDepositTime, pendingInterest, pendingInterest]
+        [accountId, newBankPrincipal, newDepositTime, accrual.pendingInterest, accrual.pendingInterest]
       );
     }
 
@@ -1201,30 +1180,19 @@ export class EconomyService {
 
     const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
     const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
-
-    // 3. Calculate pending interest accrued so far & preserve subday remainder
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    let pendingInterest = 0;
-    let subdayRemainder = 0;
-    if (currentPrincipal > 0 && depositTime > 0) {
-      const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
-      const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
-      pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
-      if (daysAccrued < 10) {
-        subdayRemainder = elapsedSeconds % 86400;
-      }
-    }
+    const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
 
-    // 4. Calculate 2% deposit fee (matching script's amount / 50)
-    const fee = Math.floor(safeAmount / 50);
+    // 4. Calculate deposit fee
+    const fee = Math.floor(safeAmount / BANK_CONFIG.DEPOSIT_FEE_DIVISOR);
     const netDeposit = safeAmount - fee;
-    const newPrincipal = currentPrincipal + pendingInterest + netDeposit;
-    const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
+    const newPrincipal = accrual.totalAvailable + netDeposit;
+    const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - accrual.subdayRemainder) : currentTimestamp;
 
-    if (newPrincipal > 1900000000) {
+    if (newPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
       return {
         success: false,
-        error: "Cannot accept deposit: New principal would exceed the 1,900,000,000 Zeny bank limit.",
+        error: `Cannot accept deposit: New principal would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny bank limit.`,
       };
     }
 
@@ -1236,17 +1204,17 @@ export class EconomyService {
 
     await primaryExecute(
       "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
-      [accountId, newPrincipal, newDepositTime, pendingInterest, pendingInterest]
+      [accountId, newPrincipal, newDepositTime, accrual.pendingInterest, accrual.pendingInterest]
     );
 
     const remainingZeny = Number(char.zeny) - safeAmount;
 
     let message = `Successfully deposited ${safeAmount.toLocaleString()} Z. Fee paid: ${fee.toLocaleString()} Z. New principal: ${newPrincipal.toLocaleString()} Z.`;
-    if (pendingInterest > 0) {
-      message += ` Compounded interest: +${pendingInterest.toLocaleString()} Z.`;
+    if (accrual.pendingInterest > 0) {
+      message += ` Compounded interest: +${accrual.pendingInterest.toLocaleString()} Z.`;
     }
-    if (subdayRemainder > 0) {
-      const hours = Math.floor(subdayRemainder / 3600);
+    if (accrual.subdayRemainder > 0) {
+      const hours = Math.floor(accrual.subdayRemainder / 3600);
       message += ` Preserved ${hours}h towards next interest day.`;
     }
 
@@ -1255,7 +1223,7 @@ export class EconomyService {
       message,
       newPrincipal,
       feePaid: fee,
-      interestPaid: pendingInterest,
+      interestPaid: accrual.pendingInterest,
       remainingZeny,
     };
   }
@@ -1298,26 +1266,22 @@ export class EconomyService {
 
     // 3. Calculate pending interest & subday remainder
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
-    const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
-    const pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
-    const subdayRemainder = daysAccrued < 10 ? (elapsedSeconds % 86400) : 0;
-    const totalAvailable = currentPrincipal + pendingInterest;
+    const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
 
     // Determine withdrawal amount (partial vs full)
     const amountToWithdraw = requestedAmount && requestedAmount > 0
-      ? Math.min(Math.floor(requestedAmount), totalAvailable)
-      : totalAvailable;
+      ? Math.min(Math.floor(requestedAmount), accrual.totalAvailable)
+      : accrual.totalAvailable;
 
     if (amountToWithdraw <= 0) {
       return { success: false, error: "Invalid withdrawal amount." };
     }
 
-    // Check inventory 2.1B ceiling
-    if (2100000000 - Number(char.zeny) < amountToWithdraw) {
+    // Check inventory ceiling
+    if (MAX_CHARACTER_ZENY - Number(char.zeny) < amountToWithdraw) {
       return {
         success: false,
-        error: "Cannot withdraw: Resulting character inventory would exceed the 2,100,000,000 Zeny ceiling.",
+        error: `Cannot withdraw: Resulting character inventory would exceed the ${MAX_CHARACTER_ZENY.toLocaleString()} Zeny ceiling.`,
       };
     }
 
@@ -1327,21 +1291,21 @@ export class EconomyService {
       [amountToWithdraw, charId]
     );
 
-    const isFullWithdrawal = amountToWithdraw >= totalAvailable;
+    const isFullWithdrawal = amountToWithdraw >= accrual.totalAvailable;
     let newPrincipal = 0;
 
     if (isFullWithdrawal) {
       await primaryExecute(
         "UPDATE `solo_bank_account` SET principal = 0, deposit_time = 0, interest_paid_total = interest_paid_total + ? WHERE account_id = ?",
-        [pendingInterest, accountId]
+        [accrual.pendingInterest, accountId]
       );
     } else {
       // Partial withdrawal: roll accrued interest into principal, deduct withdrawn amount, preserve subday remainder
-      newPrincipal = totalAvailable - amountToWithdraw;
-      const newDepositTime = currentTimestamp - subdayRemainder;
+      newPrincipal = accrual.totalAvailable - amountToWithdraw;
+      const newDepositTime = currentTimestamp - accrual.subdayRemainder;
       await primaryExecute(
         "UPDATE `solo_bank_account` SET principal = ?, deposit_time = ?, interest_paid_total = interest_paid_total + ? WHERE account_id = ?",
-        [newPrincipal, newDepositTime, pendingInterest, accountId]
+        [newPrincipal, newDepositTime, accrual.pendingInterest, accountId]
       );
     }
 
@@ -1495,10 +1459,10 @@ export class EconomyService {
         };
       }
 
-      if (Number(char.zeny) + netPayout > 2100000000) {
+      if (Number(char.zeny) + netPayout > MAX_CHARACTER_ZENY) {
         return {
           success: false,
-          error: `Dividend payout would exceed the 2,100,000,000 Zeny character wallet limit. Available space: ${(2100000000 - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination.`,
+          error: `Dividend payout would exceed the ${MAX_CHARACTER_ZENY.toLocaleString()} Zeny character wallet limit. Available space: ${(MAX_CHARACTER_ZENY - Number(char.zeny)).toLocaleString()} Z. Choose 'BANK' destination.`,
         };
       }
 
@@ -1517,31 +1481,21 @@ export class EconomyService {
       const currentPrincipal = bank ? Number(bank.principal) || 0 : 0;
       const depositTime = bank ? Number(bank.deposit_time) || 0 : 0;
       const currentTimestamp = Math.floor(Date.now() / 1000);
+      const accrual = calculateBankAccrual(currentPrincipal, depositTime, currentTimestamp);
 
-      let pendingInterest = 0;
-      let subdayRemainder = 0;
-      if (currentPrincipal > 0 && depositTime > 0) {
-        const elapsedSeconds = Math.max(0, currentTimestamp - depositTime);
-        const daysAccrued = Math.min(Math.floor(elapsedSeconds / 86400), 10);
-        pendingInterest = Math.floor((currentPrincipal / 100) * daysAccrued);
-        if (daysAccrued < 10) {
-          subdayRemainder = elapsedSeconds % 86400;
-        }
-      }
-
-      newBankPrincipal = currentPrincipal + pendingInterest + netPayout;
-      if (newBankPrincipal > 1900000000) {
+      newBankPrincipal = accrual.totalAvailable + netPayout;
+      if (newBankPrincipal > BANK_CONFIG.MAX_PRINCIPAL_LIMIT) {
         return {
           success: false,
-          error: `Dividend wire would exceed the 1,900,000,000 Zeny Investment Bank ceiling. Available space: ${Math.max(0, 1900000000 - (currentPrincipal + pendingInterest)).toLocaleString()} Z.`,
+          error: `Dividend wire would exceed the ${BANK_CONFIG.MAX_PRINCIPAL_LIMIT.toLocaleString()} Zeny Investment Bank ceiling. Available space: ${Math.max(0, BANK_CONFIG.MAX_PRINCIPAL_LIMIT - accrual.totalAvailable).toLocaleString()} Z.`,
         };
       }
 
-      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - subdayRemainder) : currentTimestamp;
+      const newDepositTime = currentPrincipal > 0 && depositTime > 0 ? (currentTimestamp - accrual.subdayRemainder) : currentTimestamp;
 
       await primaryExecute(
         "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
-        [accountId, newBankPrincipal, newDepositTime, pendingInterest, pendingInterest]
+        [accountId, newBankPrincipal, newDepositTime, accrual.pendingInterest, accrual.pendingInterest]
       );
     }
 

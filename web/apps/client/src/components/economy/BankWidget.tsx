@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Landmark, Clock, CheckCircle2, AlertTriangle, ArrowRight, Wallet, User } from "lucide-react";
-import { BankData, CharacterSummary } from "@rathena/shared";
+import { BankData, CharacterSummary, BANK_CONFIG } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
 import { api } from "../../lib/api";
 
@@ -36,7 +36,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
     principal = 0,
     pendingInterest = 0,
     daysAccrued = 0,
-    maxDays = 10,
+    maxDays = BANK_CONFIG.MAX_ACCRUAL_DAYS,
     totalPayout = 0,
     interestPaidTotal = 0,
     subdayProgressSeconds = 0,
@@ -49,7 +49,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
 
   // Deposit Preview Math
   const parsedDeposit = Math.floor(Number(depositAmount) || 0);
-  const depositFee = Math.floor(parsedDeposit / 50); // 2% fee
+  const depositFee = Math.floor(parsedDeposit / BANK_CONFIG.DEPOSIT_FEE_DIVISOR);
   const netDeposit = parsedDeposit - depositFee;
   const newPrincipalOnDeposit = principal + pendingInterest + netDeposit;
 
@@ -63,8 +63,8 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
       setError("Please select a character.");
       return;
     }
-    if (parsedDeposit < 100) {
-      setError("Minimum deposit is 100 Zeny.");
+    if (parsedDeposit < BANK_CONFIG.MIN_DEPOSIT_ZENY) {
+      setError(`Minimum deposit is ${BANK_CONFIG.MIN_DEPOSIT_ZENY} Zeny.`);
       return;
     }
     setIsLoading(true);
