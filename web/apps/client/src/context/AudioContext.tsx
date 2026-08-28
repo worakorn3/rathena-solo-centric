@@ -67,11 +67,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const startRadio = () => {
     setHasStarted(true);
     setIsPlaying(true);
-    setTimeout(() => {
-      sendIframeCommand("setLoop", [true]);
-      sendIframeCommand("setShuffle", [true]);
+    const syncSettings = () => {
+      sendIframeCommand("setLoop", [isLooped]);
+      sendIframeCommand("setShuffle", [isShuffled]);
       sendIframeCommand("playVideo");
-    }, 200);
+    };
+    setTimeout(syncSettings, 300);
+    setTimeout(syncSettings, 800);
+    setTimeout(syncSettings, 1500);
   };
 
   const toggleShuffle = () => {

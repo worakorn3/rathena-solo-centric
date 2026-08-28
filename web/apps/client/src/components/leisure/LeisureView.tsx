@@ -10,6 +10,8 @@ import {
   ExternalLink,
   Shuffle,
   Repeat,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { formatZeny } from "../../lib/assets";
 import { useAudio } from "../../context/AudioContext";
@@ -228,35 +230,65 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                 </div>
 
                 {/* Status and Controls Header Bar */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  {/* Shuffle Toggle Button */}
                   <button
+                    type="button"
                     onClick={toggleShuffle}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border flex items-center gap-1 transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border flex items-center gap-1.5 transition-all cursor-pointer ${
                       isShuffled
-                        ? "bg-accent/15 border-accent/30 text-accent font-bold"
-                        : "bg-surface2 border-border text-muted hover:text-primary"
+                        ? "bg-accent/15 border-accent/40 text-accent font-bold shadow-sm"
+                        : "bg-surface2/60 border-border text-muted hover:text-primary hover:bg-surface2"
                     }`}
-                    title={isShuffled ? "Shuffle Enabled" : "Shuffle Disabled"}
+                    title={isShuffled ? "Shuffle Enabled (Click to disable)" : "Shuffle Disabled (Click to enable)"}
                   >
-                    <Shuffle className="w-3 h-3" />
+                    {isShuffled ? (
+                      <ToggleRight className="w-3.5 h-3.5 text-accent" />
+                    ) : (
+                      <ToggleLeft className="w-3.5 h-3.5 text-muted" />
+                    )}
                     <span>Shuffle</span>
+                    <span
+                      className={`text-[8.5px] px-1 py-0.2 rounded font-bold ${
+                        isShuffled
+                          ? "bg-accent/25 text-accent"
+                          : "bg-surface text-muted"
+                      }`}
+                    >
+                      {isShuffled ? "ON" : "OFF"}
+                    </span>
                   </button>
 
+                  {/* Loop Toggle Button */}
                   <button
+                    type="button"
                     onClick={toggleLoop}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border flex items-center gap-1 transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border flex items-center gap-1.5 transition-all cursor-pointer ${
                       isLooped
-                        ? "bg-accent/15 border-accent/30 text-accent font-bold"
-                        : "bg-surface2 border-border text-muted hover:text-primary"
+                        ? "bg-accent/15 border-accent/40 text-accent font-bold shadow-sm"
+                        : "bg-surface2/60 border-border text-muted hover:text-primary hover:bg-surface2"
                     }`}
-                    title={isLooped ? "Loop Enabled" : "Loop Disabled"}
+                    title={isLooped ? "Loop Enabled (Click to disable)" : "Loop Disabled (Click to enable)"}
                   >
-                    <Repeat className="w-3 h-3" />
+                    {isLooped ? (
+                      <ToggleRight className="w-3.5 h-3.5 text-accent" />
+                    ) : (
+                      <ToggleLeft className="w-3.5 h-3.5 text-muted" />
+                    )}
                     <span>Loop</span>
+                    <span
+                      className={`text-[8.5px] px-1 py-0.2 rounded font-bold ${
+                        isLooped
+                          ? "bg-accent/25 text-accent"
+                          : "bg-surface text-muted"
+                      }`}
+                    >
+                      {isLooped ? "ON" : "OFF"}
+                    </span>
                   </button>
 
                   <div
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono border ${
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-mono border ${
                       isOnlineNetwork
                         ? isPlaying
                           ? "bg-success/10 border-success/20 text-success"
@@ -296,7 +328,7 @@ export const LeisureView: React.FC<LeisureViewProps> = ({
                     <iframe
                       key="ragnarok-lofi-playlist"
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&loop=1&autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+                      src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&loop=${isLooped ? 1 : 0}&autoplay=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
                       title="Ragnarok LoFi Beats"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
