@@ -13,6 +13,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import { StockTransaction, StockTransactionAction, isCryptoAsset } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
@@ -91,7 +92,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
         };
       case "DIVIDEND":
         return {
-          label: "DIVIDEND",
+          label: "DIV",
           icon: Coins,
           bg: "bg-info/15",
           text: "text-info",
@@ -99,7 +100,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
         };
       case "DRIP_BUY":
         return {
-          label: "DRIP REINVEST",
+          label: "DRIP",
           icon: Sparkles,
           bg: "bg-purple-500/15",
           text: "text-purple-400",
@@ -130,6 +131,8 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
     }
   };
 
+  const isFilterActive = selectedAssetClass !== "ALL" || selectedAction !== "ALL";
+
   return (
     <div className={`bento-card p-3 sm:p-3.5 flex flex-col ${className}`}>
       {/* Header & Controls */}
@@ -158,48 +161,62 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
         </div>
       </div>
 
-      {/* Filter Chips */}
+      {/* Filter Toolbar: Dual Compact Bento Dropdowns */}
       {!tickerFilter && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-2.5 text-[10px]">
-          {/* Asset Class Filter */}
-          <div className="flex items-center bg-surface2/60 p-0.5 rounded-lg border border-border">
-            {(["ALL", "EQUITY", "CRYPTO"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setSelectedAssetClass(tab)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${
-                  selectedAssetClass === tab
-                    ? "bg-accent text-black font-bold shadow-xs"
-                    : "text-muted hover:text-primary"
-                }`}
-              >
-                {tab === "ALL" ? "All Assets" : tab === "EQUITY" ? "Stocks" : "Crypto"}
-              </button>
-            ))}
+        <div className="flex items-center gap-2 mb-2.5 text-xs">
+          <div className="flex items-center gap-1 text-muted shrink-0" title="Filter ledger transactions">
+            <Filter className="w-3.5 h-3.5 text-muted/70" />
           </div>
 
-          {/* Action Filter */}
-          <div className="flex items-center bg-surface2/60 p-0.5 rounded-lg border border-border">
-            {(["ALL", "BUY", "SELL", "DIVIDEND", "DRIP_BUY"] as const).map((act) => (
-              <button
-                key={act}
-                type="button"
-                onClick={() => setSelectedAction(act)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${
-                  selectedAction === act
-                    ? "bg-primary text-black font-bold shadow-xs"
-                    : "text-muted hover:text-primary"
-                }`}
+          <div className="grid grid-cols-2 gap-2 flex-1 min-w-0">
+            {/* Asset Class Select */}
+            <div className="relative">
+              <select
+                value={selectedAssetClass}
+                onChange={(e) => setSelectedAssetClass(e.target.value as any)}
+                className="w-full bg-surface2/70 hover:bg-surface2 border border-border focus:border-accent rounded-lg px-2.5 py-1 text-[11px] text-primary outline-none transition-colors cursor-pointer appearance-none pr-6 font-medium"
               >
-                {act === "ALL"
-                  ? "All Actions"
-                  : act === "DRIP_BUY"
-                  ? "DRIP"
-                  : act}
-              </button>
-            ))}
+                <option value="ALL">All Assets</option>
+                <option value="EQUITY">Municipal Equities</option>
+                <option value="CRYPTO">Crypto Protocols</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted">
+                <ChevronDown className="w-3 h-3" />
+              </div>
+            </div>
+
+            {/* Action Type Select */}
+            <div className="relative">
+              <select
+                value={selectedAction}
+                onChange={(e) => setSelectedAction(e.target.value as any)}
+                className="w-full bg-surface2/70 hover:bg-surface2 border border-border focus:border-accent rounded-lg px-2.5 py-1 text-[11px] text-primary outline-none transition-colors cursor-pointer appearance-none pr-6 font-medium"
+              >
+                <option value="ALL">All Actions</option>
+                <option value="BUY">Buy Orders</option>
+                <option value="SELL">Sell Orders</option>
+                <option value="DIVIDEND">Dividends</option>
+                <option value="DRIP_BUY">DRIP Reinvestment</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-muted">
+                <ChevronDown className="w-3 h-3" />
+              </div>
+            </div>
           </div>
+
+          {isFilterActive && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedAssetClass("ALL");
+                setSelectedAction("ALL");
+              }}
+              className="px-2 py-1 rounded-lg bg-surface2 hover:bg-surface text-[10px] font-mono text-accent hover:text-accent/80 border border-border transition-colors cursor-pointer shrink-0"
+              title="Reset Filters to Default"
+            >
+              Reset
+            </button>
+          )}
         </div>
       )}
 
@@ -215,7 +232,9 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
             <History className="w-6 h-6 mx-auto mb-1.5 opacity-40" />
             <p className="font-medium text-primary">No transactions recorded yet</p>
             <p className="text-[11px] text-muted mt-0.5">
-              Orders placed on the Web Terminal or In-Game Broker will appear here automatically.
+              {isFilterActive
+                ? "No records match the selected filters. Try resetting the filters above."
+                : "Orders placed on the Web Terminal or In-Game Broker will appear here automatically."}
             </p>
           </div>
         ) : (
@@ -227,72 +246,84 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
             return (
               <div
                 key={tx.id}
-                className="flex items-center justify-between p-2 rounded-lg bg-surface2/60 border border-border/80 hover:border-border transition-colors text-xs"
+                className="p-2.5 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/30 transition-all flex flex-col gap-1.5"
               >
-                {/* Left: Action Badge + Ticker Info */}
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${badge.bg} ${badge.border} ${badge.text} shrink-0 text-[10px] font-bold`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    <span>{badge.label}</span>
+                {/* Top Row: Action Badge + Ticker + Crypto Tag + Stock Name (Left) & Total Amount Zeny (Right) */}
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div
+                      className={`w-12 py-0.5 rounded border ${badge.bg} ${badge.border} ${badge.text} shrink-0 text-[9.5px] font-bold text-center flex items-center justify-center gap-0.5`}
+                    >
+                      <Icon className="w-2.5 h-2.5 shrink-0" />
+                      <span>{badge.label}</span>
+                    </div>
+
+                    <span className="font-bold font-mono text-primary text-xs shrink-0">{tx.ticker}</span>
+
+                    {isCrypto && (
+                      <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[8.5px] font-mono font-bold border border-amber-400/20 shrink-0">
+                        CRYPTO
+                      </span>
+                    )}
+
+                    <span className="text-[11px] text-muted truncate">
+                      {tx.stockName}
+                    </span>
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold font-mono text-primary">{tx.ticker}</span>
-                      {isCrypto && (
-                        <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[9px] font-mono border border-amber-400/20">
-                          CRYPTO
-                        </span>
-                      )}
-                      <span className="text-[11px] text-muted truncate hidden sm:inline">
-                        {tx.stockName}
-                      </span>
-                    </div>
-
-                    <div className="text-[10px] text-muted flex items-center gap-2 font-mono mt-0.5">
-                      <span>{formatDate(tx.createdAt)}</span>
-                      {tx.charName && (
-                        <>
-                          <span>•</span>
-                          <span className="text-muted/80">{tx.charName}</span>
-                        </>
-                      )}
-                      {tx.destination && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-0.5 text-muted">
-                            {tx.destination === "BANK" ? (
-                              <>
-                                <Landmark className="w-2.5 h-2.5 text-info" /> Bank
-                              </>
-                            ) : (
-                              <>
-                                <Wallet className="w-2.5 h-2.5" /> Wallet
-                              </>
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                  {/* Total Amount */}
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`font-bold font-mono text-xs ${
+                        tx.action === "SELL" || tx.action === "DIVIDEND"
+                          ? "text-success"
+                          : tx.action === "DRIP_BUY"
+                          ? "text-purple-400"
+                          : "text-primary"
+                      }`}
+                    >
+                      {tx.action === "SELL" || tx.action === "DIVIDEND" ? "+" : "-"}
+                      {formatZeny(tx.totalAmount)} Z
+                    </span>
                   </div>
                 </div>
 
-                {/* Right: Quantity, Price & Total Amount */}
-                <div className="text-right shrink-0 pl-2">
-                  <div className="font-bold font-mono text-primary text-xs">
-                    {tx.action === "SELL" || tx.action === "DIVIDEND" ? "+" : "-"}
-                    {formatZeny(tx.totalAmount)} Z
+                {/* Bottom Row: Metadata (Timestamp, Char, Destination) & (Units @ Price, Fee) */}
+                <div className="flex items-center justify-between gap-2 text-[10px] text-muted font-mono pt-1 border-t border-border/30">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span>{formatDate(tx.createdAt)}</span>
+                    {tx.charName && (
+                      <>
+                        <span className="text-muted/40">•</span>
+                        <span className="text-muted/90 truncate">{tx.charName}</span>
+                      </>
+                    )}
+                    {tx.destination && (
+                      <>
+                        <span className="text-muted/40">•</span>
+                        <span className="flex items-center gap-0.5 text-muted shrink-0">
+                          {tx.destination === "BANK" ? (
+                            <>
+                              <Landmark className="w-2.5 h-2.5 text-info" /> Bank
+                            </>
+                          ) : (
+                            <>
+                              <Wallet className="w-2.5 h-2.5 text-accent" /> Wallet
+                            </>
+                          )}
+                        </span>
+                      </>
+                    )}
                   </div>
-                  <div className="text-[10px] text-muted font-mono">
+
+                  <div className="text-right shrink-0 flex items-center gap-1">
                     {tx.shares > 0 && (
                       <span>
                         {tx.shares.toLocaleString()} {tx.shares === 1 ? "unit" : "units"} @ {formatZeny(tx.price)} Z
                       </span>
                     )}
                     {tx.fee > 0 && (
-                      <span className="text-danger/80 ml-1.5">
+                      <span className="text-danger/80 text-[9px]">
                         (Fee: {formatZeny(tx.fee)} Z)
                       </span>
                     )}

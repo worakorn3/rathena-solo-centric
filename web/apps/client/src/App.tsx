@@ -345,7 +345,11 @@ export const AppContent: React.FC = () => {
             {user && netWorth ? (
               <>
                 {/* Hero Net Worth Bar */}
-                <NetWorthCard summary={netWorth} onSelectTab={setPortfolioTab} />
+                <NetWorthCard
+                  summary={netWorth}
+                  characters={characters}
+                  onSelectTab={setPortfolioTab}
+                />
 
                 {/* 5:7 Balanced Bento Grid */}
                 <div className="flex-1 min-h-0 grid grid-cols-12 gap-3">
@@ -434,6 +438,7 @@ export const AppContent: React.FC = () => {
                           municipalMarketValue={netWorth.municipalMarketValue}
                           cryptoMarketValue={netWorth.cryptoMarketValue}
                           totalNetWorth={netWorth.totalNetWorth}
+                          characters={characters}
                           selectedAssetCategory={portfolioAssetFilter}
                           onSelectAssetCategory={(cat) => {
                             setPortfolioAssetFilter(cat);

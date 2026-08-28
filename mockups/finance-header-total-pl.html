@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Finance Header Total P/L Prototype</title>
+  <title>Finance Dashboard & Multi-Character Wealth Prototype</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -53,8 +53,8 @@
     }
     /* Custom scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
@@ -66,476 +66,678 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #3f3f46;
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-accent/20 selection:text-accent p-3 md:p-6 max-w-7xl mx-auto">
 
   <!-- ==================== PROTOTYPE CONTROL STRIP ==================== -->
-  <div class="mb-4 bg-surface2/70 border border-border px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+  <div class="mb-4 bg-surface2/80 border border-border px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
     <div class="flex items-center gap-2">
       <span class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
       <span class="font-bold text-accent">[PROTOTYPE]</span>
-      <span class="text-primary font-semibold">Finance Header: Total P/L Metric Integration</span>
-      <span class="bg-surface px-2 py-0.5 rounded text-[10px] text-muted border border-border">v1.0 (Zinc Bento)</span>
+      <span class="text-primary font-semibold">Finance Tab: Multi-Character Wealth Scaling</span>
+      <span class="bg-surface px-2 py-0.5 rounded text-[10px] text-muted border border-border">v2.1 (Up to 15 Slots)</span>
     </div>
 
-    <!-- Live State Toggles -->
+    <!-- Live Simulation Controls -->
     <div class="flex items-center gap-2 flex-wrap">
-      <span class="text-muted text-[11px] font-sans">Simulate State:</span>
-      <button onclick="setState('PROFIT')" id="btn-profit" class="px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/40 font-bold transition-all text-[11px] flex items-center gap-1">
-        <i data-lucide="trending-up" class="w-3 h-3"></i> Big Gain (+14.8%)
+      <span class="text-muted text-[11px] font-sans">Simulate Account Scale:</span>
+      <button onclick="setRoster('MAX15')" id="btn-roster-max15" class="px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/40 font-bold transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="layers" class="w-3 h-3"></i> 15 Heroes (Full Account Cap)
       </button>
-      <button onclick="setState('LOSS')" id="btn-loss" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-danger hover:bg-danger/10 border border-border transition-all text-[11px] flex items-center gap-1">
-        <i data-lucide="trending-down" class="w-3 h-3"></i> Drawdown (-7.2%)
+      <button onclick="setRoster('MID4')" id="btn-roster-mid4" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="users" class="w-3 h-3"></i> 4 Heroes (Core Alt Team)
       </button>
-      <button onclick="setState('NEUTRAL')" id="btn-neutral" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
-        <i data-lucide="minus" class="w-3 h-3"></i> Neutral / 0 Z
-      </button>
-      <button onclick="setState('EMPTY')" id="btn-empty" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
-        <i data-lucide="briefcase" class="w-3 h-3"></i> 0 Positions
+      <button onclick="setRoster('SOLO1')" id="btn-roster-solo1" class="px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1">
+        <i data-lucide="user" class="w-3 h-3"></i> 1 Hero (Single Main)
       </button>
     </div>
   </div>
 
-  <!-- Variant Selector Bar -->
-  <div class="mb-5 flex items-center justify-between bg-surface p-1.5 rounded-xl border border-border">
-    <div class="flex items-center gap-2 text-xs font-medium px-2 text-muted">
-      <i data-lucide="layout" class="w-4 h-4 text-accent"></i>
-      <span>Layout Options:</span>
-    </div>
-    <div class="flex items-center gap-1">
-      <button onclick="setVariant('A')" id="var-a-btn" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-surface2 text-primary border border-border transition-all flex items-center gap-1.5">
-        <span>Option A (Recommended: Balanced Stat Card)</span>
-      </button>
-      <button onclick="setVariant('B')" id="var-b-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
-        <span>Option B (Inline Hero Badge)</span>
-      </button>
-      <button onclick="setVariant('C')" id="var-c-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5">
-        <span>Option C (Sleek 3-Metric Hub)</span>
-      </button>
+  <!-- Information Architecture Callout Banner -->
+  <div class="mb-4 bg-surface/90 border border-accent/30 rounded-xl p-3 text-xs text-muted flex items-start gap-2.5">
+    <i data-lucide="shield-check" class="w-4 h-4 text-accent shrink-0 mt-0.5"></i>
+    <div class="space-y-0.5 leading-relaxed">
+      <span class="text-primary font-bold">15-Slot Account Scaling Verified:</span>
+      <p>
+        In Ragnarok Renewal, accounts can hold up to <strong>15 character slots</strong>. 
+        The top header summarizes total liquid cash cleanly (e.g. <strong class="text-accent">"Wallets (15)"</strong>), while clicking reveals a smooth, virtualized scrollable popover with individual balances, map locations, and online state.
+      </p>
     </div>
   </div>
 
-  <!-- ==================== HEADER PREVIEW CONTAINER ==================== -->
-  <div class="space-y-4">
-    <div class="flex items-center justify-between text-xs text-muted font-mono px-1">
-      <span>PREVIEW: FINANCE TAB HEADER (NetWorthCard.tsx)</span>
-      <span id="variant-indicator" class="text-accent font-bold">Option A: Balanced Stat Card (Recommended)</span>
-    </div>
+  <!-- ==================== 1. TOP HERO HEADER (NetWorthCard.tsx) ==================== -->
+  <div class="mb-4 relative">
+    <div class="bento-card p-3 sm:p-3.5 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-visible">
+      <!-- Background subtle glow -->
+      <div class="absolute -right-8 -top-8 w-44 h-44 bg-accent/5 rounded-full blur-3xl pointer-events-none"></div>
 
-    <!-- 1. OPTION A (RECOMMENDED: Balanced Dedicated Stat Card in Header) -->
-    <div id="variant-a" class="block">
-      <div class="bento-card p-3.5 sm:p-4 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden">
-        <!-- Background subtle glow -->
-        <div id="optA-glow" class="absolute -right-8 -top-8 w-44 h-44 bg-success/5 rounded-full blur-3xl pointer-events-none transition-all duration-300"></div>
-
-        <!-- Left: North Star Hero Metric (Net Worth) -->
-        <div class="flex items-center gap-3 sm:gap-3.5">
-          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-            <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
-          </div>
-          <div>
-            <div class="text-[10px] font-bold text-muted uppercase tracking-wider">
+      <!-- Left: North Star Hero Metric (Net Worth) -->
+      <div class="flex items-center gap-3 sm:gap-3.5">
+        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+          <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-muted uppercase tracking-wider">
               Total Global Net Worth
-            </div>
-            <div class="text-xl sm:text-2xl font-black font-mono text-primary flex items-baseline gap-1.5 mt-0.5">
-              <span id="optA-networth">142,850,200</span>
+            </span>
+            <span
+              id="header-pnl-badge"
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border transition-all bg-success/15 border-success/30 text-success"
+              title="Portfolio Unrealized Return: +18,450,200 Z (+14.8%)"
+            >
+              <i data-lucide="trending-up" class="w-2.5 h-2.5"></i>
+              <span>+14.8% P/L</span>
+            </span>
+          </div>
+          <div class="flex flex-wrap items-baseline gap-2 sm:gap-2.5 mt-0.5">
+            <div class="text-xl sm:text-2xl font-black font-mono text-primary flex items-baseline gap-1">
+              <span id="hero-networth">148,800,000</span>
               <span class="text-accent text-xs font-sans font-bold">Zeny</span>
             </div>
+            <div class="text-xs sm:text-sm font-bold font-mono flex items-center gap-1 text-success">
+              <span>(+18,450,200 Z)</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Center / Right: Total P/L Metric + Positions Counter -->
-        <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 border-t sm:border-t-0 border-border/60 pt-2.5 sm:pt-0 shrink-0">
-          
-          <!-- TOTAL P/L STAT CARD (Medium Balanced Size - Not too small or big) -->
-          <div id="optA-pnl-card" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-success/10 border border-success/30 transition-all">
-            <div id="optA-pnl-icon-box" class="w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center shrink-0">
-              <i id="optA-pnl-icon" data-lucide="trending-up" class="w-4 h-4 text-success"></i>
-            </div>
-            <div>
-              <div class="text-[9px] font-bold text-muted uppercase tracking-wider font-sans flex items-center gap-1">
-                <span>Total Portfolio P/L</span>
-              </div>
-              <div class="flex items-baseline gap-1.5 mt-0.5">
-                <span id="optA-pnl-amount" class="text-sm sm:text-base font-bold font-mono text-success">
-                  +18,450,200 Z
-                </span>
-                <span id="optA-pnl-percent" class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-success/20 text-success border border-success/30">
-                  +14.8%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Positions Counter Shortcut -->
+      <!-- Right: Macro Shortcuts (Positions & NEW Multi-Char Wallets Trigger) -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 border-t sm:border-t-0 border-border/60 pt-2 sm:pt-0 shrink-0 text-[10px] font-mono relative">
+        
+        <!-- NEW: Multi-Character Liquid Wallets Popover Trigger -->
+        <div class="relative">
           <button
+            id="btn-wallets-popover"
             type="button"
-            class="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
-            title="View Active Positions"
+            onclick="toggleWalletsPopover()"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border/80 hover:border-accent/60 text-primary transition-all cursor-pointer text-left group"
+            title="Inspect Liquid Zeny balance across all characters"
           >
-            <div class="w-7 h-7 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
-              <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info"></i>
+            <div class="w-6 h-6 rounded-md bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0 group-hover:bg-accent/25 transition-colors">
+              <i data-lucide="wallet" class="w-3.5 h-3.5 text-accent"></i>
             </div>
             <div>
-              <div class="text-[9px] text-muted font-bold uppercase font-sans">
-                Positions
+              <div class="text-[8px] text-muted font-bold uppercase font-sans flex items-center gap-1">
+                <span>Wallets</span>
+                <span id="wallets-count-tag" class="text-accent font-mono font-bold">(15)</span>
               </div>
-              <div id="optA-positions" class="font-bold text-primary text-xs font-mono">
-                8 Assets
+              <div id="wallets-summary-zeny" class="font-bold text-accent text-[11px]">
+                34.5M Z
               </div>
             </div>
+            <i id="wallets-chevron" data-lucide="chevron-down" class="w-3.5 h-3.5 text-muted group-hover:text-accent transition-transform ml-0.5"></i>
           </button>
 
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. OPTION B (Inline Hero Sub-Metric Pill) -->
-    <div id="variant-b" class="hidden">
-      <div class="bento-card p-3.5 sm:p-4 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden">
-        <!-- Left: Hero Net Worth with P/L Badge directly inline/adjacent -->
-        <div class="flex items-center gap-3 sm:gap-3.5">
-          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-            <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold text-muted uppercase tracking-wider">Total Global Net Worth</span>
-              <!-- Small Inline Badge -->
-              <span id="optB-pnl-badge" class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-success/15 border border-success/30 text-success text-[10px] font-mono font-bold">
-                <i id="optB-badge-icon" data-lucide="trending-up" class="w-2.5 h-2.5"></i>
-                <span id="optB-badge-text">+14.8% P/L</span>
-              </span>
-            </div>
-            <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
-              <div class="text-xl sm:text-2xl font-black font-mono text-primary flex items-baseline gap-1">
-                <span id="optB-networth">142,850,200</span>
-                <span class="text-accent text-xs font-sans font-bold">Zeny</span>
-              </div>
-              <div id="optB-pnl-secondary" class="text-xs sm:text-sm font-bold font-mono text-success flex items-center gap-1">
-                <span id="optB-pnl-amount">(+18,450,200 Z)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Positions Button -->
-        <div class="flex items-center gap-2 border-t sm:border-t-0 border-border/60 pt-2 sm:pt-0 shrink-0">
-          <button
-            type="button"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
+          <!-- 📂 FLOATING WALLETS POPOVER CARD (Scrollable for up to 15 heroes) -->
+          <div
+            id="wallets-popover"
+            class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 bento-card bg-surface p-3 shadow-2xl border-accent/40 rounded-xl flex-col gap-2.5 z-50 animate-fadeIn"
           >
-            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info shrink-0"></i>
-            <div>
-              <div class="text-[8px] text-muted font-bold uppercase font-sans">Positions</div>
-              <div id="optB-positions" class="font-bold text-primary text-[11px] font-mono">8 Assets</div>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. OPTION C (Sleek 3-Metric Hub) -->
-    <div id="variant-c" class="hidden">
-      <div class="bento-card p-3 sm:p-3.5 shrink-0 grid grid-cols-1 sm:grid-cols-3 gap-3 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
-        <!-- Col 1: Net Worth -->
-        <div class="flex items-center gap-3 pr-2">
-          <div class="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-            <i data-lucide="coins" class="w-4.5 h-4.5 text-accent"></i>
-          </div>
-          <div>
-            <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Global Net Worth</div>
-            <div class="text-lg sm:text-xl font-bold font-mono text-primary flex items-baseline gap-1">
-              <span id="optC-networth">142,850,200</span>
-              <span class="text-accent text-[11px] font-sans font-bold">Z</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Col 2: Total Unrealized P/L -->
-        <div class="flex items-center gap-3 pt-2 sm:pt-0 sm:px-3">
-          <div id="optC-pnl-icon-box" class="w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
-            <i id="optC-pnl-icon" data-lucide="trending-up" class="w-4 h-4 text-success"></i>
-          </div>
-          <div>
-            <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Portfolio Return (P/L)</div>
-            <div class="flex items-baseline gap-1.5">
-              <span id="optC-pnl-amount" class="text-sm sm:text-base font-bold font-mono text-success">
-                +18,450,200 Z
-              </span>
-              <span id="optC-pnl-percent" class="text-[10px] font-mono font-bold text-success">
-                (+14.8%)
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Col 3: Positions & Yields -->
-        <div class="flex items-center justify-between pt-2 sm:pt-0 sm:pl-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
-              <i data-lucide="briefcase" class="w-4 h-4 text-info"></i>
-            </div>
-            <div>
-              <div class="text-[9px] font-bold text-muted uppercase tracking-wider">Active Holdings</div>
-              <div id="optC-positions" class="text-sm font-bold font-mono text-primary">8 Positions</div>
-            </div>
-          </div>
-          <span class="text-[10px] font-mono text-muted bg-surface2 px-2 py-1 rounded border border-border">
-            Equities & Crypto
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== FULL CONTEXT PREVIEW: REST OF FINANCE TAB ==================== -->
-    <div class="pt-2">
-      <div class="text-[11px] font-mono text-muted mb-2 flex items-center gap-1.5">
-        <i data-lucide="eye" class="w-3.5 h-3.5 text-accent"></i>
-        <span>CONTEXTUAL SCALE COMPARISON (Positions & Market Watch Grid)</span>
-      </div>
-
-      <!-- Mock Finance Stage Split -->
-      <div class="grid grid-cols-12 gap-3 opacity-90 pointer-events-none">
-        <!-- Left: Holdings Preview -->
-        <div class="col-span-12 lg:col-span-5 flex flex-col gap-2">
-          <!-- Segmented bar -->
-          <div class="flex items-center justify-between p-1 bg-surface2/60 rounded-xl border border-border text-xs font-mono">
-            <div class="flex-1 text-center py-1 bg-surface rounded-lg font-bold text-primary border border-border">
-              Positions (8)
-            </div>
-            <div class="flex-1 text-center py-1 text-muted">Bank Vault</div>
-            <div class="flex-1 text-center py-1 text-muted">Allocation</div>
-            <div class="flex-1 text-center py-1 text-muted">Ledger</div>
-          </div>
-
-          <!-- Sample Position Row 1 -->
-          <div class="bento-card p-3 space-y-2">
-            <div class="flex items-center justify-between text-xs border-b border-border pb-1.5">
-              <span class="font-bold text-primary flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-mono font-black text-[10px] flex items-center justify-center border border-blue-500/40">PRO</span>
-                <span>PRONTERA (PRO)</span>
-              </span>
-              <div class="text-right">
-                <div class="font-mono font-bold text-primary">32,500,000 Z</div>
-                <div class="text-[10px] font-mono font-bold text-success">+12.5% (+3,611,100)</div>
-              </div>
-            </div>
-
-            <!-- Sample Position Row 2 -->
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-primary flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-black text-[10px] flex items-center justify-center border border-amber-500/40">EMP</span>
-                <span>EMPERIUM PROTOCOL (EMP)</span>
-              </span>
-              <div class="text-right">
-                <div class="font-mono font-bold text-primary">28,400,000 Z</div>
-                <div class="text-[10px] font-mono font-bold text-success">+24.8% (+5,654,000)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Market Watch Preview -->
-        <div class="col-span-12 lg:col-span-7">
-          <div class="bento-card p-4 h-full flex flex-col justify-between">
             <div class="flex items-center justify-between border-b border-border pb-2">
-              <span class="text-xs font-bold text-primary uppercase">Midgard Stock Exchange (MSE) Live Terminal</span>
-              <span class="text-[10px] font-mono text-success flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-success animate-ping"></span> Live Market Feed
+              <div class="flex items-center gap-1.5 text-xs font-bold text-primary">
+                <i data-lucide="wallet" class="w-4 h-4 text-accent"></i>
+                <span>Character Liquid Wallets</span>
+              </div>
+              <span id="popover-hero-count" class="text-[10px] font-mono text-muted bg-surface2 px-1.5 py-0.5 rounded border border-border">
+                15 Heroes on Account
               </span>
             </div>
-            <div class="py-6 text-center text-xs text-muted font-mono">
-              [Stock Trading Candlesticks & Live Market Depth Preview]
+
+            <!-- Total Liquid Header Summary -->
+            <div class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between font-mono">
+              <span class="text-[10px] text-muted font-sans font-medium">Total Liquid Pool:</span>
+              <span id="popover-total-liquid" class="text-xs font-bold text-accent">34,500,000 Z</span>
+            </div>
+
+            <!-- Characters List Container (Scrollable) -->
+            <div id="popover-chars-list" class="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
+              <!-- Dynamically rendered via JS -->
+            </div>
+
+            <!-- Popover Footer Hint -->
+            <div class="pt-1.5 border-t border-border flex items-center justify-between text-[9px] text-muted font-mono">
+              <span class="flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3 h-3 text-info"></i>
+                Scroll to view all slots
+              </span>
+              <span class="text-accent font-semibold">Press ESC to close</span>
             </div>
           </div>
         </div>
+
+        <!-- Positions Counter Shortcut -->
+        <button
+          type="button"
+          onclick="switchFinanceTab('HOLDINGS')"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
+          title="View Active Positions"
+        >
+          <div class="w-6 h-6 rounded-md bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info"></i>
+          </div>
+          <div>
+            <div class="text-[8px] text-muted font-bold uppercase font-sans">
+              Positions
+            </div>
+            <div class="font-bold text-primary text-[11px]">
+              8 Assets
+            </div>
+          </div>
+        </button>
+
       </div>
     </div>
   </div>
 
-  <!-- Interactive JavaScript Logic -->
-  <script>
-    let currentState = 'PROFIT';
-    let currentVariant = 'A';
+  <!-- ==================== 2. MAIN 5:7 SPLIT BENTO STAGE ==================== -->
+  <div class="grid grid-cols-12 gap-3 min-h-[540px]">
+    
+    <!-- LEFT 5 COLS: UNIFIED ACCOUNT & ASSET HUB (IBKR STYLE) -->
+    <div class="col-span-12 lg:col-span-5 flex flex-col gap-2">
+      
+      <!-- Sub-Navigation Segmented Control -->
+      <div class="flex items-center justify-between p-1 bg-surface2/60 rounded-xl border border-border/80 shrink-0 text-xs font-mono">
+        <div class="flex items-center gap-1 w-full">
+          <button
+            type="button"
+            onclick="switchFinanceTab('HOLDINGS')"
+            id="tab-btn-holdings"
+            class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all text-muted hover:text-primary hover:bg-surface2/80"
+          >
+            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info"></i>
+            <span>Positions (8)</span>
+          </button>
+          <button
+            type="button"
+            onclick="switchFinanceTab('BANK')"
+            id="tab-btn-bank"
+            class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all text-muted hover:text-primary hover:bg-surface2/80"
+          >
+            <i data-lucide="landmark" class="w-3.5 h-3.5 text-accent"></i>
+            <span>Bank Vault</span>
+          </button>
+          <button
+            type="button"
+            onclick="switchFinanceTab('BREAKDOWN')"
+            id="tab-btn-breakdown"
+            class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all bg-surface text-primary shadow-sm border border-border"
+          >
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span>Allocation</span>
+          </button>
+          <button
+            type="button"
+            onclick="switchFinanceTab('HISTORY')"
+            id="tab-btn-history"
+            class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all text-muted hover:text-primary hover:bg-surface2/80"
+          >
+            <i data-lucide="history" class="w-3.5 h-3.5 text-success"></i>
+            <span>Ledger</span>
+          </button>
+        </div>
+      </div>
 
-    const states = {
-      PROFIT: {
-        networth: '142,850,200',
-        pnlRaw: 18450200,
-        pnlText: '+18,450,200 Z',
-        pnlPercent: '+14.8%',
-        pnlSecondary: '(+18,450,200 Z)',
-        positions: '8 Assets',
-        type: 'success'
-      },
-      LOSS: {
-        networth: '89,200,000',
-        pnlRaw: -7120000,
-        pnlText: '-7,120,000 Z',
-        pnlPercent: '-7.2%',
-        pnlSecondary: '(-7,120,000 Z)',
-        positions: '6 Assets',
-        type: 'danger'
-      },
-      NEUTRAL: {
-        networth: '50,000,000',
-        pnlRaw: 0,
-        pnlText: '0 Z',
-        pnlPercent: '0.0%',
-        pnlSecondary: '(0 Z)',
-        positions: '2 Assets',
-        type: 'neutral'
-      },
-      EMPTY: {
-        networth: '15,000,000',
-        pnlRaw: 0,
-        pnlText: '0 Z',
-        pnlPercent: '0.0%',
-        pnlSecondary: '(No Positions)',
-        positions: '0 Assets',
-        type: 'neutral'
-      }
+      <!-- VIEW 1: ASSET ALLOCATION (Interactive Donut & Expandable Character Cash) -->
+      <div id="view-breakdown" class="flex-1 flex flex-col min-h-0">
+        <div class="bento-card p-3 sm:p-3.5 flex-1 flex flex-col justify-between overflow-hidden border border-border/80">
+          <!-- Header -->
+          <div class="w-full flex items-center justify-between border-b border-border pb-2 mb-2 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-purple-400"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-xs uppercase tracking-wider text-primary">
+                  Asset Allocation
+                </h3>
+                <span class="text-[10px] text-muted">Capital Distribution Breakdown</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono text-muted bg-surface2 px-2 py-0.5 rounded border border-border">
+              4 Asset Classes
+            </span>
+          </div>
+
+          <!-- Interactive Donut Section -->
+          <div class="flex items-center justify-center py-2 shrink-0">
+            <div class="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="11" class="text-surface2/60" />
+                <!-- Slices: Equities (40.9%), Crypto (19.1%), Bank (16.8%), Cash (23.2%) -->
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#34d399" stroke-width="11" stroke-dasharray="97.7 141.0" stroke-dashoffset="0" class="transition-all opacity-90 hover:opacity-100 cursor-pointer" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#c084fc" stroke-width="11" stroke-dasharray="45.6 193.1" stroke-dashoffset="-97.7" class="transition-all opacity-90 hover:opacity-100 cursor-pointer" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#60a5fa" stroke-width="11" stroke-dasharray="40.1 198.6" stroke-dashoffset="-143.3" class="transition-all opacity-90 hover:opacity-100 cursor-pointer" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#fbbf24" stroke-width="12" stroke-dasharray="55.4 183.3" stroke-dashoffset="-183.4" class="transition-all opacity-95 hover:opacity-100 cursor-pointer shadow-lg" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+                <span class="text-sm sm:text-base font-black font-mono text-primary leading-none">100%</span>
+                <span class="text-[8px] font-sans uppercase font-bold text-muted tracking-wider leading-tight mt-0.5">Total Assets</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Asset Class List -->
+          <div class="space-y-1.5 flex-1 overflow-y-auto pr-0.5">
+            <!-- Asset 1: Municipal Equities -->
+            <div class="p-2 rounded-xl border bg-surface2/20 border-border/40 hover:bg-surface2/50 transition-all">
+              <div class="flex items-center justify-between gap-1.5 mb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-4 h-4 rounded flex items-center justify-center shrink-0 bg-emerald-400/20">
+                    <i data-lucide="landmark" class="w-3 h-3 text-emerald-400"></i>
+                  </div>
+                  <span class="font-bold text-[11px] text-primary truncate">Municipal Equities</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono">
+                  <span class="font-bold text-xs text-emerald-400">60,900,000 Z</span>
+                  <span class="text-[9px] font-bold text-muted bg-surface px-1.5 py-0.5 rounded border border-border/50">40.9%</span>
+                </div>
+              </div>
+              <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-emerald-400" style="width: 40.9%"></div>
+              </div>
+            </div>
+
+            <!-- Asset 2: Crypto Protocols -->
+            <div class="p-2 rounded-xl border bg-surface2/20 border-border/40 hover:bg-surface2/50 transition-all">
+              <div class="flex items-center justify-between gap-1.5 mb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-4 h-4 rounded flex items-center justify-center shrink-0 bg-purple-400/20">
+                    <i data-lucide="coins" class="w-3 h-3 text-purple-400"></i>
+                  </div>
+                  <span class="font-bold text-[11px] text-primary truncate">Crypto Protocols</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono">
+                  <span class="font-bold text-xs text-purple-400">28,400,000 Z</span>
+                  <span class="text-[9px] font-bold text-muted bg-surface px-1.5 py-0.5 rounded border border-border/50">19.1%</span>
+                </div>
+              </div>
+              <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-purple-400" style="width: 19.1%"></div>
+              </div>
+            </div>
+
+            <!-- Asset 3: Bank Vault Principal -->
+            <div class="p-2 rounded-xl border bg-surface2/20 border-border/40 hover:bg-surface2/50 transition-all">
+              <div class="flex items-center justify-between gap-1.5 mb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-4 h-4 rounded flex items-center justify-center shrink-0 bg-blue-400/20">
+                    <i data-lucide="shield-check" class="w-3 h-3 text-blue-400"></i>
+                  </div>
+                  <span class="font-bold text-[11px] text-primary truncate">Bank Vault Principal</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono">
+                  <span class="font-bold text-xs text-blue-400">25,000,000 Z</span>
+                  <span class="text-[9px] font-bold text-muted bg-surface px-1.5 py-0.5 rounded border border-border/50">16.8%</span>
+                </div>
+              </div>
+              <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-blue-400" style="width: 16.8%"></div>
+              </div>
+            </div>
+
+            <!-- Asset 4: EXPANDABLE Liquid Wallet Cash Card -->
+            <div
+              id="card-liquid-cash"
+              class="p-2 rounded-xl border bg-surface2/30 hover:bg-surface2/60 border-accent/30 transition-all cursor-pointer"
+              onclick="toggleLiquidAccordion()"
+            >
+              <div class="flex items-center justify-between gap-1.5 mb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-4 h-4 rounded flex items-center justify-center shrink-0 bg-amber-400/20">
+                    <i data-lucide="wallet" class="w-3 h-3 text-amber-400"></i>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-[11px] text-primary truncate">Liquid Wallet Cash</span>
+                    <span class="text-[9px] text-accent font-sans font-medium px-1 rounded bg-accent/15 border border-accent/25 flex items-center gap-0.5">
+                      <span id="accordion-badge-text">15 Wallets</span>
+                      <i id="accordion-chevron" data-lucide="chevron-down" class="w-2.5 h-2.5"></i>
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono">
+                  <span id="allocation-liquid-val" class="font-bold text-xs text-amber-400">34,500,000 Z</span>
+                  <span class="text-[9px] font-bold text-muted bg-surface px-1.5 py-0.5 rounded border border-border/50">23.2%</span>
+                </div>
+              </div>
+
+              <!-- Main Progress Bar -->
+              <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden mb-1">
+                <div class="h-1.5 rounded-full bg-amber-400" style="width: 23.2%"></div>
+              </div>
+
+              <!-- 📂 NESTED EXPANDED ACCORDION: PER-CHARACTER LIQUID BREAKDOWN -->
+              <div id="liquid-accordion-content" class="mt-2 pt-2 border-t border-border/60 space-y-1.5 animate-fadeIn">
+                <div class="flex items-center justify-between text-[9px] font-mono text-muted uppercase">
+                  <span>Character Slot</span>
+                  <span>Share of Liquid Cash</span>
+                </div>
+                <div id="accordion-chars-list" class="space-y-1 max-h-56 overflow-y-auto pr-1">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Bottom Exposure Bar -->
+          <div class="pt-2 mt-1.5 border-t border-border/60 shrink-0 space-y-1">
+            <div class="flex justify-between text-[10px] font-mono text-muted">
+              <span class="flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3 h-3 text-info"></i> Liquid & Safe: <strong class="text-primary">40%</strong>
+              </span>
+              <span class="flex items-center gap-1">
+                <i data-lucide="trending-up" class="w-3 h-3 text-accent"></i> Market Exposure: <strong class="text-primary">60%</strong>
+              </span>
+            </div>
+            <div class="w-full bg-surface2 rounded-full h-1.5 flex overflow-hidden">
+              <div class="bg-info h-1.5" style="width: 40%"></div>
+              <div class="bg-accent h-1.5" style="width: 60%"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIEW 2: HOLDINGS PREVIEW -->
+      <div id="view-holdings" class="hidden flex-1 flex flex-col min-h-0">
+        <div class="bento-card p-3 space-y-2 flex-1">
+          <div class="text-xs font-bold text-primary flex items-center justify-between border-b border-border pb-1.5">
+            <span>Portfolio Positions (8)</span>
+            <span class="text-accent font-mono text-[11px]">89.3M Z Value</span>
+          </div>
+          <div class="p-2 rounded-lg bg-surface2/30 border border-border/50 flex items-center justify-between text-xs">
+            <span class="font-bold text-primary">Prontera (PRO)</span>
+            <span class="font-mono text-success font-bold">+12.5% (32.5M Z)</span>
+          </div>
+          <div class="p-2 rounded-lg bg-surface2/30 border border-border/50 flex items-center justify-between text-xs">
+            <span class="font-bold text-primary">Emperium (EMP)</span>
+            <span class="font-mono text-success font-bold">+24.8% (28.4M Z)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: BANK VAULT PREVIEW -->
+      <div id="view-bank" class="hidden flex-1 flex flex-col min-h-0">
+        <div class="bento-card p-3 space-y-2 flex-1">
+          <div class="text-xs font-bold text-primary flex items-center justify-between border-b border-border pb-1.5">
+            <span>Midgard Sovereign Vault</span>
+            <span class="text-success font-mono text-[11px]">+1.0% / Day</span>
+          </div>
+          <div class="p-3 rounded-xl bg-surface2/30 border border-border/50 text-center space-y-1">
+            <div class="text-[10px] text-muted uppercase font-bold">Principal + Interest</div>
+            <div class="text-xl font-mono font-bold text-primary">25,000,000 Z</div>
+          </div>
+          <div class="text-[10px] text-muted font-sans">
+            *Deposit & Withdraw flows feature inline character selection for wallet transfers.
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: LEDGER PREVIEW -->
+      <div id="view-history" class="hidden flex-1 flex flex-col min-h-0">
+        <div class="bento-card p-3 space-y-2 flex-1">
+          <div class="text-xs font-bold text-primary border-b border-border pb-1.5">
+            <span>Transaction Ledger & Dividends</span>
+          </div>
+          <div class="text-xs text-muted font-mono p-4 text-center">
+            Complete audit trail of all buy, sell, deposit, and dividend transactions.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT 7 COLS: MIDGARD STOCK EXCHANGE TERMINAL -->
+    <div class="col-span-12 lg:col-span-7 flex flex-col">
+      <div class="bento-card p-3.5 h-full flex flex-col justify-between">
+        <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4 text-accent"></i>
+            <span class="font-bold text-xs uppercase tracking-wider text-primary">Midgard Stock Exchange (Live Terminal)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-success text-[10px] font-bold font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-success animate-ping"></span>
+              Live Feed
+            </span>
+          </div>
+        </div>
+
+        <!-- Terminal Ticker Order Book -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1">
+          <div class="p-2.5 rounded-xl bg-surface2/30 border border-border hover:border-accent/40 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <span class="font-bold text-xs text-primary">PRO</span>
+              <span class="text-[10px] font-mono font-bold text-success bg-success/15 px-1 rounded">+3.2%</span>
+            </div>
+            <div class="mt-2">
+              <div class="text-[10px] text-muted">Prontera Equities</div>
+              <div class="text-sm font-mono font-bold text-primary mt-0.5">14,250 Z</div>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-surface2/30 border border-border hover:border-accent/40 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <span class="font-bold text-xs text-primary">EMP</span>
+              <span class="text-[10px] font-mono font-bold text-success bg-success/15 px-1 rounded">+8.7%</span>
+            </div>
+            <div class="mt-2">
+              <div class="text-[10px] text-muted">Emperium DeFi</div>
+              <div class="text-sm font-mono font-bold text-accent mt-0.5">52,400 Z</div>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-surface2/30 border border-border hover:border-accent/40 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <span class="font-bold text-xs text-primary">MOR</span>
+              <span class="text-[10px] font-mono font-bold text-danger bg-danger/15 px-1 rounded">-1.8%</span>
+            </div>
+            <div class="mt-2">
+              <div class="text-[10px] text-muted">Morroc Municipal</div>
+              <div class="text-sm font-mono font-bold text-primary mt-0.5">8,900 Z</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-surface2/20 rounded-xl border border-border/50 text-[11px] text-muted mt-3 flex items-center justify-between font-mono">
+          <span>Active Trading Mechanism:</span>
+          <span class="text-accent">Modal executes trades against specific character wallet</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    const rosterData = {
+      MAX15: [
+        { slot: 1, name: "Valkyrie Knight", className: "Dragon Knight", baseLevel: 250, jobLevel: 50, zeny: 8450000, online: true, map: "prontera" },
+        { slot: 2, name: "High Priestess", className: "Cardinal", baseLevel: 245, jobLevel: 48, zeny: 5200000, online: false, map: "payon" },
+        { slot: 3, name: "Master Smith", className: "Meister", baseLevel: 240, jobLevel: 45, zeny: 4550000, online: false, map: "geffen" },
+        { slot: 4, name: "Shadow Cross", className: "Shadow Cross", baseLevel: 235, jobLevel: 42, zeny: 3200000, online: false, map: "morroc" },
+        { slot: 5, name: "Windhawk Sniper", className: "Windhawk", baseLevel: 230, jobLevel: 40, zeny: 2800000, online: false, map: "aldebaran" },
+        { slot: 6, name: "Elemental Master", className: "Elemental Master", baseLevel: 225, jobLevel: 38, zeny: 2100000, online: false, map: "yuno" },
+        { slot: 7, name: "Imperial Guard", className: "Imperial Guard", baseLevel: 220, jobLevel: 35, zeny: 1850000, online: false, map: "izlude" },
+        { slot: 8, name: "Arch Mage", className: "Arch Mage", baseLevel: 215, jobLevel: 32, zeny: 1450000, online: false, map: "geffen" },
+        { slot: 9, name: "Troubadour", className: "Troubadour", baseLevel: 210, jobLevel: 30, zeny: 1150000, online: false, map: "comodo" },
+        { slot: 10, name: "Trouvere", className: "Trouvere", baseLevel: 205, jobLevel: 28, zeny: 950000, online: false, map: "comodo" },
+        { slot: 11, name: "Biolo Alchemist", className: "Biolo", baseLevel: 200, jobLevel: 25, zeny: 820000, online: false, map: "alberta" },
+        { slot: 12, name: "Abyss Chaser", className: "Abyss Chaser", baseLevel: 195, jobLevel: 22, zeny: 710000, online: false, map: "rachel" },
+        { slot: 13, name: "Inquisitor Monk", className: "Inquisitor", baseLevel: 190, jobLevel: 20, zeny: 520000, online: false, map: "prontera" },
+        { slot: 14, name: "Soul Ascetic", className: "Soul Ascetic", baseLevel: 185, jobLevel: 15, zeny: 420000, online: false, map: "payon" },
+        { slot: 15, name: "Sky Emperor", className: "Sky Emperor", baseLevel: 180, jobLevel: 10, zeny: 330000, online: false, map: "morroc" },
+      ],
+      MID4: [
+        { slot: 1, name: "Valkyrie Knight", className: "Dragon Knight", baseLevel: 250, jobLevel: 50, zeny: 15400000, online: true, map: "prontera" },
+        { slot: 2, name: "High Priestess", className: "Cardinal", baseLevel: 245, jobLevel: 48, zeny: 8200000, online: false, map: "payon" },
+        { slot: 3, name: "Master Smith", className: "Meister", baseLevel: 240, jobLevel: 45, zeny: 6550000, online: false, map: "geffen" },
+        { slot: 4, name: "Shadow Cross", className: "Shadow Cross", baseLevel: 235, jobLevel: 42, zeny: 4350000, online: false, map: "morroc" },
+      ],
+      SOLO1: [
+        { slot: 1, name: "Valkyrie Knight", className: "Dragon Knight", baseLevel: 250, jobLevel: 50, zeny: 34500000, online: true, map: "prontera" }
+      ]
     };
 
-    function setState(st) {
-      currentState = st;
-      const data = states[st];
+    let activeRosterKey = 'MAX15';
+    let isWalletsOpen = false;
+    let isAccordionOpen = true;
 
-      // Update button highlights
-      ['profit', 'loss', 'neutral', 'empty'].forEach(id => {
-        const btn = document.getElementById('btn-' + id);
-        if (id === st.toLowerCase()) {
+    function formatZ(n) {
+      return n.toLocaleString();
+    }
+
+    function renderCharacters() {
+      const chars = rosterData[activeRosterKey];
+      const totalLiquid = chars.reduce((sum, c) => sum + c.zeny, 0);
+
+      // Update header indicators
+      document.getElementById('wallets-count-tag').textContent = `(${chars.length})`;
+      document.getElementById('wallets-summary-zeny').textContent = (totalLiquid / 1000000).toFixed(1) + 'M Z';
+      document.getElementById('popover-hero-count').textContent = `${chars.length} Heroes on Account`;
+      document.getElementById('popover-total-liquid').textContent = `${formatZ(totalLiquid)} Z`;
+      document.getElementById('allocation-liquid-val').textContent = `${formatZ(totalLiquid)} Z`;
+      document.getElementById('accordion-badge-text').textContent = `${chars.length} Wallets`;
+
+      // 1. Render Popover List
+      const popoverContainer = document.getElementById('popover-chars-list');
+      popoverContainer.innerHTML = chars.map(c => {
+        const pct = totalLiquid > 0 ? ((c.zeny / totalLiquid) * 100).toFixed(1) : 0;
+        return `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition-all">
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="relative shrink-0">
+                <div class="w-6 h-6 rounded-md bg-surface border border-border flex items-center justify-center font-bold text-[10px] text-accent font-mono">
+                  ${c.slot}
+                </div>
+                <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface ${c.online ? 'bg-success shadow-[0_0_4px_#4ade80]' : 'bg-muted'}"></span>
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold text-xs text-primary truncate">${c.name}</div>
+                <div class="text-[9px] font-mono text-muted truncate">Lv.${c.baseLevel} ${c.className} • ${c.map}</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0 font-mono">
+              <div class="font-bold text-xs text-accent">${formatZ(c.zeny)} Z</div>
+              <div class="text-[9px] text-muted">${pct}% share</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Render Accordion Sub-list in Allocation Tab
+      const accordionContainer = document.getElementById('accordion-chars-list');
+      accordionContainer.innerHTML = chars.map(c => {
+        const pct = totalLiquid > 0 ? ((c.zeny / totalLiquid) * 100).toFixed(1) : 0;
+        return `
+          <div class="p-1.5 rounded-lg bg-surface/80 border border-border/40 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-1.5 h-1.5 rounded-full ${c.online ? 'bg-success' : 'bg-muted'}"></span>
+                <span class="text-muted text-[9px]">#${c.slot}</span>
+                <span class="font-bold text-primary truncate max-w-[120px]">${c.name}</span>
+                <span class="text-muted text-[9px]">(${c.className})</span>
+              </div>
+              <div class="flex items-center gap-1 font-bold">
+                <span class="text-accent">${formatZ(c.zeny)} Z</span>
+                <span class="text-[9px] text-muted font-normal">(${pct}%)</span>
+              </div>
+            </div>
+            <div class="w-full bg-surface2 rounded-full h-1 overflow-hidden">
+              <div class="h-1 rounded-full bg-amber-400/80" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function toggleWalletsPopover() {
+      isWalletsOpen = !isWalletsOpen;
+      const popover = document.getElementById('wallets-popover');
+      const chevron = document.getElementById('wallets-chevron');
+      if (isWalletsOpen) {
+        popover.classList.remove('hidden');
+        popover.classList.add('flex');
+        chevron.classList.add('rotate-180');
+      } else {
+        popover.classList.add('hidden');
+        popover.classList.remove('flex');
+        chevron.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleLiquidAccordion() {
+      isAccordionOpen = !isAccordionOpen;
+      const content = document.getElementById('liquid-accordion-content');
+      const chevron = document.getElementById('accordion-chevron');
+      if (isAccordionOpen) {
+        content.classList.remove('hidden');
+        chevron.classList.remove('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        chevron.classList.add('rotate-180');
+      }
+    }
+
+    function setRoster(key) {
+      activeRosterKey = key;
+      ['max15', 'mid4', 'solo1'].forEach(k => {
+        const btn = document.getElementById('btn-roster-' + k);
+        if (k === key.toLowerCase()) {
           btn.className = "px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/40 font-bold transition-all text-[11px] flex items-center gap-1";
         } else {
           btn.className = "px-2.5 py-1 rounded bg-surface text-muted hover:text-primary border border-border transition-all text-[11px] flex items-center gap-1";
         }
       });
-
-      // Update OPTION A
-      document.getElementById('optA-networth').textContent = data.networth;
-      document.getElementById('optA-positions').textContent = data.positions;
-      document.getElementById('optA-pnl-amount').textContent = data.pnlText;
-      document.getElementById('optA-pnl-percent').textContent = data.pnlPercent;
-
-      const optACard = document.getElementById('optA-pnl-card');
-      const optAIconBox = document.getElementById('optA-pnl-icon-box');
-      const optAIcon = document.getElementById('optA-pnl-icon');
-      const optAAmt = document.getElementById('optA-pnl-amount');
-      const optAPct = document.getElementById('optA-pnl-percent');
-      const optAGlow = document.getElementById('optA-glow');
-
-      if (data.type === 'success') {
-        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-success/10 border border-success/30 transition-all";
-        optAIconBox.className = "w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center shrink-0";
-        optAIcon.setAttribute('data-lucide', 'trending-up');
-        optAIcon.className = "w-4 h-4 text-success";
-        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-success";
-        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-success/20 text-success border border-success/30";
-        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-success/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
-      } else if (data.type === 'danger') {
-        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-danger/10 border border-danger/30 transition-all";
-        optAIconBox.className = "w-7 h-7 rounded-lg bg-danger/20 flex items-center justify-center shrink-0";
-        optAIcon.setAttribute('data-lucide', 'trending-down');
-        optAIcon.className = "w-4 h-4 text-danger";
-        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-danger";
-        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-danger/20 text-danger border border-danger/30";
-        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-danger/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
-      } else {
-        optACard.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-surface2/40 border border-border/60 transition-all";
-        optAIconBox.className = "w-7 h-7 rounded-lg bg-surface2 flex items-center justify-center shrink-0";
-        optAIcon.setAttribute('data-lucide', 'minus');
-        optAIcon.className = "w-4 h-4 text-muted";
-        optAAmt.className = "text-sm sm:text-base font-bold font-mono text-muted";
-        optAPct.className = "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface2 text-muted border border-border";
-        optAGlow.className = "absolute -right-8 -top-8 w-44 h-44 bg-accent/5 rounded-full blur-3xl pointer-events-none transition-all duration-300";
-      }
-
-      // Update OPTION B
-      document.getElementById('optB-networth').textContent = data.networth;
-      document.getElementById('optB-positions').textContent = data.positions;
-      document.getElementById('optB-pnl-amount').textContent = data.pnlSecondary;
-      document.getElementById('optB-badge-text').textContent = data.pnlPercent + " P/L";
-
-      const optBBadge = document.getElementById('optB-pnl-badge');
-      const optBBadgeIcon = document.getElementById('optB-badge-icon');
-      const optBSecondary = document.getElementById('optB-pnl-secondary');
-
-      if (data.type === 'success') {
-        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-success/15 border border-success/30 text-success text-[10px] font-mono font-bold";
-        optBBadgeIcon.setAttribute('data-lucide', 'trending-up');
-        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-success flex items-center gap-1";
-      } else if (data.type === 'danger') {
-        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-danger/15 border border-danger/30 text-danger text-[10px] font-mono font-bold";
-        optBBadgeIcon.setAttribute('data-lucide', 'trending-down');
-        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-danger flex items-center gap-1";
-      } else {
-        optBBadge.className = "inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-surface2 border border-border text-muted text-[10px] font-mono font-bold";
-        optBBadgeIcon.setAttribute('data-lucide', 'minus');
-        optBSecondary.className = "text-xs sm:text-sm font-bold font-mono text-muted flex items-center gap-1";
-      }
-
-      // Update OPTION C
-      document.getElementById('optC-networth').textContent = data.networth;
-      document.getElementById('optC-positions').textContent = data.positions;
-      document.getElementById('optC-pnl-amount').textContent = data.pnlText;
-      document.getElementById('optC-pnl-percent').textContent = `(${data.pnlPercent})`;
-
-      const optCIconBox = document.getElementById('optC-pnl-icon-box');
-      const optCIcon = document.getElementById('optC-pnl-icon');
-      const optCAmt = document.getElementById('optC-pnl-amount');
-      const optCPct = document.getElementById('optC-pnl-percent');
-
-      if (data.type === 'success') {
-        optCIconBox.className = "w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0";
-        optCIcon.setAttribute('data-lucide', 'trending-up');
-        optCIcon.className = "w-4 h-4 text-success";
-        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-success";
-        optCPct.className = "text-[10px] font-mono font-bold text-success";
-      } else if (data.type === 'danger') {
-        optCIconBox.className = "w-9 h-9 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center shrink-0";
-        optCIcon.setAttribute('data-lucide', 'trending-down');
-        optCIcon.className = "w-4 h-4 text-danger";
-        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-danger";
-        optCPct.className = "text-[10px] font-mono font-bold text-danger";
-      } else {
-        optCIconBox.className = "w-9 h-9 rounded-lg bg-surface2/60 border border-border flex items-center justify-center shrink-0";
-        optCIcon.setAttribute('data-lucide', 'minus');
-        optCIcon.className = "w-4 h-4 text-muted";
-        optCAmt.className = "text-sm sm:text-base font-bold font-mono text-muted";
-        optCPct.className = "text-[10px] font-mono font-bold text-muted";
-      }
-
-      lucide.createIcons();
+      renderCharacters();
     }
 
-    function setVariant(v) {
-      currentVariant = v;
-      ['a', 'b', 'c'].forEach(item => {
-        const el = document.getElementById('variant-' + item);
-        const btn = document.getElementById('var-' + item + '-btn');
-        if (item === v.toLowerCase()) {
-          el.className = "block";
-          btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-surface2 text-primary border border-border transition-all flex items-center gap-1.5";
+    function switchFinanceTab(tab) {
+      const tabs = ['HOLDINGS', 'BANK', 'BREAKDOWN', 'HISTORY'];
+      tabs.forEach(t => {
+        const view = document.getElementById('view-' + t.toLowerCase());
+        const btn = document.getElementById('tab-btn-' + t.toLowerCase());
+        if (t === tab) {
+          if (view) view.classList.remove('hidden');
+          if (btn) {
+            btn.className = "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all bg-surface text-primary shadow-sm border border-border";
+          }
         } else {
-          el.className = "hidden";
-          btn.className = "px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary transition-all flex items-center gap-1.5";
+          if (view) view.classList.add('hidden');
+          if (btn) {
+            btn.className = "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all text-muted hover:text-primary hover:bg-surface2/80";
+          }
         }
       });
-
-      const titles = {
-        A: 'Option A: Balanced Stat Card (Recommended)',
-        B: 'Option B: Inline Hero Badge',
-        C: 'Option C: Sleek 3-Metric Hub'
-      };
-      document.getElementById('variant-indicator').textContent = titles[v];
       lucide.createIcons();
     }
 
-    // Initialize lucide icons on load
+    // Dismiss popover on Escape or Click Outside
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isWalletsOpen) {
+        toggleWalletsPopover();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const btn = document.getElementById('btn-wallets-popover');
+      const popover = document.getElementById('wallets-popover');
+      if (isWalletsOpen && !btn.contains(e.target) && !popover.contains(e.target)) {
+        toggleWalletsPopover();
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
+      renderCharacters();
     });
   </script>
 </body>

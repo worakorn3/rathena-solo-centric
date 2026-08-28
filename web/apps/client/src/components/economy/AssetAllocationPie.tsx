@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { formatZeny } from "../../lib/assets";
-import { PieChart, Filter, Landmark, Coins, Wallet, ShieldCheck, TrendingUp, Layers } from "lucide-react";
+import { CharacterSummary } from "@rathena/shared";
+import { PieChart, Filter, Landmark, Coins, Wallet, ShieldCheck, TrendingUp, ChevronDown } from "lucide-react";
 
 export type AssetCategory = "ALL" | "EQUITY" | "CRYPTO";
 
@@ -11,6 +12,7 @@ interface AssetAllocationPieProps {
   municipalMarketValue?: number;
   cryptoMarketValue?: number;
   totalNetWorth: number;
+  characters?: CharacterSummary[];
   selectedAssetCategory?: AssetCategory;
   onSelectAssetCategory?: (category: AssetCategory) => void;
 }
@@ -22,22 +24,30 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
   municipalMarketValue,
   cryptoMarketValue,
   totalNetWorth,
+  characters = [],
   selectedAssetCategory = "ALL",
   onSelectAssetCategory,
 }) => {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [hoveredPct, setHoveredPct] = useState<number>(0);
+  const [isLiquidExpanded, setIsLiquidExpanded] = useState(false);
+
+  const safeChars = Array.isArray(characters) ? characters : [];
+  const calculatedLiquid =
+    liquidZeny > 0
+      ? liquidZeny
+      : safeChars.reduce((sum, c) => sum + (c.zeny || 0), 0);
 
   const total = Math.max(1, totalNetWorth);
   const mVal = municipalMarketValue !== undefined ? municipalMarketValue : stockMarketValue;
   const cVal = cryptoMarketValue !== undefined ? cryptoMarketValue : 0;
 
-  const liquidPct = (liquidZeny / total) * 100;
+  const liquidPct = (calculatedLiquid / total) * 100;
   const bankPct = (bankTotal / total) * 100;
   const muniPct = (mVal / total) * 100;
   const cryptoPct = (cVal / total) * 100;
 
-  const liquidCombined = liquidZeny + bankTotal;
+  const liquidCombined = calculatedLiquid + bankTotal;
   const liquidCombinedPct = (liquidCombined / total) * 100;
   const marketCombined = mVal + cVal;
   const marketCombinedPct = (marketCombined / total) * 100;
@@ -232,7 +242,8 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
       <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto pr-0.5">
         {assets.map((a) => {
           const isSelected = selectedAssetCategory === a.category && a.category !== null;
-          const isClickable = a.isFilterable;
+          const isLiquidRow = a.label === "Liquid Wallet Cash";
+          const isClickable = a.isFilterable || (isLiquidRow && safeChars.length > 0);
           const IconComponent = a.icon;
 
           return (
@@ -240,11 +251,21 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
               key={a.label}
               role={isClickable ? "button" : undefined}
               tabIndex={isClickable ? 0 : undefined}
-              onClick={() => isClickable && handleCategoryClick(a.category)}
+              onClick={() => {
+                if (a.isFilterable) {
+                  handleCategoryClick(a.category);
+                } else if (isLiquidRow && safeChars.length > 0) {
+                  setIsLiquidExpanded((prev) => !prev);
+                }
+              }}
               onKeyDown={(e) => {
                 if (isClickable && (e.key === "Enter" || e.key === " ")) {
                   e.preventDefault();
-                  handleCategoryClick(a.category);
+                  if (a.isFilterable) {
+                    handleCategoryClick(a.category);
+                  } else if (isLiquidRow && safeChars.length > 0) {
+                    setIsLiquidExpanded((prev) => !prev);
+                  }
                 }
               }}
               onMouseEnter={() => {
@@ -263,8 +284,10 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
                   : "bg-surface2/20 border-border/30"
               }`}
               title={
-                isClickable
+                a.isFilterable
                   ? `Click to filter Investment Portfolio by ${a.label}`
+                  : isLiquidRow && safeChars.length > 0
+                  ? `Click to toggle character breakdown (${safeChars.length} characters)`
                   : `${a.label}: ${formatZeny(a.value)} Z`
               }
             >
@@ -273,10 +296,20 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
                   <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${a.dot}/20`}>
                     <IconComponent className={`w-3 h-3 ${a.textColor}`} />
                   </div>
-                  <div className="truncate">
-                    <div className="font-bold text-[11px] text-primary truncate leading-tight">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="font-bold text-[11px] text-primary truncate leading-tight">
                       {a.label}
-                    </div>
+                    </span>
+                    {isLiquidRow && safeChars.length > 0 && (
+                      <span className="text-[9px] text-accent font-sans font-medium px-1 rounded bg-accent/15 border border-accent/25 flex items-center gap-0.5">
+                        <span>{safeChars.length} {safeChars.length === 1 ? "Wallet" : "Wallets"}</span>
+                        <ChevronDown
+                          className={`w-2.5 h-2.5 transition-transform duration-200 ${
+                            isLiquidExpanded ? "rotate-180 text-accent" : ""
+                          }`}
+                        />
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 font-mono">
@@ -296,6 +329,56 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
                   style={{ width: `${Math.min(100, Math.max(0, a.pct))}%` }}
                 />
               </div>
+
+              {/* Nested Accordion for Liquid Wallet Cash */}
+              {isLiquidRow && isLiquidExpanded && safeChars.length > 0 && (
+                <div
+                  className="mt-2 pt-2 border-t border-border/60 space-y-1.5 animate-fadeIn"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between text-[9px] font-mono text-muted uppercase">
+                    <span>Character Slot</span>
+                    <span>Share of Liquid Pool</span>
+                  </div>
+                  <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                    {safeChars.map((char, index) => {
+                      const charZeny = Number(char.zeny) || 0;
+                      const charPct = calculatedLiquid > 0 ? ((charZeny / calculatedLiquid) * 100).toFixed(1) : "0";
+                      const isOnline = Boolean(char.online);
+
+                      return (
+                        <div
+                          key={char.charId || index}
+                          className="p-1.5 rounded-lg bg-surface/80 border border-border/40 space-y-1"
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-mono">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  isOnline ? "bg-success shadow-[0_0_3px_#4ade80]" : "bg-muted"
+                                }`}
+                              />
+                              <span className="text-muted text-[9px]">#{char.charNum !== undefined ? char.charNum + 1 : index + 1}</span>
+                              <span className="font-bold text-primary truncate max-w-[120px]">{char.name}</span>
+                              <span className="text-muted text-[9px]">({char.className})</span>
+                            </div>
+                            <div className="flex items-center gap-1 font-bold">
+                              <span className="text-accent">{formatZeny(charZeny)} Z</span>
+                              <span className="text-[9px] text-muted font-normal">({charPct}%)</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-surface2 rounded-full h-1 overflow-hidden">
+                            <div
+                              className="h-1 rounded-full bg-amber-400/80"
+                              style={{ width: `${Math.min(100, Math.max(0, Number(charPct)))}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
