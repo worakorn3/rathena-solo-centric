@@ -190,58 +190,90 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
       {safeHoldings.length > 0 && (
         <div className="space-y-1.5 shrink-0 mb-2">
           {/* Subtotal Allocation Chips */}
-          <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+          <div className="grid grid-cols-2 gap-1.5 font-mono">
             <button
               type="button"
               onClick={() => setAssetClassTab(assetClassTab === "EQUITY" ? "ALL" : "EQUITY")}
-              className={`flex items-center justify-between px-2 py-1 rounded transition-all cursor-pointer border ${
+              className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
                 assetClassTab === "EQUITY"
-                  ? "bg-info/25 border-info text-info font-bold ring-1 ring-info/30"
+                  ? "bg-info/20 border-info text-info shadow-xs ring-1 ring-info/30"
                   : "bg-info/10 border-info/20 text-info hover:bg-info/15"
               }`}
+              title={
+                assetClassTab === "EQUITY"
+                  ? "Filter active: Municipal Equities (Click to show all)"
+                  : "Filter list by Municipal Equities"
+              }
             >
-              <span className="flex items-center gap-1 font-sans font-medium text-[9px] truncate">
-                <Landmark className="w-3 h-3 text-info shrink-0" />
-                <span>Municipal Equities ({municipalHoldingsCount})</span>
-              </span>
-              <span className="font-bold text-[10px]">{formatZeny(municipalValue)} Z</span>
+              <div className="flex items-center justify-between gap-1 min-w-0">
+                <span className="flex items-center gap-1 font-sans font-semibold text-[9.5px] truncate text-info">
+                  <Landmark className="w-3 h-3 text-info shrink-0" />
+                  <span className="truncate">Municipal</span>
+                </span>
+                <span
+                  className={`text-[8.5px] font-mono font-bold px-1 rounded shrink-0 ${
+                    assetClassTab === "EQUITY" ? "bg-info text-black" : "bg-info/20 text-info"
+                  }`}
+                >
+                  {municipalHoldingsCount}
+                </span>
+              </div>
+              <div className="font-bold text-[11px] font-mono text-primary truncate whitespace-nowrap">
+                {formatZeny(municipalValue)} <span className="text-[9px] text-muted font-normal">Z</span>
+              </div>
             </button>
 
             <button
               type="button"
               onClick={() => setAssetClassTab(assetClassTab === "CRYPTO" ? "ALL" : "CRYPTO")}
-              className={`flex items-center justify-between px-2 py-1 rounded transition-all cursor-pointer border ${
+              className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
                 assetClassTab === "CRYPTO"
-                  ? "bg-amber-500/25 border-amber-500 text-amber-400 font-bold ring-1 ring-amber-500/30"
+                  ? "bg-amber-500/20 border-amber-500 text-amber-400 shadow-xs ring-1 ring-amber-500/30"
                   : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/15"
               }`}
+              title={
+                assetClassTab === "CRYPTO"
+                  ? "Filter active: Crypto Protocols (Click to show all)"
+                  : "Filter list by Crypto Protocols"
+              }
             >
-              <span className="flex items-center gap-1 font-sans font-medium text-[9px] truncate">
-                <Zap className="w-3 h-3 text-amber-400 shrink-0" />
-                <span>Crypto Protocols ({cryptoHoldingsCount})</span>
-              </span>
-              <span className="font-bold text-[10px]">{formatZeny(cryptoValue)} Z</span>
+              <div className="flex items-center justify-between gap-1 min-w-0">
+                <span className="flex items-center gap-1 font-sans font-semibold text-[9.5px] truncate text-amber-400">
+                  <Zap className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="truncate">Crypto</span>
+                </span>
+                <span
+                  className={`text-[8.5px] font-mono font-bold px-1 rounded shrink-0 ${
+                    assetClassTab === "CRYPTO" ? "bg-amber-400 text-black" : "bg-amber-500/20 text-amber-400"
+                  }`}
+                >
+                  {cryptoHoldingsCount}
+                </span>
+              </div>
+              <div className="font-bold text-[11px] font-mono text-primary truncate whitespace-nowrap">
+                {formatZeny(cryptoValue)} <span className="text-[9px] text-muted font-normal">Z</span>
+              </div>
             </button>
           </div>
 
           {/* Accrued Dividends Summary & Harvest Action Banner */}
           {totalPendingDividends > 0 && (
-            <div className="flex items-center justify-between p-2 rounded-lg bg-success/10 border border-success/30 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded bg-success/20 text-success">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-success/10 border border-success/30 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1 rounded bg-success/20 text-success shrink-0">
                   <Coins className="w-3.5 h-3.5" />
                 </div>
-                <div>
-                  <div className="text-[11px] font-bold text-primary flex items-center gap-1">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-primary flex items-center gap-1 truncate">
                     <span>Accrued Yields:</span>
-                    <span className="font-mono text-success font-bold">
+                    <span className="font-mono text-success font-bold whitespace-nowrap">
                       +{formatZeny(totalPendingDividends)} Z
                     </span>
                   </div>
-                  <div className="text-[10px] text-muted font-mono">
+                  <div className="text-[10px] text-muted font-mono truncate">
                     {cashHarvestableDividends > 0 ? (
                       <span className="text-success/90">
-                        {formatZeny(cashHarvestableDividends)} Z available to harvest (DRIP Off)
+                        {formatZeny(cashHarvestableDividends)} Z claimable (DRIP Off)
                       </span>
                     ) : (
                       <span className="text-purple-300">
@@ -256,7 +288,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                 type="button"
                 onClick={() => setHarvestModalHolding(null)}
                 disabled={cashHarvestableDividends <= 0}
-                className={`px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   cashHarvestableDividends > 0
                     ? "bg-success text-black hover:bg-success/90 shadow-xs"
                     : "bg-surface2 text-muted border border-border cursor-not-allowed opacity-60"
@@ -268,7 +300,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                 }
               >
                 <Coins className="w-3 h-3" />
-                <span>Harvest All Yields</span>
+                <span>Harvest All</span>
               </button>
             </div>
           )}
