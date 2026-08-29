@@ -33,6 +33,12 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
   const [spinning, setSpinning] = useState(false);
   const [selectedAssetClass, setSelectedAssetClass] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
   const [selectedAction, setSelectedAction] = useState<"ALL" | StockTransactionAction>("ALL");
+  // ponytail: progressive chunking for transaction ledger (15 initial)
+  const [visibleCount, setVisibleCount] = useState<number>(15);
+
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [tickerFilter, selectedAssetClass, selectedAction]);
 
   const fetchTransactions = useCallback(async () => {
     setIsLoading(true);
@@ -165,7 +171,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
 
       {/* Filter Toolbar: Dual Compact Bento Dropdowns */}
       {!tickerFilter && (
-        <div className="flex items-center gap-2 mb-2.5 text-xs">
+        <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md flex items-center gap-2 mb-2.5 pb-1 text-xs">
           <div className="flex items-center gap-1 text-muted shrink-0" title="Filter ledger transactions">
             <Filter className="w-3.5 h-3.5 text-muted/70" />
           </div>
@@ -240,100 +246,116 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
             </p>
           </div>
         ) : (
-          transactions.map((tx) => {
-            const badge = getActionBadge(tx.action);
-            const Icon = badge.icon;
-            const isCrypto = tx.assetType === "CRYPTO";
+          <>
+            {transactions.slice(0, visibleCount).map((tx) => {
+              const badge = getActionBadge(tx.action);
+              const Icon = badge.icon;
+              const isCrypto = tx.assetType === "CRYPTO";
 
-            return (
-              <div
-                key={tx.id}
-                className="p-2.5 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/30 transition-all flex flex-col gap-1.5"
-              >
-                {/* Top Row: Action Badge + Ticker + Crypto Tag + Stock Name (Left) & Total Amount Zeny (Right) */}
-                <div className="flex items-center justify-between gap-2 min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <div
-                      className={`w-12 py-0.5 rounded border ${badge.bg} ${badge.border} ${badge.text} shrink-0 text-[9.5px] font-bold text-center flex items-center justify-center gap-0.5`}
-                    >
-                      <Icon className="w-2.5 h-2.5 shrink-0" />
-                      <span>{badge.label}</span>
+              return (
+                <div
+                  key={tx.id}
+                  className="bento-list-item p-2.5 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/30 transition-all flex flex-col gap-1.5"
+                >
+                  {/* Top Row: Action Badge + Ticker + Crypto Tag + Stock Name (Left) & Total Amount Zeny (Right) */}
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <div
+                        className={`w-12 py-0.5 rounded border ${badge.bg} ${badge.border} ${badge.text} shrink-0 text-[9.5px] font-bold text-center flex items-center justify-center gap-0.5`}
+                      >
+                        <Icon className="w-2.5 h-2.5 shrink-0" />
+                        <span>{badge.label}</span>
+                      </div>
+
+                      <span className="font-bold font-mono text-primary text-xs shrink-0">{tx.ticker}</span>
+
+                      {isCrypto && (
+                        <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[8.5px] font-mono font-bold border border-amber-400/20 shrink-0">
+                          CRYPTO
+                        </span>
+                      )}
+
+                      <span className="text-[11px] text-muted truncate">
+                        {tx.stockName}
+                      </span>
                     </div>
 
-                    <span className="font-bold font-mono text-primary text-xs shrink-0">{tx.ticker}</span>
-
-                    {isCrypto && (
-                      <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[8.5px] font-mono font-bold border border-amber-400/20 shrink-0">
-                        CRYPTO
+                    {/* Total Amount */}
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`font-bold font-mono text-xs ${
+                          tx.action === "SELL" || tx.action === "DIVIDEND"
+                            ? "text-success"
+                            : tx.action === "DRIP_BUY"
+                            ? "text-purple-400"
+                            : "text-primary"
+                        }`}
+                      >
+                        {tx.action === "SELL" || tx.action === "DIVIDEND" ? "+" : "-"}
+                        {formatZeny(tx.totalAmount)} Z
                       </span>
-                    )}
-
-                    <span className="text-[11px] text-muted truncate">
-                      {tx.stockName}
-                    </span>
+                    </div>
                   </div>
 
-                  {/* Total Amount */}
-                  <div className="text-right shrink-0">
-                    <span
-                      className={`font-bold font-mono text-xs ${
-                        tx.action === "SELL" || tx.action === "DIVIDEND"
-                          ? "text-success"
-                          : tx.action === "DRIP_BUY"
-                          ? "text-purple-400"
-                          : "text-primary"
-                      }`}
-                    >
-                      {tx.action === "SELL" || tx.action === "DIVIDEND" ? "+" : "-"}
-                      {formatZeny(tx.totalAmount)} Z
-                    </span>
-                  </div>
-                </div>
+                  {/* Bottom Row: Metadata (Timestamp, Char, Destination) & (Units @ Price, Fee) */}
+                  <div className="flex items-center justify-between gap-2 text-[10px] text-muted font-mono pt-1 border-t border-border/30">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span>{formatDate(tx.createdAt)}</span>
+                      {tx.charName && (
+                        <>
+                          <span className="text-muted/40">•</span>
+                          <span className="text-muted/90 truncate">{tx.charName}</span>
+                        </>
+                      )}
+                      {tx.destination && (
+                        <>
+                          <span className="text-muted/40">•</span>
+                          <span className="flex items-center gap-0.5 text-muted shrink-0">
+                            {tx.destination === "BANK" ? (
+                              <>
+                                <Landmark className="w-2.5 h-2.5 text-info" /> Bank
+                              </>
+                            ) : (
+                              <>
+                                <Wallet className="w-2.5 h-2.5 text-accent" /> Wallet
+                              </>
+                            )}
+                          </span>
+                        </>
+                      )}
+                    </div>
 
-                {/* Bottom Row: Metadata (Timestamp, Char, Destination) & (Units @ Price, Fee) */}
-                <div className="flex items-center justify-between gap-2 text-[10px] text-muted font-mono pt-1 border-t border-border/30">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span>{formatDate(tx.createdAt)}</span>
-                    {tx.charName && (
-                      <>
-                        <span className="text-muted/40">•</span>
-                        <span className="text-muted/90 truncate">{tx.charName}</span>
-                      </>
-                    )}
-                    {tx.destination && (
-                      <>
-                        <span className="text-muted/40">•</span>
-                        <span className="flex items-center gap-0.5 text-muted shrink-0">
-                          {tx.destination === "BANK" ? (
-                            <>
-                              <Landmark className="w-2.5 h-2.5 text-info" /> Bank
-                            </>
-                          ) : (
-                            <>
-                              <Wallet className="w-2.5 h-2.5 text-accent" /> Wallet
-                            </>
-                          )}
+                    <div className="text-right shrink-0 flex items-center gap-1">
+                      {tx.shares > 0 && (
+                        <span>
+                          {tx.shares.toLocaleString()} {tx.shares === 1 ? "unit" : "units"} @ {formatZeny(tx.price)} Z
                         </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="text-right shrink-0 flex items-center gap-1">
-                    {tx.shares > 0 && (
-                      <span>
-                        {tx.shares.toLocaleString()} {tx.shares === 1 ? "unit" : "units"} @ {formatZeny(tx.price)} Z
-                      </span>
-                    )}
-                    {tx.fee > 0 && (
-                      <span className="text-danger/80 text-[9px]">
-                        (Fee: {formatZeny(tx.fee)} Z)
-                      </span>
-                    )}
+                      )}
+                      {tx.fee > 0 && (
+                        <span className="text-danger/80 text-[9px]">
+                          (Fee: {formatZeny(tx.fee)} Z)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+
+            {/* ponytail: progressive chunking load more trigger */}
+            {transactions.length > visibleCount && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 15)}
+                  className="px-4 py-1.5 rounded-lg bg-surface2 hover:bg-surface text-xs font-bold text-muted hover:text-primary border border-border hover:border-accent/40 shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-accent animate-bounce" />
+                  <span>Load More Transactions ({transactions.length - visibleCount} remaining)</span>
+                </button>
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
     </div>

@@ -129,4 +129,89 @@ describe("Web Gacha System (Midgard Egg Spinner Altar)", () => {
     expect(executedSql.some((s) => s.includes("acc_reg_num"))).toBe(true);
     expect(executedSql.some((s) => s.includes("solo_gacha_stash"))).toBe(true);
   });
+
+  it("rejects gacha pull when character is online in-game", async () => {
+    spyOn(pool, "primaryQueryOne").mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM `char`")) {
+        return { char_id: 150001, zeny: 1000000, name: "TestNovice", online: 1 };
+      }
+      return null;
+    });
+
+    const res = await GachaService.pull(2000001, {
+      bannerId: "supplies",
+      count: 1,
+      charId: 150001,
+    });
+
+    expect(res.success).toBe(false);
+    expect(res.error).toContain("logged into the game");
+  });
+
+  it("executes gacha pull with atomic online = 0 deduction when character is offline", async () => {
+    spyOn(pool, "primaryQueryOne").mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM `char`")) {
+        return { char_id: 150001, zeny: 1000000, name: "TestNovice", online: 0 };
+      }
+      if (sql.includes("FROM `solo_gacha_banners`")) {
+        return {
+          banner_id: "supplies",
+          name: "Supplies",
+          base_price: 10000,
+          ssr_rate: "10.00",
+          sr_rate: "25.00",
+          r_rate: "65.00",
+          pity_threshold: 20,
+          enabled: 1,
+        };
+      }
+      if (sql.includes("FROM `solo_gacha_rotation`")) {
+        return { featured_ssr_id: 12103, featured_sr_ids: "[]" };
+      }
+      if (sql.includes("FROM `solo_gacha_pity`")) {
+        return { pity_count: 0 };
+      }
+      return null;
+    });
+
+    spyOn(pool, "query").mockImplementation(async () => []);
+    spyOn(pool, "primaryQuery").mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM `solo_gacha_pool`")) {
+        return [
+          {
+            id: 1,
+            banner_id: "supplies",
+            nameid: 12103,
+            item_name: "Bloody Branch",
+            amount: 1,
+            refine: 0,
+            tier: "SSR",
+            weight: 100,
+            enabled: 1,
+          },
+        ];
+      }
+      return [];
+    });
+
+    let executedSql: string[] = [];
+    spyOn(pool, "primaryExecute").mockImplementation(async (sql: string) => {
+      executedSql.push(sql);
+      return { insertId: 1, affectedRows: 1 };
+    });
+
+    const res = await GachaService.pull(2000001, {
+      bannerId: "supplies",
+      count: 1,
+      charId: 150001,
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.rewards.length).toBe(1);
+
+    const zenyDeductCall = executedSql.find((s) => s.includes("UPDATE `char` SET `zeny`"));
+    expect(zenyDeductCall).toBeDefined();
+    expect(zenyDeductCall).toContain("`online` = 0");
+    expect(zenyDeductCall).toContain("`zeny` >=");
+  });
 });

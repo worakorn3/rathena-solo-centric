@@ -65,6 +65,13 @@ interface RawInventoryRow {
 }
 
 function mapCharRowToSummary(row: RawCharRow): CharacterSummary {
+  const hp = Number(row.hp) || 0;
+  const maxHp = Math.max(Number(row.max_hp) || 0, hp);
+  const sp = Number(row.sp) || 0;
+  const maxSp = Math.max(Number(row.max_sp) || 0, sp);
+  const ap = row.ap !== undefined ? Number(row.ap) || 0 : 0;
+  const maxAp = row.max_ap !== undefined ? Math.max(Number(row.max_ap) || 0, ap) : 0;
+
   return {
     charId: row.char_id,
     accountId: row.account_id,
@@ -77,12 +84,12 @@ function mapCharRowToSummary(row: RawCharRow): CharacterSummary {
     baseExp: Number(row.base_exp) || 0,
     jobExp: Number(row.job_exp) || 0,
     zeny: Number(row.zeny) || 0,
-    maxHp: row.max_hp,
-    hp: row.hp,
-    maxSp: row.max_sp,
-    sp: row.sp,
-    maxAp: row.max_ap !== undefined ? Number(row.max_ap) : 0,
-    ap: row.ap !== undefined ? Number(row.ap) : 0,
+    maxHp,
+    hp,
+    maxSp,
+    sp,
+    maxAp,
+    ap,
     str: row.str,
     agi: row.agi,
     vit: row.vit,

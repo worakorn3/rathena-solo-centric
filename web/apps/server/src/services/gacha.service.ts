@@ -372,14 +372,27 @@ export class GachaService {
       return { success: false, bannerId, zenySpent: 0, remainingZeny: 0, pityCount: 0, pityThreshold: 0, rewards: [], error: "Invalid pull count." };
     }
 
-    // 1. Validate character ownership & fetch liquid Zeny
-    const charRow = await primaryQueryOne<{ char_id: number; zeny: number; name: string }>(
-      "SELECT char_id, zeny, name FROM `char` WHERE `char_id` = ? AND `account_id` = ? LIMIT 1",
+    // 1. Validate character ownership & fetch liquid Zeny (ponytail: fast-fail if in-game)
+    const charRow = await primaryQueryOne<{ char_id: number; zeny: number; name: string; online: number }>(
+      "SELECT char_id, zeny, name, online FROM `char` WHERE `char_id` = ? AND `account_id` = ? LIMIT 1",
       [charId, accountId]
     );
 
     if (!charRow) {
       return { success: false, bannerId, zenySpent: 0, remainingZeny: 0, pityCount: 0, pityThreshold: 0, rewards: [], error: "Character not found or unowned." };
+    }
+
+    if (charRow.online === 1) {
+      return {
+        success: false,
+        bannerId,
+        zenySpent: 0,
+        remainingZeny: Number(charRow.zeny),
+        pityCount: 0,
+        pityThreshold: 0,
+        rewards: [],
+        error: "Character is currently logged into the game. Please log out before pulling from Gacha to prevent state desync.",
+      };
     }
 
     // 2. Fetch Banner and calculate effective price
@@ -514,8 +527,24 @@ export class GachaService {
     // 6. Primary DB Atomic Mutations
     const newZeny = Number(charRow.zeny) - totalCost;
 
-    // Deduct Zeny
-    await primaryExecute("UPDATE `char` SET `zeny` = ? WHERE `char_id` = ?", [newZeny, charId]);
+    // Deduct Zeny (ponytail: atomic mutation with online = 0 and balance verification)
+    const zenyRes = await primaryExecute(
+      "UPDATE `char` SET `zeny` = `zeny` - ? WHERE `char_id` = ? AND `online` = 0 AND `zeny` >= ?",
+      [totalCost, charId, totalCost]
+    );
+
+    if (zenyRes.affectedRows === 0) {
+      return {
+        success: false,
+        bannerId,
+        zenySpent: 0,
+        remainingZeny: Number(charRow.zeny),
+        pityCount: 0,
+        pityThreshold: Number(bannerRow.pity_threshold),
+        rewards: [],
+        error: "Gacha pull failed: Character is online in-game or has insufficient Zeny.",
+      };
+    }
 
     // Update Pity Counter
     await primaryExecute(

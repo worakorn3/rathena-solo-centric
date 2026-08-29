@@ -798,8 +798,17 @@ export class EconomyService {
       // 5. Credit Zeny & Update Quota
       const payout = amount * bounty.price;
       const newZeny = Number(char.zeny) + payout;
-
-      await primaryExecute("UPDATE `char` SET `zeny` = ? WHERE `char_id` = ?", [newZeny, charId]);
+      // ponytail: atomic credit with online = 0 guard
+      const zenyRes = await primaryExecute(
+        "UPDATE `char` SET `zeny` = ? WHERE `char_id` = ? AND `online` = 0",
+        [newZeny, charId]
+      );
+      if (zenyRes.affectedRows === 0) {
+        return {
+          success: false,
+          error: "Transaction failed: Character is online in-game.",
+        };
+      }
 
       const newDailySold = dailySold + amount;
       const newLifetimeSold = lifetimeSold + amount;
@@ -1026,10 +1035,17 @@ export class EconomyService {
         };
       }
 
-      await primaryExecute(
-        "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND zeny >= ?",
+      // ponytail: atomic zeny deduction with online = 0 guard
+      const zenyRes = await primaryExecute(
+        "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND online = 0 AND zeny >= ?",
         [totalRequired, charId, totalRequired]
       );
+      if (zenyRes.affectedRows === 0) {
+        return {
+          success: false,
+          error: "Transaction failed: Character is online in-game or has insufficient Zeny.",
+        };
+      }
 
       await primaryExecute(
         "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE shares = shares + VALUES(shares), total_cost = total_cost + VALUES(total_cost)",
@@ -1101,10 +1117,17 @@ export class EconomyService {
         };
       }
 
-      await primaryExecute(
-        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+      // ponytail: atomic zeny credit with online = 0 guard
+      const zenyRes = await primaryExecute(
+        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ? AND online = 0",
         [netProceeds, charId]
       );
+      if (zenyRes.affectedRows === 0) {
+        return {
+          success: false,
+          error: "Transaction failed: Character is online in-game.",
+        };
+      }
       remainingZeny = Number(char.zeny) + netProceeds;
     } else {
       // Bank 1.9B ceiling & interest crystallization (0% bank deposit fee)
@@ -1245,10 +1268,17 @@ export class EconomyService {
     }
 
     // 5. Execute atomic mutations on Primary DB
-    await primaryExecute(
-      "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND zeny >= ?",
+    // ponytail: atomic zeny deduction with online = 0 guard
+    const zenyRes = await primaryExecute(
+      "UPDATE `char` SET zeny = zeny - ? WHERE char_id = ? AND online = 0 AND zeny >= ?",
       [safeAmount, charId, safeAmount]
     );
+    if (zenyRes.affectedRows === 0) {
+      return {
+        success: false,
+        error: "Deposit failed: Character is online in-game or has insufficient Zeny.",
+      };
+    }
 
     await primaryExecute(
       "INSERT INTO `solo_bank_account` (account_id, principal, deposit_time, interest_paid_total) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE principal = VALUES(principal), deposit_time = VALUES(deposit_time), interest_paid_total = interest_paid_total + ?",
@@ -1335,10 +1365,17 @@ export class EconomyService {
     }
 
     // 4. Execute atomic mutations on Primary DB
-    await primaryExecute(
-      "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+    // ponytail: atomic zeny credit with online = 0 guard
+    const zenyRes = await primaryExecute(
+      "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ? AND online = 0",
       [amountToWithdraw, charId]
     );
+    if (zenyRes.affectedRows === 0) {
+      return {
+        success: false,
+        error: "Withdrawal failed: Character is online in-game.",
+      };
+    }
 
     const isFullWithdrawal = amountToWithdraw >= accrual.totalAvailable;
     let newPrincipal = 0;
@@ -1515,10 +1552,17 @@ export class EconomyService {
         };
       }
 
-      await primaryExecute(
-        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ?",
+      // ponytail: atomic zeny credit with online = 0 guard
+      const zenyRes = await primaryExecute(
+        "UPDATE `char` SET zeny = zeny + ? WHERE char_id = ? AND online = 0",
         [netPayout, targetCharId]
       );
+      if (zenyRes.affectedRows === 0) {
+        return {
+          success: false,
+          error: "Harvest failed: Character is online in-game.",
+        };
+      }
       remainingZeny = Number(char.zeny) + netPayout;
     } else {
       // Direct Wire to Investment Bank

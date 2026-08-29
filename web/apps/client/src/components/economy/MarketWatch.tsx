@@ -6,6 +6,8 @@ import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
 import { ErrorBoundary } from "../common/ErrorBoundary";
 
+export type MarketFilterTab = "ALL" | "EQUITY" | "CRYPTO" | "all" | "municipal" | "crypto";
+
 interface MarketWatchProps {
   quotes: StockMarketQuote[];
   marketMood?: number;
@@ -18,6 +20,8 @@ interface MarketWatchProps {
   selectedTicker?: string | null;
   onSelectTicker?: (ticker: string | null) => void;
   onTradeSuccess?: () => void;
+  filterTab?: MarketFilterTab;
+  onFilterChange?: (tab: "ALL" | "EQUITY" | "CRYPTO") => void;
 }
 
 const getMoodString = (mood?: number) => {
@@ -28,7 +32,7 @@ const getMoodString = (mood?: number) => {
 };
 
 export const MarketWatch: React.FC<MarketWatchProps> = ({
-  quotes,
+  quotes = [],
   marketMood,
   equitiesMood,
   cryptoMood,
@@ -36,12 +40,15 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   selectedTicker,
   onSelectTicker,
   onTradeSuccess,
+  filterTab: controlledFilterTab,
+  onFilterChange,
 }) => {
   // Derive effective municipal sentiment:
   // 1. explicit equitiesMood if > 0
   // 2. general marketMood if > 0
   // 3. dynamic fallback from municipal quotes
-  const muniQuotes = quotes.filter((q) => !isCryptoAsset(q.ticker, q.assetType || q.sector));
+  const safeQuotes = Array.isArray(quotes) ? quotes : [];
+  const muniQuotes = safeQuotes.filter((q) => !isCryptoAsset(q.ticker, q.assetType || q.sector));
   const muniUp = muniQuotes.filter((q) => q.changeAmount > 0).length;
   const muniDown = muniQuotes.filter((q) => q.changeAmount < 0).length;
   const fallbackMuniMood = muniQuotes.length > 0 ? (muniUp > muniDown ? 1 : muniDown > muniUp ? 2 : 0) : 0;
@@ -56,7 +63,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   // 1. explicit cryptoMood if > 0
   // 2. global chaos (3) if marketMood === 3
   // 3. dynamic fallback from crypto quotes
-  const cryptoQuotes = quotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector));
+  const cryptoQuotes = safeQuotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector));
   const cryptoUp = cryptoQuotes.filter((q) => q.changeAmount > 0).length;
   const cryptoDown = cryptoQuotes.filter((q) => q.changeAmount < 0).length;
   const fallbackCryptoMood = cryptoQuotes.length > 0 ? (cryptoUp > cryptoDown ? 1 : cryptoDown > cryptoUp ? 2 : 0) : 0;
@@ -71,10 +78,30 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
   const cryptoMoodInfo = getMoodString(effectiveCryptoMood);
 
   const [internalSelectedQuote, setInternalSelectedQuote] = useState<StockMarketQuote | null>(null);
-  const [filterTab, setFilterTab] = useState<"all" | "municipal" | "crypto">("all");
+  const [internalFilterTab, setInternalFilterTab] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
+
+  // ponytail: normalize external tab strings to unified "ALL" | "EQUITY" | "CRYPTO"
+  const normalizeTab = (t?: string): "ALL" | "EQUITY" | "CRYPTO" => {
+    if (!t) return "ALL";
+    const upper = t.toUpperCase();
+    if (upper === "MUNICIPAL" || upper === "EQUITY") return "EQUITY";
+    if (upper === "CRYPTO") return "CRYPTO";
+    return "ALL";
+  };
+
+  const activeFilterTab: "ALL" | "EQUITY" | "CRYPTO" =
+    controlledFilterTab !== undefined ? normalizeTab(controlledFilterTab) : internalFilterTab;
+
+  const handleFilterChange = (tab: "ALL" | "EQUITY" | "CRYPTO") => {
+    if (onFilterChange) {
+      onFilterChange(tab);
+    } else {
+      setInternalFilterTab(tab);
+    }
+  };
 
   const activeQuote = selectedTicker
-    ? quotes.find((q) => q.ticker === selectedTicker) || internalSelectedQuote
+    ? safeQuotes.find((q) => q.ticker === selectedTicker) || internalSelectedQuote
     : internalSelectedQuote;
 
   const handleSelectQuote = (q: StockMarketQuote | null) => {
@@ -84,15 +111,15 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
     setInternalSelectedQuote(q);
   };
 
-  const filteredQuotes = quotes.filter((q) => {
+  const filteredQuotes = safeQuotes.filter((q) => {
     const isCrypto = isCryptoAsset(q.ticker, q.assetType || q.sector);
-    if (filterTab === "crypto") return isCrypto;
-    if (filterTab === "municipal") return !isCrypto;
+    if (activeFilterTab === "CRYPTO") return isCrypto;
+    if (activeFilterTab === "EQUITY") return !isCrypto;
     return true;
   });
 
-  const cryptoCount = quotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector)).length;
-  const municipalCount = quotes.length - cryptoCount;
+  const cryptoCount = safeQuotes.filter((q) => isCryptoAsset(q.ticker, q.assetType || q.sector)).length;
+  const municipalCount = safeQuotes.length - cryptoCount;
 
   return (
     <div className="bento-card p-3 sm:p-3.5 flex flex-col min-h-0 h-full">
@@ -108,7 +135,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {filterTab === "all" ? (
+          {activeFilterTab === "ALL" ? (
             <div className="flex items-center gap-1.5">
               <span
                 className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${equitiesMoodInfo.bg} border ${equitiesMoodInfo.border} ${equitiesMoodInfo.color} text-[10px] font-bold font-mono`}
@@ -125,7 +152,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
                 Crypto: {cryptoMoodInfo.text}
               </span>
             </div>
-          ) : filterTab === "municipal" ? (
+          ) : activeFilterTab === "EQUITY" ? (
             <span
               className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${equitiesMoodInfo.bg} border ${equitiesMoodInfo.border} ${equitiesMoodInfo.color} text-[10px] sm:text-[11px] font-bold font-mono`}
             >
@@ -147,19 +174,21 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
       <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
         <div className="flex items-center gap-1 bg-surface2/70 p-0.5 rounded-lg border border-border text-[11px] font-mono">
           <button
-            onClick={() => setFilterTab("all")}
+            type="button"
+            onClick={() => handleFilterChange("ALL")}
             className={`px-2 py-0.5 rounded transition-colors ${
-              filterTab === "all"
+              activeFilterTab === "ALL"
                 ? "bg-surface text-accent font-bold shadow-sm"
                 : "text-muted hover:text-primary"
             }`}
           >
-            All ({quotes.length})
+            All ({safeQuotes.length})
           </button>
           <button
-            onClick={() => setFilterTab("municipal")}
+            type="button"
+            onClick={() => handleFilterChange(activeFilterTab === "EQUITY" ? "ALL" : "EQUITY")}
             className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-              filterTab === "municipal"
+              activeFilterTab === "EQUITY"
                 ? "bg-surface text-accent font-bold shadow-sm"
                 : "text-muted hover:text-primary"
             }`}
@@ -168,9 +197,10 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
             Municipal ({municipalCount})
           </button>
           <button
-            onClick={() => setFilterTab("crypto")}
+            type="button"
+            onClick={() => handleFilterChange(activeFilterTab === "CRYPTO" ? "ALL" : "CRYPTO")}
             className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-              filterTab === "crypto"
+              activeFilterTab === "CRYPTO"
                 ? "bg-surface text-accent font-bold shadow-sm"
                 : "text-muted hover:text-primary"
             }`}

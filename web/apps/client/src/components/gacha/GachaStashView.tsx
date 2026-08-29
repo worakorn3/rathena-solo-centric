@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Package, Mail, Recycle, CheckSquare, Square, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Package, Mail, Recycle, CheckSquare, Square, AlertTriangle, CheckCircle, RefreshCw, ChevronDown } from "lucide-react";
 import { GachaStashItem, GachaTier } from "@rathena/shared";
 import { api } from "../../lib/api";
 import { getItemIconUrl } from "../../lib/assets";
@@ -17,9 +17,15 @@ export const GachaStashView: React.FC<GachaStashViewProps> = ({
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [tierFilter, setTierFilter] = useState<"ALL" | GachaTier>("ALL");
+  // ponytail: progressive chunking for gacha stash items (16 initial)
+  const [visibleCount, setVisibleCount] = useState<number>(16);
   const [isMailing, setIsMailing] = useState(false);
   const [isScrapping, setIsScrapping] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [tierFilter, items.length]);
 
   const filteredItems = items.filter((item) => {
     if (tierFilter === "ALL") return true;
@@ -220,65 +226,81 @@ export const GachaStashView: React.FC<GachaStashViewProps> = ({
             No items in your Web Stash matching the selected filter. Pull on the Gacha Altar to collect items!
           </div>
         ) : (
-          filteredItems.map((item) => {
-            const isSelected = selectedIds.has(item.id);
-            const isSSR = item.tier === "SSR";
-            const isSR = item.tier === "SR";
+          <>
+            {filteredItems.slice(0, visibleCount).map((item) => {
+              const isSelected = selectedIds.has(item.id);
+              const isSSR = item.tier === "SSR";
+              const isSR = item.tier === "SR";
 
-            const badgeClass = isSSR
-              ? "bg-amber-400 text-background font-black"
-              : isSR
-              ? "bg-purple-400 text-background font-bold"
-              : "bg-sky-400/20 text-sky-300 font-semibold";
+              const badgeClass = isSSR
+                ? "bg-amber-400 text-background font-black"
+                : isSR
+                ? "bg-purple-400 text-background font-bold"
+                : "bg-sky-400/20 text-sky-300 font-semibold";
 
-            const borderClass = isSelected
-              ? "border-accent bg-accent/10 shadow-sm shadow-accent/10"
-              : "border-border bg-surface2/60 hover:border-border/80";
+              const borderClass = isSelected
+                ? "border-accent bg-accent/10 shadow-sm shadow-accent/10"
+                : "border-border bg-surface2/60 hover:border-border/80";
 
-            return (
-              <div
-                key={item.id}
-                onClick={() => toggleSelect(item.id)}
-                className={`p-3 rounded-xl border ${borderClass} flex items-center justify-between gap-2.5 cursor-pointer transition-all`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="text-accent">
-                    {isSelected ? (
-                      <CheckSquare className="w-4 h-4" />
-                    ) : (
-                      <Square className="w-4 h-4 text-muted/60" />
-                    )}
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0 border border-border/50 shadow-inner">
-                    <img
-                      src={getItemIconUrl(item.nameId)}
-                      alt={item.itemName}
-                      className="ro-icon w-6 h-6 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
-                      }}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-primary truncate">
-                      {item.itemName}
-                      {item.refine > 0 && ` +${item.refine}`}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`text-[9px] font-mono px-1 py-0.2 rounded ${badgeClass}`}>
-                        {item.tier}
-                      </span>
-                      {item.amount > 1 && (
-                        <span className="text-[10px] text-muted font-mono font-bold">
-                          x{item.amount}
-                        </span>
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => toggleSelect(item.id)}
+                  className={`bento-list-item p-3 rounded-xl border ${borderClass} flex items-center justify-between gap-2.5 cursor-pointer transition-all`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="text-accent">
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4 text-muted/60" />
                       )}
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0 border border-border/50 shadow-inner">
+                      <img
+                        src={getItemIconUrl(item.nameId)}
+                        alt={item.itemName}
+                        className="ro-icon w-6 h-6 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-primary truncate">
+                        {item.itemName}
+                        {item.refine > 0 && ` +${item.refine}`}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[9px] font-mono px-1 py-0.2 rounded ${badgeClass}`}>
+                          {item.tier}
+                        </span>
+                        {item.amount > 1 && (
+                          <span className="text-[10px] text-muted font-mono font-bold">
+                            x{item.amount}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
+              );
+            })}
+
+            {/* ponytail: progressive chunking load more trigger */}
+            {filteredItems.length > visibleCount && (
+              <div className="pt-2 text-center col-span-full">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 16)}
+                  className="px-4 py-1.5 rounded-lg bg-surface2 hover:bg-surface text-xs font-bold text-muted hover:text-primary border border-border hover:border-accent/40 shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-accent animate-bounce" />
+                  <span>Show More Items ({filteredItems.length - visibleCount} remaining)</span>
+                </button>
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
     </div>

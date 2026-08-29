@@ -67,6 +67,13 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
   const [isSelling, setIsSelling] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [countdownText, setCountdownText] = useState<string>("--:--:--");
+  // ponytail: progressive chunking to avoid doom scroll (12 cards initial)
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+
+  // Reset pagination chunk when filters change
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [tierFilter, searchQuery, sortOption, selectedCharId]);
 
   // Active Character Resolution
   const activeChar = useMemo(() => {
@@ -288,12 +295,22 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
 
     list.sort((a, b) => {
       if (sortOption === "recommend") {
+        // 1. On-hand items in character backpack first
         if ((a.inInventory > 0) !== (b.inInventory > 0)) {
           return a.inInventory > 0 ? -1 : 1;
         }
+        // 2. Storage items second
         if ((a.totalAvailable > 0) !== (b.totalAvailable > 0)) {
           return a.totalAvailable > 0 ? -1 : 1;
         }
+        // 3. Level proximity recommendation based on active character
+        const charLv = activeChar?.baseLevel || 1;
+        const diffA = Math.abs(a.mobLevel - charLv);
+        const diffB = Math.abs(b.mobLevel - charLv);
+        if (diffA !== diffB) {
+          return diffA - diffB;
+        }
+        // 4. Highest payout price
         return b.price - a.price;
       }
       if (sortOption === "price_desc") return b.price - a.price;
@@ -304,7 +321,7 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
     });
 
     return list;
-  }, [bounties, tierFilter, searchQuery, sortOption]);
+  }, [bounties, tierFilter, searchQuery, sortOption, activeChar]);
 
   // Open modal with smart initial quantity
   const handleOpenSellModal = (bounty: BountyPlayerHolding) => {
@@ -620,7 +637,7 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
       )}
 
       {/* ==================== 3. FILTER & CONTROL STRIP ==================== */}
-      <div className="bento-card p-2.5 shrink-0 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="bento-card p-2.5 shrink-0 sticky top-0 z-10 bg-surface/95 backdrop-blur-md shadow-sm flex flex-wrap items-center justify-between gap-2.5">
         {/* Tier Filter Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
@@ -748,157 +765,173 @@ export const BountyBoard: React.FC<BountyBoardProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {processedBounties.map((bounty) => {
-              const theme = getTierTheme(bounty.tier);
-              const batch100 = bounty.price * 100;
-              const hasOnHand = bounty.inInventory > 0;
-              const hasStorage = bounty.inStorage > 0;
-              const totalOwned = bounty.inInventory + bounty.inStorage;
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {processedBounties.slice(0, visibleCount).map((bounty) => {
+                const theme = getTierTheme(bounty.tier);
+                const batch100 = bounty.price * 100;
+                const hasOnHand = bounty.inInventory > 0;
+                const hasStorage = bounty.inStorage > 0;
+                const totalOwned = bounty.inInventory + bounty.inStorage;
 
-              return (
-                <div
-                  key={`${bounty.tier}-${bounty.index}`}
-                  className={`bento-card p-3.5 flex flex-col justify-between transition-all ${
-                    hasOnHand
-                      ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-400"
-                      : `${theme.cardBg} ${theme.cardBorder}`
-                  }`}
-                >
-                  {/* Card Top: Badges & RO Sprite Icon */}
-                  <div>
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className={`text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded ${theme.badge}`}
-                          >
-                            {theme.label}
-                          </span>
-                          {getDifficultyPill(bounty.mobLevel)}
-                          {hasOnHand && (
-                            <span className="text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 border border-amber-400/40 flex items-center gap-0.5">
-                              <Backpack className="w-2.5 h-2.5" /> In Bag ({bounty.inInventory})
+                return (
+                  <div
+                    key={`${bounty.tier}-${bounty.index}`}
+                    className={`bento-card bento-list-item p-3.5 flex flex-col justify-between transition-all ${
+                      hasOnHand
+                        ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-400"
+                        : `${theme.cardBg} ${theme.cardBorder}`
+                    }`}
+                  >
+                    {/* Card Top: Badges & RO Sprite Icon */}
+                    <div>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded ${theme.badge}`}
+                            >
+                              {theme.label}
                             </span>
-                          )}
+                            {getDifficultyPill(bounty.mobLevel)}
+                            {hasOnHand && (
+                              <span className="text-[9px] font-bold font-mono uppercase px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 border border-amber-400/40 flex items-center gap-0.5">
+                                <Backpack className="w-2.5 h-2.5" /> In Bag ({bounty.inInventory})
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-bold text-sm text-primary transition-colors truncate mt-1">
+                            {bounty.itemName}
+                          </h3>
+
+                          <div className="text-[11px] text-muted flex items-center gap-1 truncate">
+                            <Skull className="w-3 h-3 text-danger shrink-0" />
+                            <span className="truncate">
+                              {bounty.mobName}{" "}
+                              <strong className="text-primary/80 font-mono">
+                                (Lv.{bounty.mobLevel})
+                              </strong>
+                            </span>
+                          </div>
                         </div>
 
-                        <h3 className="font-bold text-sm text-primary transition-colors truncate mt-1">
-                          {bounty.itemName}
-                        </h3>
+                        {/* RO Item Icon Frame */}
+                        <div className="w-11 h-11 rounded-lg bg-surface2 border border-border flex items-center justify-center shrink-0 shadow-inner">
+                          <img
+                            src={getItemIconUrl(bounty.itemId)}
+                            alt={bounty.itemName}
+                            className="ro-icon w-6 h-6 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                        <div className="text-[11px] text-muted flex items-center gap-1 truncate">
-                          <Skull className="w-3 h-3 text-danger shrink-0" />
-                          <span className="truncate">
-                            {bounty.mobName}{" "}
-                            <strong className="text-primary/80 font-mono">
-                              (Lv.{bounty.mobLevel})
+                      {/* Card Middle: Stock / Inventory Intel */}
+                      <div className="my-2.5 px-2.5 py-1.5 rounded-md bg-surface2/60 border border-border/80 flex items-center justify-between text-[10px] font-mono">
+                        {user ? (
+                          <span className="text-muted">
+                            Bag:{" "}
+                            <strong
+                              className={
+                                hasOnHand ? "text-amber-400 font-bold" : "text-primary"
+                              }
+                            >
+                              {bounty.inInventory}
+                            </strong>{" "}
+                            | Storage:{" "}
+                            <strong
+                              className={
+                                hasStorage ? "text-sky-400 font-bold" : "text-primary"
+                              }
+                            >
+                              {bounty.inStorage}
                             </strong>
                           </span>
+                        ) : (
+                          <span className="text-muted flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-accent" />
+                            <span>Item #{bounty.itemId}</span>
+                          </span>
+                        )}
+
+                        <a
+                          href={`https://www.divine-pride.net/database/item/${bounty.itemId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-info hover:text-primary font-bold transition-colors flex items-center gap-1 hover:underline shrink-0"
+                          title="Inspect item drops on Divine Pride DB"
+                        >
+                          <span>Item DB</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Card Bottom: Payout Rate & Action Button */}
+                    <div className="pt-2.5 border-t border-border/80 flex justify-between items-end text-xs">
+                      <div>
+                        <div className="text-[9px] uppercase font-bold text-muted">
+                          Unit Bounty Payout
+                        </div>
+                        <div className={`font-mono font-bold text-sm ${theme.accent}`}>
+                          {formatZeny(bounty.price)}{" "}
+                          <span className="text-[10px] font-sans font-semibold">
+                            Z/ea
+                          </span>
                         </div>
                       </div>
 
-                      {/* RO Item Icon Frame */}
-                      <div className="w-11 h-11 rounded-lg bg-surface2 border border-border flex items-center justify-center shrink-0 shadow-inner">
-                        <img
-                          src={getItemIconUrl(bounty.itemId)}
-                          alt={bounty.itemName}
-                          className="ro-icon w-6 h-6 object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Card Middle: Stock / Inventory Intel */}
-                    <div className="my-2.5 px-2.5 py-1.5 rounded-md bg-surface2/60 border border-border/80 flex items-center justify-between text-[10px] font-mono">
-                      {user ? (
-                        <span className="text-muted">
-                          Bag:{" "}
-                          <strong
-                            className={
-                              hasOnHand ? "text-amber-400 font-bold" : "text-primary"
-                            }
-                          >
-                            {bounty.inInventory}
-                          </strong>{" "}
-                          | Storage:{" "}
-                          <strong
-                            className={
-                              hasStorage ? "text-sky-400 font-bold" : "text-primary"
-                            }
-                          >
-                            {bounty.inStorage}
-                          </strong>
-                        </span>
-                      ) : (
-                        <span className="text-muted flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-accent" />
-                          <span>Item #{bounty.itemId}</span>
-                        </span>
-                      )}
-
-                      <a
-                        href={`https://www.divine-pride.net/database/item/${bounty.itemId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-info hover:text-primary font-bold transition-colors flex items-center gap-1 hover:underline shrink-0"
-                        title="Inspect item drops on Divine Pride DB"
-                      >
-                        <span>Item DB</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Card Bottom: Payout Rate & Action Button */}
-                  <div className="pt-2.5 border-t border-border/80 flex justify-between items-end text-xs">
-                    <div>
-                      <div className="text-[9px] uppercase font-bold text-muted">
-                        Unit Bounty Payout
-                      </div>
-                      <div className={`font-mono font-bold text-sm ${theme.accent}`}>
-                        {formatZeny(bounty.price)}{" "}
-                        <span className="text-[10px] font-sans font-semibold">
-                          Z/ea
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      {user ? (
-                        totalOwned > 0 ? (
-                          <button
-                            onClick={() => handleOpenSellModal(bounty)}
-                            className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-1 shadow transition-all cursor-pointer"
-                          >
-                            <Coins className="w-3.5 h-3.5" />
-                            <span>Sell from Web</span>
-                          </button>
+                      <div>
+                        {user ? (
+                          totalOwned > 0 ? (
+                            <button
+                              onClick={() => handleOpenSellModal(bounty)}
+                              className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-1 shadow transition-all cursor-pointer"
+                            >
+                              <Coins className="w-3.5 h-3.5" />
+                              <span>Sell from Web</span>
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="px-2.5 py-1 rounded bg-surface2 text-muted/50 border border-border/50 text-[10px] font-medium cursor-not-allowed"
+                            >
+                              None Owned
+                            </button>
+                          )
                         ) : (
                           <button
-                            disabled
-                            className="px-2.5 py-1 rounded bg-surface2 text-muted/50 border border-border/50 text-[10px] font-medium cursor-not-allowed"
+                            onClick={onOpenLoginModal}
+                            className="px-2.5 py-1 rounded bg-surface2 hover:bg-surface2/80 text-accent border border-border text-[10px] font-bold transition-colors"
                           >
-                            None Owned
+                            Log in to Sell
                           </button>
-                        )
-                      ) : (
-                        <button
-                          onClick={onOpenLoginModal}
-                          className="px-2.5 py-1 rounded bg-surface2 hover:bg-surface2/80 text-accent border border-border text-[10px] font-bold transition-colors"
-                        >
-                          Log in to Sell
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* ponytail: progressive chunking load more trigger */}
+            {processedBounties.length > visibleCount && (
+              <div className="pt-4 pb-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
+                  className="px-5 py-2 rounded-xl bg-surface2 hover:bg-surface text-xs font-bold text-muted hover:text-primary border border-border hover:border-accent/40 shadow-sm transition-all inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <ChevronDown className="w-4 h-4 text-accent animate-bounce" />
+                  <span>Show More Bounties ({processedBounties.length - visibleCount} remaining)</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

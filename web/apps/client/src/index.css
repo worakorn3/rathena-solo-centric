@@ -28,6 +28,12 @@
     @apply object-contain;
     image-rendering: pixelated;
   }
+
+  /* ponytail: native browser virtualization with 0 JS observer overhead */
+  .bento-list-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 72px;
+  }
 }
 
 @keyframes shake {

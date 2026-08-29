@@ -21,10 +21,13 @@ import {
   UserCheck,
   Activity,
   Dices,
+  Target,
 } from "lucide-react";
 import { api } from "../../lib/api";
 import { formatZeny } from "../../lib/assets";
 import { AdminGachaManager } from "./AdminGachaManager";
+import { AdminMilestoneManager } from "./AdminMilestoneManager";
+
 
 interface AdminVaultWindowProps {
   onClose: () => void;
@@ -43,7 +46,8 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
     localStorage.getItem("rathena_admin_key") || ""
   );
   const [isKeyUnlocked, setIsKeyUnlocked] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"backup" | "accounts" | "overview" | "gacha">("backup");
+  const [activeTab, setActiveTab] = useState<"backup" | "accounts" | "overview" | "gacha" | "milestones">("backup");
+
 
   // System Stats
   const [stats, setStats] = useState<SystemStats | null>(null);
@@ -393,7 +397,19 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
             <Dices size={14} />
             <span>Gacha Manager</span>
           </button>
+          <button
+            onClick={() => setActiveTab("milestones")}
+            className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 ${
+              activeTab === "milestones"
+                ? "border-accent text-accent bg-surface2/40"
+                : "border-transparent text-muted hover:text-primary font-medium"
+            }`}
+          >
+            <Target size={14} />
+            <span>Hunt Milestones</span>
+          </button>
         </div>
+
 
         {/* 4. Tab Body Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 bg-surface text-xs sm:text-sm">
@@ -857,7 +873,13 @@ export const AdminVaultWindow: React.FC<AdminVaultWindowProps> = ({ onClose }) =
           {activeTab === "gacha" && (
             <AdminGachaManager adminKey={adminKey} />
           )}
+
+          {/* TAB 5: HUNT MILESTONES MANAGER */}
+          {activeTab === "milestones" && (
+            <AdminMilestoneManager />
+          )}
         </div>
+
 
         {/* 5. Modal Footer */}
         <div className="bg-surface2 border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted shrink-0">

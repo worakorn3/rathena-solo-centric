@@ -152,8 +152,27 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Lifetime Interest DB Accounting** | ✅ [DONE] | Atomically increment `interest_paid_total` on deposit compound rollover and dividend wires · [`solo_bank_account.sql`](../sql-files/custom/solo_bank_account.sql) |
 | **Bento Bank Widget Progress & Dialogue** | ✅ [DONE] | Display intra-day hourly progress countdown, lifetime interest earned, and explicit compound rollover notices · [`BankWidget.tsx`](../web/apps/client/src/components/economy/BankWidget.tsx) |
 
+### Phase 20: Dynamic DB Hunt Milestones, 1-Click RODEX Delivery & Web Admin Customizer
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Dynamic DB Milestone Schema** | ✅ [DONE] | SQL migration creating `solo_milestones` & `solo_milestone_claims` tables · [`solo_milestones.sql`](../sql-files/custom/solo_milestones.sql) & [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Level-Tiered Mob Seeding (Up to 4th Class)** | ✅ [DONE] | Seeded sample monsters across Renewal level ranges (Poring Lv 1, Orc Warrior Lv 44, Raydric Lv 95, Magmaring Lv 110, Giant Caput Lv 213) · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Dynamic Evaluation Backend** | ✅ [DONE] | Real-time query & progress evaluation over `solo_persistence_log` on replica DB in `TrackingService.getProgressionSummary` · [`tracking.service.ts`](../web/apps/server/src/services/tracking.service.ts) |
+| **1-Click In-Game RODEX Mail Delivery** | ✅ [DONE] | 1-click reward dispatch directly to active character's in-game mail (`mail` & `mail_attachments`) from `"Eden Hunt Guild"` via `POST /api/tracking/milestones/claim` · [`KillTracker.tsx`](../web/apps/client/src/components/tracking/KillTracker.tsx) |
+| **Web Admin Milestone Customizer** | ✅ [DONE] | Real-time CRUD and reward configuration interface with GM authorization in `AdminVaultWindow` · [`AdminMilestoneManager.tsx`](../web/apps/client/src/components/admin/AdminMilestoneManager.tsx) & [`admin.routes.ts`](../web/apps/server/src/routes/admin.routes.ts) |
+
+
+### Phase 21: Sequential Milestone Unlocking & Prerequisite Progress Chains
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Prerequisite Schema Column** | ✅ [DONE] | Added `prev_milestone_id VARCHAR(64) DEFAULT NULL` to `solo_milestones` table · [`solo_milestones.sql`](../sql-files/custom/solo_milestones.sql) & [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Tier Ladder Prerequisite Seeding** | ✅ [DONE] | Chained Renewal monsters: Poring (Novice) → Orc Warrior (2nd) → Raydric (Trans) → Magmaring (3rd) → Giant Caput (4th) · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Backend Prerequisite & Lock Validation** | ✅ [DONE] | Dynamically evaluate `isLocked = Boolean(m.prev_milestone_id && !claimedSet.has(m.prev_milestone_id))` and block unearned claims · [`tracking.service.ts`](../web/apps/server/src/services/tracking.service.ts) |
+| **Client Locked State & Admin Selector** | ✅ [DONE] | Display lock status with prerequisite badge in `KillTracker.tsx` and dropdown selector in `AdminMilestoneManager.tsx` · [`KillTracker.tsx`](../web/apps/client/src/components/tracking/KillTracker.tsx) & [`AdminMilestoneManager.tsx`](../web/apps/client/src/components/admin/AdminMilestoneManager.tsx) |
+
 
 ---
+
 
 ## 🏛️ Core Philosophy & The Four Pillars
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, X, Shield, Award, MapPin, User, ChevronRight } from "lucide-react";
+import { Search, X, Shield, Award, MapPin, User, ChevronRight, ChevronDown } from "lucide-react";
 import { CharacterDetail, CharacterSummary } from "@rathena/shared";
 import { api } from "../../lib/api";
 import { StatusWindow } from "../character/StatusWindow";
@@ -15,9 +15,15 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CharacterSummary[]>([]);
   const [rankings, setRankings] = useState<CharacterSummary[]>([]);
+  // ponytail: progressive chunking for hall of fame rankings and search results (10 initial)
+  const [visibleCount, setVisibleCount] = useState<number>(10);
   const [loading, setLoading] = useState(false);
   const [inspectChar, setInspectChar] = useState<CharacterDetail | null>(null);
   const [inspectLoading, setInspectLoading] = useState(false);
+
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [query, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -167,44 +173,75 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({ isOpen, onClose }) =
                     Searching Adventurer Archives...
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(query.trim() ? results : rankings).map((char, index) => (
-                      <div
-                        key={char.charId}
-                        onClick={() => handleSelectChar(char.charId)}
-                        className="bg-surface2 border border-border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:border-accent hover:bg-surface2/80 transition-all group"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center font-bold text-sm text-accent group-hover:scale-110 transition-transform">
-                            {!query.trim() ? `#${index + 1}` : <User size={16} />}
-                          </div>
-                          <div>
-                            <div className="font-bold text-primary flex items-center gap-2">
-                              <span>{char.name}</span>
-                              {char.online && (
-                                <span className="w-2 h-2 rounded-full bg-success" title="Online" />
-                              )}
+                  (() => {
+                    const activeList = query.trim() ? results : rankings;
+                    if (activeList.length === 0) {
+                      return (
+                        <div className="py-12 text-center text-sm text-muted">
+                          {query.trim()
+                            ? "No adventurers found matching your search."
+                            : "No ranking records available."}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {activeList.slice(0, visibleCount).map((char, index) => (
+                            <div
+                              key={char.charId}
+                              onClick={() => handleSelectChar(char.charId)}
+                              className="bento-list-item bg-surface2 border border-border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:border-accent hover:bg-surface2/80 transition-all group"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center font-bold text-sm text-accent group-hover:scale-110 transition-transform">
+                                  {!query.trim() ? `#${index + 1}` : <User size={16} />}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-primary flex items-center gap-2">
+                                    <span>{char.name}</span>
+                                    {char.online && (
+                                      <span className="w-2 h-2 rounded-full bg-success" title="Online" />
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-accent font-medium">
+                                    {char.className}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right flex items-center gap-3">
+                                <div className="font-mono">
+                                  <div className="text-sm font-bold text-primary">
+                                    Lv. {char.baseLevel}/{char.jobLevel}
+                                  </div>
+                                  <div className="text-xs text-muted">
+                                    {formatZeny(char.zeny)} Z
+                                  </div>
+                                </div>
+                                <ChevronRight size={16} className="text-muted group-hover:text-primary transition-colors" />
+                              </div>
                             </div>
-                            <div className="text-xs text-accent font-medium">
-                              {char.className}
-                            </div>
-                          </div>
+                          ))}
                         </div>
 
-                        <div className="text-right flex items-center gap-3">
-                          <div className="font-mono">
-                            <div className="text-sm font-bold text-primary">
-                              Lv. {char.baseLevel}/{char.jobLevel}
-                            </div>
-                            <div className="text-xs text-muted">
-                              {formatZeny(char.zeny)} Z
-                            </div>
+                        {/* ponytail: progressive chunking load more trigger */}
+                        {activeList.length > visibleCount && (
+                          <div className="pt-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setVisibleCount((prev) => prev + 10)}
+                              className="px-4 py-1.5 rounded-lg bg-surface2 hover:bg-surface text-xs font-bold text-muted hover:text-primary border border-border hover:border-accent/40 shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5 text-accent animate-bounce" />
+                              <span>Show More ({activeList.length - visibleCount} remaining)</span>
+                            </button>
                           </div>
-                          <ChevronRight size={16} className="text-muted group-hover:text-primary transition-colors" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        )}
+                      </>
+                    );
+                  })()
                 )}
               </div>
             </>

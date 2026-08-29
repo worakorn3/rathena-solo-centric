@@ -3,6 +3,7 @@ import crypto from "crypto";
 import zlib from "zlib";
 import { config } from "../config";
 import { query, queryOne, primaryExecute, getPrimaryDbPool } from "../db/pool";
+import { TrackingService } from "../services/tracking.service";
 
 import { jwt } from "@elysiajs/jwt";
 
@@ -442,4 +443,72 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
         passphrase: t.Optional(t.String()),
       }),
     }
-  );
+  )
+
+  // 10. Hunt Milestones CRUD Manager
+  .get("/milestones", async ({ verifyAdmin, set }) => {
+    verifyAdmin();
+    try {
+      const milestones = await TrackingService.getAllMilestonesAdmin();
+      return { success: true, milestones };
+    } catch (err: any) {
+      set.status = 500;
+      return { success: false, error: err.message || "Failed to load milestones" };
+    }
+  })
+  .post(
+    "/milestones",
+    async ({ verifyAdmin, body, set }) => {
+      verifyAdmin();
+      try {
+        await TrackingService.saveMilestoneAdmin(body as any);
+        return { success: true, message: "Milestone saved successfully" };
+      } catch (err: any) {
+        set.status = 400;
+        return { success: false, error: err.message || "Failed to save milestone" };
+      }
+    },
+    {
+      body: t.Object({
+        id: t.String(),
+        category: t.String(),
+        prev_milestone_id: t.Optional(t.Nullable(t.String())),
+        target_mob_id: t.Number(),
+        required_count: t.Number(),
+        title: t.String(),
+        description: t.Optional(t.String()),
+        reward_zeny: t.Optional(t.Number()),
+        reward_item_id: t.Optional(t.Number()),
+        reward_item_amount: t.Optional(t.Number()),
+        reward_desc: t.Optional(t.String()),
+        tier_label: t.Optional(t.String()),
+        is_active: t.Optional(t.Boolean()),
+        sort_order: t.Optional(t.Number()),
+      }),
+    }
+  )
+  .put(
+    "/milestones/:id",
+    async ({ verifyAdmin, params, body, set }) => {
+      verifyAdmin();
+      try {
+        await TrackingService.saveMilestoneAdmin({ ...(body as any), id: params.id });
+        return { success: true, message: "Milestone updated successfully" };
+      } catch (err: any) {
+        set.status = 400;
+        return { success: false, error: err.message || "Failed to update milestone" };
+      }
+    }
+  )
+  .delete("/milestones/:id", async ({ verifyAdmin, params, set }) => {
+    verifyAdmin();
+    try {
+      await TrackingService.deleteMilestoneAdmin(params.id);
+      return { success: true, message: "Milestone deleted successfully" };
+    } catch (err: any) {
+      set.status = 400;
+      return { success: false, error: err.message || "Failed to delete milestone" };
+    }
+  });
+
+

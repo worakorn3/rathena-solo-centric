@@ -32,7 +32,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         { keys: ["1"], label: "Hero & Equipment Paperdoll" },
         { keys: ["2"], label: "Financial HQ & Stock Market" },
         { keys: ["3"], label: "Leisure & LoFi Audio Lounge" },
-        { keys: ["4"], label: "Hunt Tracker & Persistence Log" },
+        { keys: ["4"], label: "Hunting Journal & Milestones" },
         { keys: ["5"], label: "Daily Junk Trader Bounties" },
         { keys: ["6"], label: "Midgard Egg Spinner Gacha Altar" },
       ],

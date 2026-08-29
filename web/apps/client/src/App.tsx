@@ -465,6 +465,8 @@ export const AppContent: React.FC = () => {
                       cryptoMood={netWorth.cryptoMood}
                       cryptoDrift={netWorth.cryptoDrift}
                       latestEvent={netWorth.latestEvent}
+                      filterTab={portfolioAssetFilter}
+                      onFilterChange={setPortfolioAssetFilter}
                       onTradeSuccess={() => loadUserData(true)}
                     />
                   </div>
@@ -503,6 +505,8 @@ export const AppContent: React.FC = () => {
                     cryptoMood={cryptoMood}
                     cryptoDrift={cryptoDrift}
                     latestEvent={latestEvent}
+                    filterTab={portfolioAssetFilter}
+                    onFilterChange={setPortfolioAssetFilter}
                     onTradeSuccess={loadPublicData}
                   />
                 </div>
@@ -548,27 +552,37 @@ export const AppContent: React.FC = () => {
                     onSelect={setSelectedCharId}
                   />
                 )}
-                <KillTracker progression={progression} />
+                <KillTracker
+                  progression={progression}
+                  selectedCharId={selectedCharId}
+                  selectedCharName={
+                    characters.find((c) => c.charId === selectedCharId)?.name ||
+                    selectedCharDetail?.name
+                  }
+                  onClaimSuccess={() => loadUserData(true)}
+                />
               </>
             ) : (
+
               <div className="bento-card flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12">
                 <div className="w-14 h-14 rounded-full bg-danger/10 border border-danger/20 mx-auto flex items-center justify-center">
                   <Skull className="text-danger w-7 h-7" />
                 </div>
                 <div>
                   <h2 className="font-bold text-lg text-primary mb-1">
-                    Solo Persistence & Hunt Tracker
+                    Hunting Journal & Bounties
                   </h2>
                   <p className="text-xs font-medium text-muted max-w-md mx-auto">
-                    Silently records your lifetime monster kills, MvP triumphs, and rare loot discoveries directly into the solo persistence log. Log in to view your hunting milestones.
+                    Track your lifetime monster hunts, MvP triumphs, and unlock bounty rewards sent straight to your in-game RODEX mailbox. Log in to view your hunting progress.
                   </p>
                 </div>
                 <button
                   onClick={() => handleTabChange("LOGIN")}
                   className="bg-danger hover:bg-danger/90 text-background font-bold py-2 px-5 rounded-md text-xs transition-colors mt-2"
                 >
-                  Log In to View Hunting Records
+                  Log In to View Hunting Journal
                 </button>
+
               </div>
             )}
           </div>

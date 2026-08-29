@@ -6,6 +6,17 @@ interface StatusWindowProps {
   char: CharacterSummary;
 }
 
+// Helper to detect ranged classes where DEX is the primary status ATK attribute
+const isRangedClass = (classId: number): boolean => {
+  const rangedJobIds = new Set([
+    3, 11, 4004, 4012, 4056, 4069, 4257, // Archer, Hunter, High Archer, Sniper, Ranger, Windhawk
+    19, 4020, 4062, 4075, 4263, // Bard, Clown, Minstrel, Troubadour
+    20, 4021, 4063, 4076, 4264, // Dancer, Gypsy, Wanderer, Trouvere
+    24, 4215, 4269, // Gunslinger, Rebellion, Night Watch
+  ]);
+  return rangedJobIds.has(classId);
+};
+
 export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
 
@@ -19,11 +30,25 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
     return () => clearInterval(interval);
   }, [char.charId, char.online, char.lastLogoutTime]);
 
-  const hpPct = char.maxHp > 0 ? (char.hp / char.maxHp) * 100 : 0;
-  const spPct = char.maxSp > 0 ? (char.sp / char.maxSp) * 100 : 0;
+  // Vitals & Gauges (defensively clamped against max_hp/sp desyncs)
+  const effectiveMaxHp = Math.max(char.maxHp || 0, char.hp || 0);
+  const effectiveMaxSp = Math.max(char.maxSp || 0, char.sp || 0);
   const maxAp = char.maxAp || 0;
   const ap = char.ap || 0;
-  const apPct = maxAp > 0 ? (ap / maxAp) * 100 : 0;
+  const effectiveMaxAp = Math.max(maxAp, ap);
+
+  const hpPct =
+    effectiveMaxHp > 0
+      ? Math.min(100, Math.max(0, (char.hp / effectiveMaxHp) * 100))
+      : 0;
+  const spPct =
+    effectiveMaxSp > 0
+      ? Math.min(100, Math.max(0, (char.sp / effectiveMaxSp) * 100))
+      : 0;
+  const apPct =
+    effectiveMaxAp > 0
+      ? Math.min(100, Math.max(0, (ap / effectiveMaxAp) * 100))
+      : 0;
 
   // Offline Rest & Expedition metrics (48h ceiling = 172,800s = 2880m):
   const isOffline = !char.online;
@@ -52,6 +77,11 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
     (char.maxAp !== undefined && char.maxAp > 0) ||
     (char.traitPoint !== undefined && char.traitPoint > 0) ||
     (char.pow !== undefined && char.pow > 0) ||
+    (char.sta !== undefined && char.sta > 0) ||
+    (char.wis !== undefined && char.wis > 0) ||
+    (char.spl !== undefined && char.spl > 0) ||
+    (char.con !== undefined && char.con > 0) ||
+    (char.crt !== undefined && char.crt > 0) ||
     (char.classId >= 4252 && char.classId <= 4271);
 
   const pow = char.pow || 0;
@@ -62,23 +92,46 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
   const crt = char.crt || 0;
   const traitPoints = char.traitPoint || 0;
 
-  // Calculated secondary combat ratings from base stats
-  const atkBase = char.str + Math.floor(char.dex / 5) + Math.floor(char.luk / 5);
-  const defBase = char.vit;
-  const hitBase = char.baseLevel + char.dex;
-  const critBase = Math.floor(1 + char.luk * 0.3);
-  const matkMin = char.int + Math.floor(char.int / 7) ** 2;
-  const matkMax = char.int + Math.floor(char.int / 5) ** 2;
-  const mdefBase = char.int;
-  const fleeBase = char.baseLevel + char.agi;
-  const aspdBase = (150 + char.agi * 0.4 + char.dex * 0.1).toFixed(1);
-
-  // 4th Class Sub-Ratings
-  const pAtkBonus = pow * 5 + Math.floor(con / 5);
-  const sMatkBonus = spl * 5 + Math.floor(con / 5);
-  const resBonus = sta;
-  const mresBonus = wis;
+  // Exact 4th Class Sub-Ratings from rAthena status.cpp (Renewal)
+  const pAtkBonus = Math.floor(pow / 3) + Math.floor(con / 5);
+  const sMatkBonus = Math.floor(spl / 3) + Math.floor(con / 5);
+  const resBonus = sta + Math.floor(sta / 3) * 5;
+  const mresBonus = wis + Math.floor(wis / 3) * 5;
   const cRateBonus = Math.floor(crt / 3);
+  const hPlusBonus = crt;
+
+  // Exact Renewal Base Combat Telemetry from rAthena status.cpp
+  const isRanged = isRangedClass(char.classId);
+  const mainAtkStat = isRanged ? char.dex : char.str;
+  const subAtkStat = isRanged ? char.str : char.dex;
+
+  const atkBase =
+    Math.floor(char.baseLevel / 4) +
+    mainAtkStat +
+    Math.floor(subAtkStat / 5) +
+    Math.floor(char.luk / 3) +
+    5 * pow;
+
+  const matkBase =
+    Math.floor(char.baseLevel / 4) +
+    char.int +
+    Math.floor(char.int / 2) +
+    Math.floor(char.dex / 5) +
+    Math.floor(char.luk / 3) +
+    5 * spl;
+
+  const defBase = Math.floor((char.baseLevel + char.vit) / 2 + char.agi / 5);
+  const mdefBase = Math.floor(
+    char.int + char.baseLevel / 4 + (char.dex + char.vit) / 5
+  );
+  const hitBase =
+    175 + char.baseLevel + char.dex + Math.floor(char.luk / 3) + 2 * con;
+  const fleeBase =
+    100 + char.baseLevel + char.agi + Math.floor(char.luk / 5) + 2 * con;
+  const critBase = Math.floor(
+    1 + char.baseLevel / 100 + char.luk * 0.3 + crt / 3
+  );
+  const aspdBase = (150 + char.agi * 0.4 + char.dex * 0.1).toFixed(1);
 
   return (
     <div className="flex flex-col gap-3 min-h-0 h-full">
@@ -93,7 +146,7 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
                   <Heart className="w-3.5 h-3.5" /> HP (Health)
                 </span>
                 <span className="font-mono text-[11px] text-primary">
-                  {char.hp.toLocaleString()} / {char.maxHp.toLocaleString()}{" "}
+                  {char.hp.toLocaleString()} / {effectiveMaxHp.toLocaleString()}{" "}
                   <span className="text-success text-[10px]">
                     ({Math.round(hpPct)}%)
                   </span>
@@ -113,7 +166,7 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
                   <Zap className="w-3.5 h-3.5" /> SP (Mana)
                 </span>
                 <span className="font-mono text-[11px] text-primary">
-                  {char.sp.toLocaleString()} / {char.maxSp.toLocaleString()}{" "}
+                  {char.sp.toLocaleString()} / {effectiveMaxSp.toLocaleString()}{" "}
                   <span className="text-info text-[10px]">
                     ({Math.round(spPct)}%)
                   </span>
@@ -135,7 +188,7 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
                     <Sparkles className="w-3.5 h-3.5" /> AP (Activity Points)
                   </span>
                   <span className="font-mono text-[11px] text-accent">
-                    {ap} / {maxAp || 200}{" "}
+                    {ap} / {effectiveMaxAp || 200}{" "}
                     <span className="text-[10px]">
                       ({Math.round(apPct || 0)}%)
                     </span>
@@ -284,36 +337,60 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
               </div>
 
               {/* Secondary Trait Combat Ratings */}
-              <div className="grid grid-cols-5 gap-1.5 pt-0.5 text-center font-mono text-[9px]">
-                <div className="bg-surface p-1 rounded border border-border">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-0.5 text-center font-mono text-[9px]">
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Power Attack (+1 per 3 POW, +1 per 5 CON)"
+                >
                   <span className="text-[8px] text-muted uppercase block">
                     P.ATK
                   </span>
                   <span className="font-bold text-danger">+{pAtkBonus}</span>
                 </div>
-                <div className="bg-surface p-1 rounded border border-border">
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Spell Magic Attack (+1 per 3 SPL, +1 per 5 CON)"
+                >
                   <span className="text-[8px] text-muted uppercase block">
                     S.MATK
                   </span>
                   <span className="font-bold text-purple">+{sMatkBonus}</span>
                 </div>
-                <div className="bg-surface p-1 rounded border border-border">
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Physical Resistance (STA + floor(STA/3)*5)"
+                >
                   <span className="text-[8px] text-muted uppercase block">
                     RES
                   </span>
                   <span className="font-bold text-success">{resBonus}</span>
                 </div>
-                <div className="bg-surface p-1 rounded border border-border">
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Magic Resistance (WIS + floor(WIS/3)*5)"
+                >
                   <span className="text-[8px] text-muted uppercase block">
                     MRES
                   </span>
                   <span className="font-bold text-info">{mresBonus}</span>
                 </div>
-                <div className="bg-surface p-1 rounded border border-border">
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Critical Damage Rate (+1 per 3 CRT)"
+                >
                   <span className="text-[8px] text-muted uppercase block">
                     C.RATE
                   </span>
                   <span className="font-bold text-pink-400">+{cRateBonus}</span>
+                </div>
+                <div
+                  className="bg-surface p-1 rounded border border-border"
+                  title="Heal Plus (+1 per CRT)"
+                >
+                  <span className="text-[8px] text-muted uppercase block">
+                    H.PLUS
+                  </span>
+                  <span className="font-bold text-accent">+{hPlusBonus}</span>
                 </div>
               </div>
             </div>
@@ -325,52 +402,74 @@ export const StatusWindow: React.FC<StatusWindowProps> = ({ char }) => {
               Combat Ratings
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-mono">
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Status ATK (Renewal)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   ATK
                 </div>
                 <div className="font-bold text-primary">{atkBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Soft DEF (Renewal)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   DEF
                 </div>
                 <div className="font-bold text-primary">{defBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="HIT Rate (Renewal 175 Baseline)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   HIT
                 </div>
                 <div className="font-bold text-primary">{hitBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Critical Rate (Renewal)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   CRIT
                 </div>
                 <div className="font-bold text-accent">{critBase}%</div>
               </div>
 
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Status MATK (Renewal)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   MATK
                 </div>
-                <div className="font-bold text-primary">
-                  {matkMin}~{matkMax}
-                </div>
+                <div className="font-bold text-primary">{matkBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Soft MDEF (Renewal)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   MDEF
                 </div>
                 <div className="font-bold text-primary">{mdefBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="FLEE Rate (Renewal 100 Baseline)"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   FLEE
                 </div>
                 <div className="font-bold text-primary">{fleeBase}</div>
               </div>
-              <div className="p-2 rounded bg-surface2/20 border border-border">
+              <div
+                className="p-2 rounded bg-surface2/20 border border-border"
+                title="Attack Speed Base"
+              >
                 <div className="text-[8px] text-muted font-sans font-bold uppercase">
                   ASPD
                 </div>

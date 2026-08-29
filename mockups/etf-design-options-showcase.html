@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midgard Stock Exchange — ETF & Index Clean Separation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+    }
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-accent/20 selection:text-accent p-3 md:p-6 max-w-7xl mx-auto">
+
+  <!-- ==================== HEADER STRIP ==================== -->
+  <div class="mb-3 bg-surface2/90 border border-border p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-sm">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
+      <span class="font-bold text-accent">[CLEAN SEPARATION]</span>
+      <span class="text-primary font-semibold">Index (Statistical Benchmark) vs. ETF / Endowment (Financial Asset)</span>
+    </div>
+    <span class="text-[11px] text-muted font-sans">Option 1 Refined</span>
+  </div>
+
+  <!-- ==================== REAL NET WORTH TOP BAR ==================== -->
+  <div class="bento-card p-3.5 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+        <i data-lucide="coins" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 text-xs text-muted font-sans font-medium uppercase tracking-wider">
+          <span>Total Global Net Worth</span>
+          <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-success/10 text-success font-bold">+54.9% P/L</span>
+        </div>
+        <div class="text-lg sm:text-xl font-extrabold text-primary font-mono tracking-tight flex items-baseline gap-2">
+          <span>331,205,655</span> <span class="text-xs text-accent font-sans font-bold">Zeny</span>
+          <span class="text-xs text-success font-normal font-mono">(+107,599,996 Z)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="px-3 py-1.5 rounded-lg bg-surface2/60 border border-border flex items-center gap-2 text-xs">
+        <i data-lucide="wallet" class="w-3.5 h-3.5 text-accent"></i>
+        <div>
+          <div class="text-[9px] text-muted uppercase font-sans">Wallets (7)</div>
+          <div class="font-bold text-primary font-mono">5,057,074 Z</div>
+        </div>
+      </div>
+      <div class="px-3 py-1.5 rounded-lg bg-surface2/60 border border-border flex items-center gap-2 text-xs">
+        <i data-lucide="layers" class="w-3.5 h-3.5 text-info"></i>
+        <div>
+          <div class="text-[9px] text-muted uppercase font-sans">Positions</div>
+          <div class="font-bold text-primary font-mono">14 Assets</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN 2-COLUMN LAYOUT ==================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+    
+    <!-- LEFT 5 COLS: Sub-Nav with "👑 Endowments" Tab Active -->
+    <div class="lg:col-span-5 bento-card p-3 sm:p-3.5 flex flex-col min-h-[480px]">
+      
+      <!-- Sub-Nav Pill Strip -->
+      <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3">
+        <div class="flex items-center gap-1 bg-surface2/70 p-0.5 rounded-lg border border-border text-[11px] font-mono">
+          <button onclick="switchSubTab('POSITIONS')" id="tab-btn-pos" class="px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors">
+            Positions (14)
+          </button>
+          <button onclick="switchSubTab('ENDOWMENTS')" id="tab-btn-endow" class="px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm transition-colors flex items-center gap-1">
+            <i data-lucide="crown" class="w-3 h-3 text-accent"></i> Endowments (1)
+          </button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Bank Vault</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Allocation</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Ledger</button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: ENDOWMENTS (Prestige Soulbound Assets Held by Player) -->
+      <div id="subtab-endowments" class="flex-1 flex flex-col justify-between">
+        <div>
+          <!-- Endowment Instrument Header -->
+          <div class="p-3.5 rounded-xl bg-gradient-to-br from-surface2 via-surface to-accent/[0.04] border border-accent/30 mb-3 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono bg-accent/20 text-accent border border-accent/40 font-bold uppercase flex items-center gap-1">
+                <i data-lucide="award" class="w-3 h-3"></i> Crown Sovereign Endowment
+              </span>
+              <span class="text-[10px] text-muted font-mono bg-surface2 px-1.5 py-0.2 rounded border border-border">Soulbound</span>
+            </div>
+
+            <!-- Asset Info -->
+            <div class="mb-3">
+              <h3 class="font-extrabold text-sm text-primary">Royal Tristan III Endowment Fund</h3>
+              <div class="text-[11px] text-muted font-sans mt-0.5 flex items-center gap-1.5">
+                <span>Issuer: <strong>Royal Treasury of Prontera</strong></span>
+                <span>•</span>
+                <span class="text-info font-mono">Tracks Benchmark: <strong>MIDX</strong></span>
+              </div>
+            </div>
+
+            <!-- Holdings & Yield Numbers -->
+            <div class="grid grid-cols-2 gap-2 font-mono">
+              <div class="p-2.5 rounded-lg bg-surface/90 border border-border">
+                <div class="text-[9px] text-muted uppercase font-sans">Held Fund Units</div>
+                <div class="text-base font-extrabold text-accent mt-0.5">100 Shares</div>
+                <div class="text-[10px] text-muted font-sans">Asset Value: <strong class="text-primary font-mono">14,200z</strong></div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-surface/90 border border-border">
+                <div class="text-[9px] text-muted uppercase font-sans">Perpetual Dividend Yield</div>
+                <div class="text-base font-extrabold text-success mt-0.5">4.2% APR</div>
+                <div class="text-[10px] text-muted font-sans">Est. Payout: <strong class="text-success font-mono">+600z / cycle</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Benchmark Link Card (Explicitly explains what index is being tracked) -->
+          <div class="p-3 rounded-xl bg-surface2/40 border border-border/80 text-xs mb-3 font-sans">
+            <div class="flex items-center justify-between font-bold text-primary mb-1.5">
+              <span class="flex items-center gap-1.5 text-[11px]">
+                <i data-lucide="line-chart" class="w-3.5 h-3.5 text-info"></i>
+                Tracked Index: Midgard Composite (MIDX)
+              </span>
+              <span class="text-[10px] font-mono text-success font-bold">1,482 Z (+2.4%)</span>
+            </div>
+            <p class="text-[11px] text-muted leading-relaxed">
+              This endowment does not hold individual company shares. The Crown automatically mirrors the 
+              <strong>Midgard Composite Index</strong> (70% Defensive Blue-Chips / 30% Frontier Growth Tech) 
+              and credits all aggregate municipal dividends directly to your account.
+            </p>
+          </div>
+        </div>
+
+        <!-- DRIP Auto-Compound Footer -->
+        <div class="p-2.5 rounded-lg bg-surface2/70 border border-border flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4 text-accent"></i>
+            <div>
+              <div class="font-bold text-primary text-[11px]">DRIP Dividend Compounding</div>
+              <div class="text-[10px] text-muted font-sans">Automatically purchase more endowment units with cycle dividends</div>
+            </div>
+          </div>
+          <button class="px-2.5 py-1 rounded bg-success/20 text-success text-[10px] font-bold font-mono border border-success/30">
+            ACTIVE
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 2: NORMAL POSITIONS (Hidden by default in demo, switchable) -->
+      <div id="subtab-positions" class="hidden flex-1 flex flex-col">
+        <div class="text-xs text-muted font-sans py-10 text-center">
+          Standard active trading positions (Municipal & Crypto holdings).
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT 7 COLS: Live Exchange Terminal & Pure Tradable Order Book -->
+    <div class="lg:col-span-7 bento-card p-3 sm:p-3.5 flex flex-col min-h-[480px]">
+      
+      <!-- Terminal Header with Macro Index Barometer in Header -->
+      <div class="flex items-center justify-between gap-2 border-b border-border pb-2.5 mb-2.5">
+        <div class="flex items-center gap-2 min-w-0">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4 text-accent"></i> Midgard Stock Exchange
+          </h3>
+          <span class="text-[11px] text-muted hidden sm:inline">| Live Order Book</span>
+        </div>
+
+        <!-- Regional Macro Index Barometer (Statistical benchmark, NOT an asset) -->
+        <div class="flex items-center gap-2 text-[10px] font-mono">
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface2/80 border border-border">
+            <span class="text-muted text-[9px] uppercase font-sans">Index (MIDX):</span>
+            <span class="text-primary font-bold">1,482 Z</span>
+            <span class="text-success font-bold">▲ +2.4%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pure Tradable Filter Tabs -->
+      <div class="flex items-center justify-between gap-1.5 mb-2 text-[11px] font-mono">
+        <div class="flex items-center gap-1 bg-surface2/70 p-0.5 rounded-lg border border-border">
+          <button class="px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm">All (19)</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">🏛️ Municipal (9)</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">⚡ Crypto Protocols (10)</button>
+        </div>
+        <div class="flex items-center gap-1 text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full bg-danger/10 border border-danger/20 text-danger font-bold">Muni: Bearish</span>
+          <span class="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-bold">Crypto: Chaos</span>
+        </div>
+      </div>
+
+      <!-- Live Active Event Banner -->
+      <div class="mb-2 p-2 rounded-lg bg-info/10 border border-info/20 flex items-center justify-between text-xs shrink-0">
+        <div class="flex items-center gap-2 truncate text-[11px]">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-accent shrink-0"></i>
+          <span class="font-bold text-info mr-1">[Distressed Equity Capital Restructuring]</span>
+          <span class="text-primary/90 font-medium">Municipal regulators approve 1:5 reverse stock split!</span>
+        </div>
+        <span class="text-[9px] text-muted font-mono shrink-0 ml-2">Active</span>
+      </div>
+
+      <!-- Pure Trading Floor Table (100% Tradable Assets Only) -->
+      <div class="flex-1 overflow-y-auto pr-0.5">
+        <table class="w-full text-xs text-left min-w-[340px]">
+          <thead class="text-[10px] text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface z-10 font-mono">
+            <tr>
+              <th class="pb-1.5 font-bold">Ticker & Organization</th>
+              <th class="pb-1.5 font-bold text-right">Price</th>
+              <th class="pb-1.5 font-bold text-right">24h Change</th>
+              <th class="pb-1.5 font-bold text-center">Trend</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60 font-mono">
+            <!-- Row 1 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                  <span>ALB</span>
+                  <span class="text-[10px] text-muted font-normal">Alberta Maritime Logistics</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">122 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +9.9%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+            <!-- Row 2 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                  <span>ALM</span>
+                  <span class="px-1 py-0.2 rounded text-[8px] font-bold uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">Crypto</span>
+                  <span class="text-[10px] text-muted font-normal">Alchemax AMM Pool</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">123 Z</td>
+              <td class="py-2 text-right font-bold text-danger">▼ -8.2%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-danger/10 text-danger">▼ Bearish</span></td>
+            </tr>
+            <!-- Row 3 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>EIN</span>
+                  <span class="text-[10px] text-muted font-normal">Einbroch Heavy Industries</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">90 Z</td>
+              <td class="py-2 text-right font-bold text-danger">▼ -13.5%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-danger/10 text-danger">▼ Bearish</span></td>
+            </tr>
+            <!-- Row 4 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>EMP</span>
+                  <span class="px-1 py-0.2 rounded text-[8px] font-bold uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">Crypto</span>
+                  <span class="text-[10px] text-muted font-normal">Emperium Shard Protocol</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">133 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +75.0%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+            <!-- Row 5 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span>GEF</span>
+                  <span class="text-[10px] text-muted font-normal">Geffen Arcanetech</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">171 Z</td>
+              <td class="py-2 text-right font-bold text-danger">▼ -3.9%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-danger/10 text-danger">▼ Bearish</span></td>
+            </tr>
+            <!-- Row 6 -->
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                  <span>HUG</span>
+                  <span class="text-[10px] text-muted font-normal">Hugel Leisure & Coastal</span>
+                </div>
+              </td>
+              <td class="py-2 text-right font-bold text-primary">215 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +0.0%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchSubTab(tab) {
+      if (tab === 'ENDOWMENTS') {
+        document.getElementById('subtab-endowments').classList.remove('hidden');
+        document.getElementById('subtab-positions').classList.add('hidden');
+        document.getElementById('tab-btn-endow').className = "px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm transition-colors flex items-center gap-1";
+        document.getElementById('tab-btn-pos').className = "px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors";
+      } else {
+        document.getElementById('subtab-endowments').classList.add('hidden');
+        document.getElementById('subtab-positions').classList.remove('hidden');
+        document.getElementById('tab-btn-pos').className = "px-2.5 py-0.5 rounded bg-surface text-primary font-bold shadow-sm transition-colors";
+        document.getElementById('tab-btn-endow').className = "px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors flex items-center gap-1";
+      }
+      lucide.createIcons();
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

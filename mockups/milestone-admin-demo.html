@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hunting Journal & Milestone Bounties — Bento UI Prototype</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+            purple: '#c084fc',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease-in-out;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+
+    .badge-tier-novice { background: rgba(74, 222, 128, 0.1); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.25); }
+    .badge-tier-2nd { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.25); }
+    .badge-tier-trans { background: rgba(192, 132, 252, 0.1); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.25); }
+    .badge-tier-3rd { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); }
+    .badge-tier-4th { background: rgba(248, 113, 113, 0.1); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.25); }
+
+    /* Pulse animation for ready to claim */
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
+      50% { box-shadow: 0 0 16px rgba(74, 222, 128, 0.7); }
+    }
+    .ready-claim-glow {
+      animation: glow-pulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col p-3 sm:p-6 select-none">
+
+  <!-- Top Global Navigation Header with Active Character Context -->
+  <header class="w-full max-w-6xl mx-auto mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface border border-border p-3.5 rounded-xl shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+        <i data-lucide="skull" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-sm text-primary uppercase tracking-wide">Hunting Journal & Milestone Bounties</h1>
+          <span class="bg-accent/10 text-accent border border-accent/25 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">BENTO UX</span>
+        </div>
+        <p class="text-xs text-muted">Lifetime monster hunting records & 1-click bounty claims delivered to in-game RODEX mail</p>
+      </div>
+    </div>
+
+    <!-- Active Character Badge + Mode Switcher -->
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <!-- Active Character Chip -->
+      <div class="flex items-center gap-2 bg-surface2/80 border border-border px-2.5 py-1 rounded-lg">
+        <div class="w-6 h-6 rounded bg-accent/20 border border-accent/30 flex items-center justify-center text-accent text-[11px] font-bold">
+          S
+        </div>
+        <div>
+          <div class="text-xs font-bold text-primary leading-tight" id="active-char-name">SolitaryKnight</div>
+          <div class="text-[9px] text-muted font-mono leading-tight">Lv 99 Lord Knight</div>
+        </div>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="flex items-center gap-1 bg-surface2/60 p-1 rounded-lg border border-border">
+        <button onclick="setViewMode('player')" id="btn-mode-player" class="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-accent text-background transition-all shadow-sm">
+          <i data-lucide="award" class="w-3.5 h-3.5"></i>
+          <span>Journal</span>
+        </button>
+        <button onclick="setViewMode('admin')" id="btn-mode-admin" class="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-muted hover:text-primary transition-all">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+          <span>Admin Vault</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="w-full max-w-6xl mx-auto flex-1 flex flex-col gap-4 min-h-0">
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: PLAYER PROGRESSION & HUNT JOURNAL TAB (TAB 4)                     -->
+    <!-- ========================================================================= -->
+    <section id="section-player" class="w-full flex flex-col gap-4">
+      
+      <!-- Top 4-Card Hero KPI Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 shrink-0">
+        <div class="bento-card p-3 flex items-center gap-2.5 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center shrink-0">
+            <i data-lucide="skull" class="w-4 h-4 sm:w-5 sm:h-5 text-danger"></i>
+          </div>
+          <div>
+            <div class="text-[8px] sm:text-[9px] font-bold text-muted uppercase">Total Defeated</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-primary" id="player-stat-total">34,120</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-2.5 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <i data-lucide="crown" class="w-4 h-4 sm:w-5 sm:h-5 text-accent"></i>
+          </div>
+          <div>
+            <div class="text-[8px] sm:text-[9px] font-bold text-muted uppercase text-accent">MvP Bosses</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-accent" id="player-stat-mvp">42</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-2.5 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center shrink-0">
+            <i data-lucide="swords" class="w-4 h-4 sm:w-5 sm:h-5 text-info"></i>
+          </div>
+          <div>
+            <div class="text-[8px] sm:text-[9px] font-bold text-muted uppercase text-info">Mini-Bosses</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-info" id="player-stat-miniboss">188</div>
+          </div>
+        </div>
+
+        <div class="bento-card p-3 flex items-center gap-2.5 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface2 border border-border flex items-center justify-center shrink-0">
+            <i data-lucide="mail-check" class="w-4 h-4 sm:w-5 sm:h-5 text-success"></i>
+          </div>
+          <div>
+            <div class="text-[8px] sm:text-[9px] font-bold text-muted uppercase">Milestones Claimed</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-success" id="player-stat-claimed">2 / 7</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Test Kill Simulator Bar -->
+      <div class="bento-card p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-surface2/30">
+        <div class="flex items-center gap-2 text-xs">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-accent"></i>
+          <span class="font-bold text-primary">Simulation Tool:</span>
+          <span class="text-muted text-[11px]">Simulate in-game kills to test milestone progression & 1-click claim:</span>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button onclick="simulateAddKills(1002, 100)" class="px-2 py-1 bg-surface border border-border hover:border-accent text-[11px] rounded font-mono text-primary transition-colors">+100 Poring</button>
+          <button onclick="simulateAddKills(1023, 250)" class="px-2 py-1 bg-surface border border-border hover:border-accent text-[11px] rounded font-mono text-primary transition-colors">+250 Orc</button>
+          <button onclick="simulateAddKills(1163, 300)" class="px-2 py-1 bg-surface border border-border hover:border-accent text-[11px] rounded font-mono text-primary transition-colors">+300 Raydric</button>
+          <button onclick="simulateAddKills(20929, 500)" class="px-2 py-1 bg-surface border border-border hover:border-accent text-[11px] rounded font-mono text-danger transition-colors">+500 Caput (4th)</button>
+          <button onclick="simulateAddMvpKills(5)" class="px-2 py-1 bg-surface border border-border hover:border-accent text-[11px] rounded font-mono text-accent transition-colors">+5 MvP</button>
+        </div>
+      </div>
+
+      <!-- 2-Column Main Progression Stage: Left Target Records (7 cols) + Right Milestones (5 cols) -->
+      <div class="grid grid-cols-12 gap-3 min-h-0">
+        
+        <!-- Left: Hunted Targets List (7 Cols) -->
+        <div class="col-span-12 lg:col-span-7 bento-card p-3.5 flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-border pb-2">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+              <i data-lucide="target" class="w-4 h-4 text-accent"></i> Hunted Targets
+            </h3>
+            <span class="text-[10px] font-mono text-muted">Renewal Sampled Lv 1–213</span>
+          </div>
+
+          <div class="space-y-2 overflow-y-auto max-h-[460px] pr-1" id="player-mob-list">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Right: Hunt Milestones (5 Cols) -->
+        <div class="col-span-12 lg:col-span-5 bento-card p-3.5 flex flex-col justify-between min-h-0">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-border pb-2">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+                <i data-lucide="award" class="w-4 h-4 text-accent"></i> Hunt Milestones
+              </h3>
+              <span class="text-[10px] text-muted font-mono" id="player-milestone-sub">2 of 7 Claimed</span>
+            </div>
+
+            <!-- List of Dynamic Player Milestones -->
+            <div class="space-y-2.5 overflow-y-auto max-h-[420px] pr-1" id="player-milestone-list">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <div class="text-[10px] text-muted text-center border-t border-border pt-2 font-mono mt-3 flex items-center justify-center gap-1.5">
+            <i data-lucide="mail" class="w-3 h-3 text-info"></i>
+            <span>Rewards are sent directly to <b>SolitaryKnight</b> via in-game RODEX mail.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: ADMIN VAULT WINDOW (ADMIN MODAL / TAB)                            -->
+    <!-- ========================================================================= -->
+    <section id="section-admin" class="w-full hidden flex flex-col gap-4">
+      
+      <!-- Admin Vault Container Window Frame -->
+      <div class="bento-card flex-1 flex flex-col overflow-hidden shadow-2xl border-border">
+        
+        <!-- Vault Header & Navigation Bar -->
+        <div class="bg-surface2/80 border-b border-border px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-danger/15 border border-danger/30 flex items-center justify-center text-danger">
+              <i data-lucide="shield" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-primary">System Admin Vault</span>
+                <span class="bg-danger/10 text-danger border border-danger/25 text-[10px] font-mono px-1.5 py-0.2 rounded font-bold">GM Lv 99</span>
+              </div>
+              <div class="text-[11px] text-muted font-mono">Server Database (:3306) Connected</div>
+            </div>
+          </div>
+
+          <!-- Sub-tabs in Admin Vault -->
+          <div class="flex items-center gap-1 bg-surface p-1 rounded-lg border border-border text-xs">
+            <button class="px-2.5 py-1 rounded text-muted hover:text-primary transition-colors">Overview</button>
+            <button class="px-2.5 py-1 rounded text-muted hover:text-primary transition-colors">Accounts</button>
+            <button class="px-2.5 py-1 rounded text-muted hover:text-primary transition-colors">Backup</button>
+            <button class="px-2.5 py-1 rounded text-muted hover:text-primary transition-colors">Gacha</button>
+            <button class="px-2.5 py-1 rounded bg-surface2 font-bold text-accent border border-accent/20 flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="target" class="w-3.5 h-3.5 text-accent"></i> Milestones
+            </button>
+          </div>
+        </div>
+
+        <!-- Toolbar & Filter Controls -->
+        <div class="p-4 bg-surface/50 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="adminSearchInput" oninput="renderAdminMilestones()" placeholder="Search title, target mob or reward..." class="bg-surface2 border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary placeholder-muted focus:outline-none focus:border-accent w-56 sm:w-64" />
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="flex items-center gap-1 bg-surface2 p-0.5 rounded-lg border border-border text-[11px]">
+              <button onclick="setAdminFilter('ALL')" id="filter-btn-ALL" class="px-2 py-1 rounded font-semibold bg-accent text-background">All (<span id="count-all">7</span>)</button>
+              <button onclick="setAdminFilter('SPECIFIC_MOB')" id="filter-btn-SPECIFIC_MOB" class="px-2 py-1 rounded font-medium text-muted hover:text-primary">Mob Targets (<span id="count-mob">5</span>)</button>
+              <button onclick="setAdminFilter('MVP')" id="filter-btn-MVP" class="px-2 py-1 rounded font-medium text-muted hover:text-primary">MvP (<span id="count-mvp">1</span>)</button>
+              <button onclick="setAdminFilter('TOTAL')" id="filter-btn-TOTAL" class="px-2 py-1 rounded font-medium text-muted hover:text-primary">Total (<span id="count-total">1</span>)</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button onclick="openCreateModal()" class="flex items-center gap-1.5 bg-accent hover:bg-amber-400 text-background px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-md transition-colors">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Create Milestone</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Milestones Data Table / Bento Grid -->
+        <div class="p-4 overflow-y-auto max-h-[520px] space-y-2.5" id="admin-milestone-list">
+          <!-- Dynamically Injected by JS -->
+        </div>
+
+        <!-- Admin Footer Info Strip -->
+        <div class="bg-surface2/60 border-t border-border px-4 py-2.5 flex flex-wrap items-center justify-between text-[11px] text-muted">
+          <div class="flex items-center gap-2">
+            <i data-lucide="database" class="w-3.5 h-3.5 text-success"></i>
+            <span>Table <code class="font-mono text-primary font-bold">solo_milestones</code></span>
+            <span>•</span>
+            <span id="active-milestones-count">7 Active Milestones</span>
+          </div>
+          <div class="text-accent font-mono text-[10px]">
+            Changes immediately update live player sessions and RODEX reward payloads
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: EDIT / CREATE MILESTONE REWARD CUSTOMIZER                          -->
+  <!-- ========================================================================= -->
+  <div id="editModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-background/80 backdrop-blur-sm hidden" onclick="handleModalBackdrop(event)">
+    <div class="bento-card w-full max-w-xl flex flex-col p-0 overflow-hidden shadow-2xl border-border animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="bg-surface2 px-4 py-3 border-b border-border flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
+            <i data-lucide="edit-3" class="w-4 h-4" id="modal-icon"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-primary" id="modal-title">Edit Hunt Milestone & Rewards</h3>
+            <p class="text-[10px] text-muted font-mono" id="modal-subtitle">Server Database (:3306)</p>
+          </div>
+        </div>
+        <button onclick="closeEditModal()" class="text-muted hover:text-primary p-1 rounded-lg hover:bg-surface transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <div class="p-4 space-y-3.5 max-h-[75vh] overflow-y-auto">
+        
+        <input type="hidden" id="form-milestone-id" />
+
+        <!-- 1. Category & Identifier -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-muted uppercase mb-1">Category</label>
+            <select id="form-category" onchange="handleCategoryChange()" class="w-full bg-surface2 border border-border rounded-lg px-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent">
+              <option value="SPECIFIC_MOB">Specific Monster Target</option>
+              <option value="MVP">MvP Boss Slayer</option>
+              <option value="MINI_BOSS">Mini-Boss Hunter</option>
+              <option value="TOTAL">Total Kills (Exterminator)</option>
+              <option value="NORMAL">Normal Monsters</option>
+            </select>
+          </div>
+
+          <div id="container-target-mob">
+            <label class="block text-[11px] font-bold text-muted uppercase mb-1">Target Monster</label>
+            <select id="form-target-mob-id" class="w-full bg-surface2 border border-border rounded-lg px-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent font-mono">
+              <option value="1002">#1002 - Poring (Lv 1, Novice)</option>
+              <option value="1023">#1023 - Orc Warrior (Lv 44, 2nd Class)</option>
+              <option value="1163">#1163 - Raydric (Lv 95, Trans)</option>
+              <option value="1836">#1836 - Magmaring (Lv 110, 3rd Class)</option>
+              <option value="20929">#20929 - Giant Caput (Lv 213, 4th Class)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Title & Required Kills -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-muted uppercase mb-1">Milestone Title</label>
+            <input type="text" id="form-title" class="w-full bg-surface2 border border-border rounded-lg px-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent font-medium" placeholder="e.g. Knightfall Slayer" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-muted uppercase mb-1">Required Kills</label>
+            <input type="number" id="form-required-count" class="w-full bg-surface2 border border-border rounded-lg px-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent font-mono font-bold" placeholder="1000" />
+          </div>
+        </div>
+
+        <!-- 3. Rewards Box (Bento Group) -->
+        <div class="p-3 bg-surface2/40 border border-border rounded-xl space-y-3">
+          <div class="flex items-center justify-between border-b border-border/60 pb-1.5">
+            <span class="text-xs font-bold text-accent flex items-center gap-1.5">
+              <i data-lucide="gift" class="w-3.5 h-3.5"></i> Configurable RODEX Rewards
+            </span>
+            <span class="text-[10px] text-muted font-mono">Dispatched via In-Game Mail</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Zeny Reward (z)</label>
+              <input type="number" id="form-reward-zeny" class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-accent focus:outline-none focus:border-accent" placeholder="500000" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Reward Item ID</label>
+              <input type="number" id="form-reward-item-id" class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-primary focus:outline-none focus:border-accent" placeholder="617 (Old Purple Box)" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Item Amount</label>
+              <input type="number" id="form-reward-item-amount" class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-primary focus:outline-none focus:border-accent" placeholder="1" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Level Tier Badge</label>
+              <select id="form-tier" class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent">
+                <option value="Novice (Lv 1–40)">Novice (Lv 1–40)</option>
+                <option value="2nd Class (Lv 41–99)">2nd Class (Lv 41–99)</option>
+                <option value="Trans (Lv 90–99)">Trans (Lv 90–99)</option>
+                <option value="3rd Class (Lv 100–185)">3rd Class (Lv 100–185)</option>
+                <option value="4th Class (Lv 200–250+)">4th Class (Lv 200–250+)</option>
+                <option value="Global / Boss">Global / Boss</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-muted uppercase mb-1">Reward Description Text</label>
+            <input type="text" id="form-reward-desc" class="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent" placeholder="e.g. 500,000 Zeny + 1x Old Purple Box" />
+          </div>
+        </div>
+
+        <!-- 4. Active Toggle -->
+        <div class="flex items-center justify-between p-2.5 rounded-lg bg-surface2/30 border border-border">
+          <div>
+            <div class="text-xs font-bold text-primary">Active in Progression</div>
+            <div class="text-[10px] text-muted">Visible to players and eligible for completion</div>
+          </div>
+          <input type="checkbox" id="form-is-active" class="w-4 h-4 rounded text-accent focus:ring-0 cursor-pointer" checked />
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-surface2 px-4 py-3 border-t border-border flex items-center justify-between">
+        <button type="button" onclick="closeEditModal()" class="px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-primary hover:bg-surface transition-colors">
+          Cancel
+        </button>
+        <button type="button" onclick="saveMilestoneForm()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-accent hover:bg-amber-400 text-background flex items-center gap-1.5 transition-colors shadow">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span>Save Changes to DB</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST FEEDBACK NOTIFICATION -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 bg-surface border border-accent/40 text-primary text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <i data-lucide="check-circle" class="w-4 h-4 text-accent" id="toast-icon"></i>
+    <span id="toast-msg">Milestone successfully updated in database!</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT STATE ENGINE & MOCK DATA                                      -->
+  <!-- ========================================================================= -->
+  <script>
+    // Master Mob Dictionary
+    const MOB_DICT = {
+      1002: { name: "Poring", level: 1, tier: "Novice (Lv 1–40)", badgeClass: "badge-tier-novice", sprite: "https://static.divine-pride.net/images/mobs/png/1002.png" },
+      1023: { name: "Orc Warrior", level: 44, tier: "2nd Class (Lv 41–99)", badgeClass: "badge-tier-2nd", sprite: "https://static.divine-pride.net/images/mobs/png/1023.png" },
+      1163: { name: "Raydric", level: 95, tier: "Trans (Lv 90–99)", badgeClass: "badge-tier-trans", sprite: "https://static.divine-pride.net/images/mobs/png/1163.png" },
+      1836: { name: "Magmaring", level: 110, tier: "3rd Class (Lv 100–185)", badgeClass: "badge-tier-3rd", sprite: "https://static.divine-pride.net/images/mobs/png/1836.png" },
+      20929: { name: "Giant Caput", level: 213, tier: "4th Class (Lv 200–250+)", badgeClass: "badge-tier-4th", sprite: "https://static.divine-pride.net/images/mobs/png/20929.png" },
+    };
+
+    // Item Dictionary for Rewards
+    const ITEM_DICT = {
+      501: "Red Potion",
+      604: "Dead Branch",
+      984: "Oridecon",
+      617: "Old Purple Box",
+      616: "Old Card Album",
+    };
+
+    // Player Kills State (Simulated Account #2000001)
+    let playerKills = {
+      total: 34120,
+      mvp: 42,
+      miniboss: 188,
+      normal: 33890,
+      mobKills: {
+        1002: 650,  // Poring (completed)
+        1023: 1200, // Orc Warrior (completed)
+        1163: 940,  // Raydric (in progress)
+        1836: 410,  // Magmaring (in progress)
+        20929: 120, // Giant Caput (in progress)
+      },
+      claims: new Set(["poring_hunter_500", "exterminator_tier_1"])
+    };
+
+    // Database Milestones Table Mock (The 7 seeded milestones)
+    let milestones = [
+      {
+        id: "mvp_centurion_50",
+        category: "MVP",
+        prev_milestone_id: null,
+        target_mob_id: 0,
+        required_count: 50,
+        title: "Centurion Slayer",
+        description: "Defeat 50 MvP Bosses across Midgard",
+        reward_zeny: 1000000,
+        reward_item_id: 0,
+        reward_item_amount: 0,
+        reward_desc: "+10% Boss Drop Rate permanently + 1,000,000z",
+        tier: "Global / Boss",
+        is_active: true,
+        sort_order: 1
+      },
+      {
+        id: "exterminator_tier_1",
+        category: "TOTAL",
+        prev_milestone_id: null,
+        target_mob_id: 0,
+        required_count: 25000,
+        title: "Exterminator Tier I",
+        description: "Slay 25,000 total monsters of any class",
+        reward_zeny: 500000,
+        reward_item_id: 617,
+        reward_item_amount: 1,
+        reward_desc: "500,000 Zeny + 1x Old Purple Box",
+        tier: "Global / Boss",
+        is_active: true,
+        sort_order: 2
+      },
+      {
+        id: "poring_hunter_500",
+        category: "SPECIFIC_MOB",
+        prev_milestone_id: null,
+        target_mob_id: 1002,
+        required_count: 500,
+        title: "Jelly Menace (Poring)",
+        description: "Exterminate 500 Porings in Prontera Fields",
+        reward_zeny: 25000,
+        reward_item_id: 501,
+        reward_item_amount: 50,
+        reward_desc: "25,000 Zeny + 50x Red Potions",
+        tier: "Novice (Lv 1–40)",
+        is_active: true,
+        sort_order: 3
+      },
+      {
+        id: "orc_warrior_1000",
+        category: "SPECIFIC_MOB",
+        prev_milestone_id: "poring_hunter_500",
+        target_mob_id: 1023,
+        required_count: 1000,
+        title: "Orc Village Conqueror",
+        description: "Defeat 1,000 Orc Warriors in Gef_Fild",
+        reward_zeny: 100000,
+        reward_item_id: 604,
+        reward_item_amount: 5,
+        reward_desc: "100,000 Zeny + 5x Dead Branches",
+        tier: "2nd Class (Lv 41–99)",
+        is_active: true,
+        sort_order: 4
+      },
+      {
+        id: "raydric_slayer_1500",
+        category: "SPECIFIC_MOB",
+        prev_milestone_id: "orc_warrior_1000",
+        target_mob_id: 1163,
+        required_count: 1500,
+        title: "Glast Heim Knightfall",
+        description: "Slay 1,500 Raydrics in the Castle ruins",
+        reward_zeny: 350000,
+        reward_item_id: 984,
+        reward_item_amount: 10,
+        reward_desc: "350,000 Zeny + 10x Oridecon",
+        tier: "Trans (Lv 90–99)",
+        is_active: true,
+        sort_order: 5
+      },
+      {
+        id: "magmaring_blaster_2000",
+        category: "SPECIFIC_MOB",
+        prev_milestone_id: "raydric_slayer_1500",
+        target_mob_id: 1836,
+        required_count: 2000,
+        title: "Magma Blaster",
+        description: "Extinguish 2,000 Magmarings in Veins Field",
+        reward_zeny: 750000,
+        reward_item_id: 617,
+        reward_item_amount: 3,
+        reward_desc: "750,000 Zeny + 3x Old Purple Boxes",
+        tier: "3rd Class (Lv 100–185)",
+        is_active: true,
+        sort_order: 6
+      },
+      {
+        id: "giant_caput_2500",
+        category: "SPECIFIC_MOB",
+        prev_milestone_id: "magmaring_blaster_2000",
+        target_mob_id: 20929,
+        required_count: 2500,
+        title: "Biomass Exterminator",
+        description: "Eliminate 2,500 Giant Caputs in 4th Class Zone",
+        reward_zeny: 2500000,
+        reward_item_id: 616,
+        reward_item_amount: 2,
+        reward_desc: "2,500,000 Zeny + 2x Old Card Albums",
+        tier: "4th Class (Lv 200–250+)",
+        is_active: true,
+        sort_order: 7
+      }
+
+    ];
+
+    let currentAdminFilter = "ALL";
+
+    // View Switching (Full Page Toggle)
+    function setViewMode(mode) {
+      const secAdmin = document.getElementById("section-admin");
+      const secPlayer = document.getElementById("section-player");
+      const btnAdmin = document.getElementById("btn-mode-admin");
+      const btnPlayer = document.getElementById("btn-mode-player");
+
+      if (mode === "admin") {
+        secAdmin.classList.remove("hidden");
+        secPlayer.classList.add("hidden");
+        btnAdmin.className = "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-accent text-background transition-all shadow-sm";
+        btnPlayer.className = "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-muted hover:text-primary transition-all";
+      } else {
+        secAdmin.classList.add("hidden");
+        secPlayer.classList.remove("hidden");
+        btnPlayer.className = "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-accent text-background transition-all shadow-sm";
+        btnAdmin.className = "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-muted hover:text-primary transition-all";
+      }
+      lucide.createIcons();
+    }
+
+    function setAdminFilter(filter) {
+      currentAdminFilter = filter;
+      ["ALL", "SPECIFIC_MOB", "MVP", "TOTAL"].forEach(f => {
+        const btn = document.getElementById(`filter-btn-${f}`);
+        if (btn) {
+          if (f === filter) {
+            btn.className = "px-2 py-1 rounded font-semibold bg-accent text-background";
+          } else {
+            btn.className = "px-2 py-1 rounded font-medium text-muted hover:text-primary";
+          }
+        }
+      });
+      renderAdminMilestones();
+    }
+
+    // Render Admin List
+    function renderAdminMilestones() {
+      const container = document.getElementById("admin-milestone-list");
+      const searchQuery = document.getElementById("adminSearchInput").value.toLowerCase();
+      container.innerHTML = "";
+
+      let activeCount = 0;
+      let countMob = 0, countMvp = 0, countTotal = 0;
+
+      milestones.forEach(m => {
+        if (m.is_active) activeCount++;
+        if (m.category === "SPECIFIC_MOB") countMob++;
+        if (m.category === "MVP") countMvp++;
+        if (m.category === "TOTAL") countTotal++;
+      });
+
+      document.getElementById("count-all").innerText = milestones.length;
+      document.getElementById("count-mob").innerText = countMob;
+      document.getElementById("count-mvp").innerText = countMvp;
+      document.getElementById("count-total").innerText = countTotal;
+      document.getElementById("active-milestones-count").innerText = `${activeCount} Active Milestones`;
+
+      const filtered = milestones.filter(m => {
+        if (currentAdminFilter !== "ALL" && m.category !== currentAdminFilter) return false;
+        if (searchQuery) {
+          const mobName = MOB_DICT[m.target_mob_id]?.name || "";
+          return m.title.toLowerCase().includes(searchQuery) ||
+                 m.description.toLowerCase().includes(searchQuery) ||
+                 mobName.toLowerCase().includes(searchQuery) ||
+                 m.reward_desc.toLowerCase().includes(searchQuery);
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-muted">No milestones found matching criteria.</div>`;
+        return;
+      }
+
+      filtered.forEach(m => {
+        const mob = MOB_DICT[m.target_mob_id];
+        const tierBadge = mob ? mob.badgeClass : "badge-tier-3rd";
+        const tierLabel = m.tier || (mob ? mob.tier : "Global");
+
+        const card = document.createElement("div");
+        card.className = `p-3 rounded-xl bg-surface2/40 border ${m.is_active ? 'border-border' : 'border-border/40 opacity-60'} flex flex-col md:flex-row items-start md:items-center justify-between gap-3 hover:border-accent/50 transition-all`;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <!-- Sprite or Category Icon Box -->
+            <div class="w-11 h-11 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 overflow-hidden relative">
+              ${mob ? `<img src="${mob.sprite}" alt="${mob.name}" class="w-8 h-8 object-contain" onerror="this.src='https://static.divine-pride.net/images/items/png/617.png'" />`
+                     : (m.category === 'MVP' ? '<i data-lucide="crown" class="w-5 h-5 text-accent"></i>' : '<i data-lucide="skull" class="w-5 h-5 text-danger"></i>')}
+            </div>
+
+            <!-- Details -->
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-xs text-primary">${m.title}</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${tierBadge}">${tierLabel}</span>
+                ${m.is_active ? '<span class="text-[9px] text-success font-mono font-bold">ACTIVE</span>' : '<span class="text-[9px] text-muted font-mono">DISABLED</span>'}
+              </div>
+              <div class="text-[11px] text-muted mt-0.5">${m.description}</div>
+              <div class="text-[10px] text-accent font-mono mt-1 flex items-center gap-2 flex-wrap">
+                <span>🎯 Target: ${m.required_count.toLocaleString()} kills</span>
+                <span>•</span>
+                <span>🎁 RODEX: ${m.reward_desc}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2 self-end md:self-center shrink-0">
+            <button onclick="openEditModal('${m.id}')" class="px-2.5 py-1.5 rounded-lg bg-surface border border-border hover:border-accent text-xs font-semibold text-primary flex items-center gap-1 transition-colors">
+              <i data-lucide="edit-2" class="w-3.5 h-3.5 text-accent"></i>
+              <span>Edit</span>
+            </button>
+            <button onclick="toggleActive('${m.id}')" class="p-1.5 rounded-lg bg-surface border border-border hover:border-border text-xs ${m.is_active ? 'text-success' : 'text-muted'} transition-colors" title="Toggle Active">
+              <i data-lucide="${m.is_active ? 'eye' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="deleteMilestone('${m.id}')" class="p-1.5 rounded-lg bg-surface border border-border hover:border-danger hover:text-danger text-muted text-xs transition-colors" title="Delete Milestone">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Render Player Progression Tab
+    function renderPlayerProgression() {
+      // 1. Stats
+      document.getElementById("player-stat-total").innerText = playerKills.total.toLocaleString();
+      document.getElementById("player-stat-mvp").innerText = playerKills.mvp.toLocaleString();
+      document.getElementById("player-stat-miniboss").innerText = playerKills.miniboss.toLocaleString();
+
+      const activeMilestones = milestones.filter(m => m.is_active);
+      const claimedCount = activeMilestones.filter(m => playerKills.claims.has(m.id)).length;
+      document.getElementById("player-stat-claimed").innerText = `${claimedCount} / ${activeMilestones.length}`;
+      document.getElementById("player-milestone-sub").innerText = `${claimedCount} of ${activeMilestones.length} Claimed`;
+
+      // 2. Left Target Breakdown List
+      const mobListContainer = document.getElementById("player-mob-list");
+      mobListContainer.innerHTML = "";
+
+      Object.keys(MOB_DICT).forEach((mobId, idx) => {
+        const mob = MOB_DICT[mobId];
+        const count = playerKills.mobKills[mobId] || 0;
+
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between p-2.5 rounded-lg bg-surface2/30 border border-border";
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] font-mono font-bold text-muted w-4 text-center">#${idx + 1}</span>
+            <div class="w-9 h-9 rounded-lg bg-surface border border-border flex items-center justify-center">
+              <img src="${mob.sprite}" alt="${mob.name}" class="w-7 h-7 object-contain" />
+            </div>
+            <div>
+              <div class="text-xs font-bold text-primary flex items-center gap-1.5">
+                <span>${mob.name}</span>
+                <span class="text-[9px] font-mono px-1 rounded ${mob.badgeClass}">${mob.tier}</span>
+              </div>
+              <div class="text-[10px] text-muted font-mono">Lv ${mob.level}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-mono font-bold text-xs text-primary">${count.toLocaleString()} <span class="text-[10px] text-muted">Kills</span></div>
+            <div class="text-[10px] text-muted font-mono">#${mobId}</div>
+          </div>
+        `;
+        mobListContainer.appendChild(row);
+      });
+
+      // 3. Right Milestones List
+      const milestoneListContainer = document.getElementById("player-milestone-list");
+      milestoneListContainer.innerHTML = "";
+
+      activeMilestones.forEach(m => {
+        let currentKills = 0;
+        if (m.category === "MVP") currentKills = playerKills.mvp;
+        else if (m.category === "TOTAL") currentKills = playerKills.total;
+        else if (m.category === "SPECIFIC_MOB") currentKills = playerKills.mobKills[m.target_mob_id] || 0;
+
+        const isClaimed = playerKills.claims.has(m.id);
+        const isLocked = Boolean(m.prev_milestone_id && !playerKills.claims.has(m.prev_milestone_id));
+        const prevMilestoneTitle = m.prev_milestone_id ? (milestones.find(x => x.id === m.prev_milestone_id)?.title || m.prev_milestone_id) : "";
+        const pct = Math.min(100, (currentKills / m.required_count) * 100);
+        const isCompleted = !isLocked && currentKills >= m.required_count;
+
+        const card = document.createElement("div");
+        card.className = `p-2.5 rounded-lg bg-surface2/30 border ${isCompleted && !isClaimed ? 'border-success ready-claim-glow' : (isLocked ? 'border-border/50 opacity-70' : 'border-border')} space-y-1.5`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-primary flex items-center gap-1.5 truncate">
+              ${m.category === 'MVP' ? '<i data-lucide="crown" class="w-3.5 h-3.5 text-accent"></i>' : (m.category === 'SPECIFIC_MOB' ? '<i data-lucide="target" class="w-3.5 h-3.5 text-info"></i>' : '<i data-lucide="skull" class="w-3.5 h-3.5 text-danger"></i>')}
+              <span class="truncate">${m.title}</span>
+              ${m.tier ? `<span class="text-[9px] font-mono font-bold px-1 rounded bg-surface2 text-muted">${m.tier}</span>` : ''}
+            </span>
+            ${isLocked ? `
+              <span class="font-mono text-[11px] text-muted flex items-center gap-1 shrink-0">
+                <i data-lucide="lock" class="w-3 h-3 text-muted"></i> LOCKED
+              </span>
+            ` : `
+              <span class="font-mono text-xs ${isCompleted ? 'text-success' : 'text-accent'} shrink-0">
+                ${currentKills.toLocaleString()} / ${m.required_count.toLocaleString()}
+              </span>
+            `}
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+            <div class="${isLocked ? 'bg-muted/30' : (isCompleted ? 'bg-success shadow-[0_0_8px_rgba(74,222,128,0.6)]' : 'bg-accent')} h-1.5 rounded-full transition-all duration-300" style="width: ${isLocked ? 0 : pct}%"></div>
+          </div>
+
+          <!-- Bottom Rewards and Direct 1-Click Claim Button -->
+          <div class="flex items-center justify-between text-[10px] gap-2">
+            <span class="text-muted truncate">Reward: <span class="text-primary font-medium">${m.reward_desc}</span></span>
+            
+            ${isClaimed ? `
+              <span class="text-muted font-mono font-bold flex items-center gap-1 text-[9px] bg-surface px-2 py-0.5 rounded border border-border shrink-0">
+                <i data-lucide="mail-check" class="w-3 h-3 text-success"></i> CLAIMED
+              </span>
+            ` : (isLocked ? `
+              <span class="text-amber-400/90 font-mono text-[9px] flex items-center gap-1 font-semibold shrink-0">
+                <i data-lucide="lock" class="w-3 h-3"></i> Requires: ${prevMilestoneTitle}
+              </span>
+            ` : (isCompleted ? `
+              <button onclick="claimDirectRodex('${m.id}')" class="px-2.5 py-0.5 bg-success hover:bg-emerald-400 text-background font-bold rounded text-[10px] font-mono flex items-center gap-1 shadow-sm shrink-0 transition-transform active:scale-95">
+                <i data-lucide="send" class="w-3 h-3"></i> CLAIM
+              </button>
+            ` : `
+              <span class="text-muted font-mono text-[9px] shrink-0">${Math.floor(pct)}% COMPLETE</span>
+            `))}
+          </div>
+        `;
+        milestoneListContainer.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // 1-Click Direct Claim to Active Character
+    function claimDirectRodex(milestoneId) {
+      const m = milestones.find(x => x.id === milestoneId);
+      if (!m) return;
+
+      playerKills.claims.add(milestoneId);
+      showToast(`Reward sent to [SolitaryKnight]! Check your in-game RODEX mailbox.`);
+      renderPlayerProgression();
+    }
+
+    // Modal Control
+    function openEditModal(milestoneId) {
+      const m = milestones.find(x => x.id === milestoneId);
+      if (!m) return;
+
+      document.getElementById("modal-title").innerText = "Edit Hunt Milestone & Rewards";
+      document.getElementById("form-milestone-id").value = m.id;
+      document.getElementById("form-category").value = m.category;
+      document.getElementById("form-target-mob-id").value = m.target_mob_id || 1002;
+      document.getElementById("form-title").value = m.title;
+      document.getElementById("form-required-count").value = m.required_count;
+      document.getElementById("form-reward-zeny").value = m.reward_zeny || 0;
+      document.getElementById("form-reward-item-id").value = m.reward_item_id || 0;
+      document.getElementById("form-reward-item-amount").value = m.reward_item_amount || 0;
+      document.getElementById("form-reward-desc").value = m.reward_desc;
+      document.getElementById("form-tier").value = m.tier || "Novice (Lv 1–40)";
+      document.getElementById("form-is-active").checked = m.is_active;
+
+      handleCategoryChange();
+      document.getElementById("editModal").classList.remove("hidden");
+    }
+
+    function openCreateModal() {
+      document.getElementById("modal-title").innerText = "Create New Hunt Milestone";
+      document.getElementById("form-milestone-id").value = "custom_" + Date.now();
+      document.getElementById("form-category").value = "SPECIFIC_MOB";
+      document.getElementById("form-target-mob-id").value = 1002;
+      document.getElementById("form-title").value = "";
+      document.getElementById("form-required-count").value = 1000;
+      document.getElementById("form-reward-zeny").value = 500000;
+      document.getElementById("form-reward-item-id").value = 617;
+      document.getElementById("form-reward-item-amount").value = 1;
+      document.getElementById("form-reward-desc").value = "500,000 Zeny + 1x Old Purple Box";
+      document.getElementById("form-tier").value = "Novice (Lv 1–40)";
+      document.getElementById("form-is-active").checked = true;
+
+      handleCategoryChange();
+      document.getElementById("editModal").classList.remove("hidden");
+    }
+
+    function handleCategoryChange() {
+      const cat = document.getElementById("form-category").value;
+      const targetContainer = document.getElementById("container-target-mob");
+      if (cat === "SPECIFIC_MOB") {
+        targetContainer.classList.remove("hidden");
+      } else {
+        targetContainer.classList.add("hidden");
+      }
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModal").classList.add("hidden");
+    }
+
+    function handleModalBackdrop(e) {
+      if (e.target.id === "editModal") closeEditModal();
+    }
+
+    function saveMilestoneForm() {
+      const id = document.getElementById("form-milestone-id").value;
+      let m = milestones.find(x => x.id === id);
+
+      const category = document.getElementById("form-category").value;
+      const targetMobId = category === "SPECIFIC_MOB" ? parseInt(document.getElementById("form-target-mob-id").value) : 0;
+      const title = document.getElementById("form-title").value || "Custom Milestone";
+      const requiredCount = parseInt(document.getElementById("form-required-count").value) || 100;
+      const rewardZeny = parseInt(document.getElementById("form-reward-zeny").value) || 0;
+      const rewardItemId = parseInt(document.getElementById("form-reward-item-id").value) || 0;
+      const rewardItemAmount = parseInt(document.getElementById("form-reward-item-amount").value) || 0;
+      const rewardDesc = document.getElementById("form-reward-desc").value || `${rewardZeny.toLocaleString()} Zeny`;
+      const tier = document.getElementById("form-tier").value;
+      const isActive = document.getElementById("form-is-active").checked;
+
+      if (m) {
+        // Update
+        m.category = category;
+        m.target_mob_id = targetMobId;
+        m.title = title;
+        m.required_count = requiredCount;
+        m.reward_zeny = rewardZeny;
+        m.reward_item_id = rewardItemId;
+        m.reward_item_amount = rewardItemAmount;
+        m.reward_desc = rewardDesc;
+        m.tier = tier;
+        m.is_active = isActive;
+        showToast("Milestone successfully updated in database!");
+      } else {
+        // Create new
+        milestones.push({
+          id,
+          category,
+          target_mob_id: targetMobId,
+          required_count: requiredCount,
+          title,
+          description: `Custom hunt challenge: defeat ${requiredCount.toLocaleString()} targets`,
+          reward_zeny: rewardZeny,
+          reward_item_id: rewardItemId,
+          reward_item_amount: rewardItemAmount,
+          reward_desc: rewardDesc,
+          tier,
+          is_active: isActive,
+          sort_order: milestones.length + 1
+        });
+        showToast("New milestone saved to database!");
+      }
+
+      closeEditModal();
+      renderAdminMilestones();
+      renderPlayerProgression();
+    }
+
+    function toggleActive(id) {
+      const m = milestones.find(x => x.id === id);
+      if (m) {
+        m.is_active = !m.is_active;
+        showToast(`Milestone ${m.is_active ? 'enabled' : 'disabled'}`);
+        renderAdminMilestones();
+        renderPlayerProgression();
+      }
+    }
+
+    function deleteMilestone(id) {
+      if (confirm("Are you sure you want to delete this milestone from the database?")) {
+        milestones = milestones.filter(x => x.id !== id);
+        showToast("Milestone deleted from database");
+        renderAdminMilestones();
+        renderPlayerProgression();
+      }
+    }
+
+    // Simulation Actions
+    function simulateAddKills(mobId, count) {
+      playerKills.mobKills[mobId] = (playerKills.mobKills[mobId] || 0) + count;
+      playerKills.total += count;
+      playerKills.normal += count;
+      showToast(`+${count} kills recorded for ${MOB_DICT[mobId]?.name || 'Target'}`);
+      renderPlayerProgression();
+    }
+
+    function simulateAddMvpKills(count) {
+      playerKills.mvp += count;
+      playerKills.total += count;
+      showToast(`+${count} MvP kills recorded!`);
+      renderPlayerProgression();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-msg").innerText = msg;
+      toast.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+      setTimeout(() => {
+        toast.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+      }, 2500);
+    }
+
+    // Keyboard navigation (Escape closes modals)
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeEditModal();
+    });
+
+    // Initialize
+    window.addEventListener("DOMContentLoaded", () => {
+      renderAdminMilestones();
+      renderPlayerProgression();
+    });
+  </script>
+</body>
+</html>

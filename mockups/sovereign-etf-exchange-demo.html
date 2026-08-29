@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midgard Stock Exchange — Financial Proxy & Synced ETF Architecture</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            background: '#09090b',
+            surface: '#18181b',
+            surface2: '#27272a',
+            border: '#27272a',
+            primary: '#f4f4f5',
+            muted: '#a1a1aa',
+            accent: '#fbbf24',
+            danger: '#f87171',
+            success: '#4ade80',
+            info: '#60a5fa',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+    }
+    .bento-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 0.75rem;
+    }
+    .bento-card:hover {
+      border-color: #3f3f46;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-accent/20 selection:text-accent p-3 md:p-6 max-w-7xl mx-auto">
+
+  <!-- ==================== TOP GLOBAL NET WORTH BAR ==================== -->
+  <div class="bento-card p-3.5 mb-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+        <i data-lucide="coins" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 text-xs text-muted font-sans font-medium uppercase tracking-wider">
+          <span>Total Global Net Worth</span>
+          <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-success/10 text-success font-bold">+54.9% P/L</span>
+        </div>
+        <div class="text-lg sm:text-xl font-extrabold text-primary font-mono tracking-tight flex items-baseline gap-2">
+          <span>331,205,655</span> <span class="text-xs text-accent font-sans font-bold">Zeny</span>
+          <span class="text-xs text-success font-normal font-mono">(+107,599,996 Z)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="px-3 py-1.5 rounded-lg bg-surface2/60 border border-border flex items-center gap-2 text-xs">
+        <i data-lucide="wallet" class="w-3.5 h-3.5 text-accent"></i>
+        <div>
+          <div class="text-[9px] text-muted uppercase font-sans">Wallets (7)</div>
+          <div class="font-bold text-primary font-mono">5,057,074 Z</div>
+        </div>
+      </div>
+      <div class="px-3 py-1.5 rounded-lg bg-surface2/60 border border-border flex items-center gap-2 text-xs">
+        <i data-lucide="layers" class="w-3.5 h-3.5 text-info"></i>
+        <div>
+          <div class="text-[9px] text-muted uppercase font-sans">Positions</div>
+          <div class="font-bold text-primary font-mono">15 Assets</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN 2-COLUMN LAYOUT ==================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0">
+    
+    <!-- LEFT 5 COLS: Investment Portfolio (Positions) -->
+    <div class="lg:col-span-5 bento-card p-3 sm:p-3.5 flex flex-col min-h-[480px]">
+      
+      <!-- Sub-Nav Pill Strip -->
+      <div class="flex items-center justify-between border-b border-border pb-2.5 mb-2.5">
+        <div class="flex items-center gap-1 bg-surface2/70 p-0.5 rounded-lg border border-border text-[11px] font-mono">
+          <button class="px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm">Positions</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Bank Vault</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Allocation</button>
+          <button class="px-2.5 py-0.5 rounded text-muted hover:text-primary">Ledger</button>
+        </div>
+      </div>
+
+      <!-- Header & Total -->
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5">
+          <i data-lucide="briefcase" class="w-3.5 h-3.5 text-info"></i> Investment Portfolio
+        </h3>
+        <span class="text-[10px] text-muted font-mono">Total: 303,576,846 Z</span>
+      </div>
+
+      <!-- Category Filter Chips (Municipal, Crypto, ETF with Live Sync) -->
+      <div class="grid grid-cols-3 gap-1.5 mb-2 font-mono text-[10px]">
+        <button onclick="setPortfolioCategory('ALL')" id="pchip-all" class="p-1.5 rounded-lg bg-surface text-accent border border-accent/40 font-bold flex items-center justify-between transition-all">
+          <span class="font-sans">All</span>
+          <span>303.5M</span>
+        </button>
+        <button onclick="setPortfolioCategory('MUNICIPAL')" id="pchip-muni" class="p-1.5 rounded-lg bg-surface2/50 text-muted hover:text-primary border border-border flex items-center justify-between transition-all">
+          <span class="font-sans flex items-center gap-0.5"><i data-lucide="landmark" class="w-3 h-3 text-info"></i> Muni (9)</span>
+          <span>238.2M</span>
+        </button>
+        <button onclick="setPortfolioCategory('ETF')" id="pchip-etf" class="p-1.5 rounded-lg bg-surface2/50 text-muted hover:text-primary border border-border flex items-center justify-between transition-all">
+          <span class="font-sans flex items-center gap-0.5"><i data-lucide="crown" class="w-3 h-3 text-accent"></i> ETF (1)</span>
+          <span>14.2K</span>
+        </button>
+      </div>
+
+      <!-- Accrued Yields Banner -->
+      <div class="p-2 rounded-lg bg-success/10 border border-success/20 flex items-center justify-between mb-2 shrink-0">
+        <div>
+          <div class="text-[10px] text-success font-bold font-mono flex items-center gap-1">
+            <i data-lucide="coins" class="w-3 h-3"></i> +75,756 Z Accrued Yields
+          </div>
+          <div class="text-[9px] text-muted font-sans">75,756 Z claimable (DRIP Off)</div>
+        </div>
+        <button class="px-2.5 py-1 rounded bg-success/20 hover:bg-success/30 text-success text-[10px] font-bold font-mono transition-colors">
+          Harvest All
+        </button>
+      </div>
+
+      <!-- Filter Controls: All / Gainers / Losers -->
+      <div class="flex items-center justify-between text-[10px] font-mono border-b border-border/60 pb-1.5 mb-2">
+        <div class="flex items-center gap-1 bg-surface2/50 p-0.5 rounded border border-border">
+          <button class="px-2 py-0.5 rounded bg-surface text-primary font-bold">All</button>
+          <button class="px-2 py-0.5 rounded text-muted hover:text-primary">Gainers</button>
+          <button class="px-2 py-0.5 rounded text-muted hover:text-primary">Losers</button>
+        </div>
+        <span class="text-muted text-[10px]">Sort: Market Value ▼</span>
+      </div>
+
+      <!-- Unified Positions List (No "Non-Tradable" label clutter; clean sync on click) -->
+      <div id="holdings-list-container" class="flex-1 min-h-0 overflow-y-auto space-y-1.5 text-xs font-mono pr-0.5">
+        
+        <!-- ETF Holding in Normal Position List (Syncs to Exchange on click) -->
+        <div onclick="selectAndSyncETF('MS500')" class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between hover:bg-surface2/80 hover:border-accent/50 cursor-pointer transition-colors group">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-accent font-bold text-[10px] shrink-0">
+              MS
+            </div>
+            <div>
+              <div class="font-bold text-primary flex items-center gap-1.5 text-[11px] group-hover:text-accent transition-colors">
+                <span>MS500</span>
+                <span class="text-[10px] text-muted font-sans font-normal truncate max-w-[120px]">Midgard Sovereign ETF</span>
+              </div>
+              <div class="text-[10px] text-muted flex items-center gap-2 mt-0.5">
+                <span>100 sh</span>
+                <span class="px-1 py-0.1 rounded text-[8px] bg-success/20 text-success font-bold">DRIP</span>
+                <span class="text-success">+4.2%</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-primary text-xs">14,200 Z</div>
+            <div class="text-success text-[10px] font-bold">▲ +3.4%</div>
+          </div>
+        </div>
+
+        <!-- Regular Holding: Morroc -->
+        <div class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between hover:bg-surface2/60 transition-colors">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-600/20 border border-amber-600/30 flex items-center justify-center text-amber-500 font-bold text-[10px] shrink-0">
+              MO
+            </div>
+            <div>
+              <div class="font-bold text-primary flex items-center gap-1.5 text-[11px]">
+                <span>MOR</span>
+                <span class="text-[10px] text-muted font-sans font-normal truncate max-w-[110px]">Morroc Oasis Trading</span>
+              </div>
+              <div class="text-[10px] text-muted flex items-center gap-2 mt-0.5">
+                <span>398,486 sh</span>
+                <span class="px-1 py-0.1 rounded text-[8px] bg-success/20 text-success font-bold">DRIP</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-primary text-xs">62,960,788 Z</div>
+            <div class="text-success text-[10px] font-bold">▲ +80.4%</div>
+          </div>
+        </div>
+
+        <!-- Regular Holding: Alberta -->
+        <div class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between hover:bg-surface2/60 transition-colors">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-cyan-600/20 border border-cyan-600/30 flex items-center justify-center text-cyan-400 font-bold text-[10px] shrink-0">
+              AL
+            </div>
+            <div>
+              <div class="font-bold text-primary flex items-center gap-1.5 text-[11px]">
+                <span>ALB</span>
+                <span class="text-[10px] text-muted font-sans font-normal truncate max-w-[110px]">Alberta Maritime</span>
+              </div>
+              <div class="text-[10px] text-muted flex items-center gap-2 mt-0.5">
+                <span>384,930 sh</span>
+                <span class="px-1 py-0.1 rounded text-[8px] bg-success/20 text-success font-bold">DRIP</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-primary text-xs">46,961,460 Z</div>
+            <div class="text-success text-[10px] font-bold">▲ +43.3%</div>
+          </div>
+        </div>
+
+        <!-- Regular Holding: Payon -->
+        <div class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between hover:bg-surface2/60 transition-colors">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-green-600/20 border border-green-600/30 flex items-center justify-center text-green-400 font-bold text-[10px] shrink-0">
+              PA
+            </div>
+            <div>
+              <div class="font-bold text-primary flex items-center gap-1.5 text-[11px]">
+                <span>PAY</span>
+                <span class="text-[10px] text-muted font-sans font-normal truncate max-w-[110px]">Payon Timber & Craft</span>
+              </div>
+              <div class="text-[10px] text-muted flex items-center gap-2 mt-0.5">
+                <span>387,115 sh</span>
+                <span class="px-1 py-0.1 rounded text-[8px] bg-success/20 text-success font-bold">DRIP</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-primary text-xs">43,743,995 Z</div>
+            <div class="text-success text-[10px] font-bold">▲ +31.2%</div>
+          </div>
+        </div>
+
+        <!-- Regular Holding: Emperium Protocol -->
+        <div class="p-2 rounded-lg bg-surface2/40 border border-border/60 flex items-center justify-between hover:bg-surface2/60 transition-colors">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-[10px] shrink-0">
+              EM
+            </div>
+            <div>
+              <div class="font-bold text-primary flex items-center gap-1.5 text-[11px]">
+                <span>EMP</span>
+                <span class="px-1 py-0.2 rounded text-[8px] bg-amber-500/15 text-amber-400 font-bold">CRYPTO</span>
+                <span class="text-[10px] text-muted font-sans font-normal truncate max-w-[90px]">Emperium Shard</span>
+              </div>
+              <div class="text-[10px] text-muted flex items-center gap-2 mt-0.5">
+                <span>175,000 tokens</span>
+                <span class="text-muted">DRIP OFF</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-primary text-xs">23,275,000 Z</div>
+            <div class="text-success text-[10px] font-bold">▲ +1578%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT 7 COLS: Live Exchange Terminal with "Indices" Tab BEFORE "All" -->
+    <div class="lg:col-span-7 bento-card p-3 sm:p-3.5 flex flex-col min-h-[480px]">
+      
+      <!-- Terminal Header -->
+      <div class="flex items-center justify-between gap-2 border-b border-border pb-2.5 mb-2.5">
+        <div class="flex items-center gap-2">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4 text-accent"></i> Midgard Stock Exchange
+          </h3>
+          <span class="text-[11px] text-muted hidden sm:inline">| Live Order Book</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full bg-danger/10 border border-danger/20 text-danger font-bold">Muni: Bearish</span>
+          <span class="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-bold">Crypto: Chaos</span>
+        </div>
+      </div>
+
+      <!-- Filter Tabs: [📊 Indices] comes BEFORE [All] -->
+      <div class="flex items-center justify-between gap-1.5 mb-2.5 text-[11px] font-mono">
+        <div class="flex items-center gap-1 bg-surface2/70 p-0.5 rounded-lg border border-border">
+          
+          <!-- 1. Indices Tab (First in Line) -->
+          <button onclick="setTab('INDICES')" id="tab-indices" class="px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm transition-colors flex items-center gap-1">
+            <i data-lucide="line-chart" class="w-3 h-3 text-accent"></i> Indices (3)
+          </button>
+
+          <!-- 2. All Stocks -->
+          <button onclick="setTab('ALL')" id="tab-all" class="px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors">
+            All (19)
+          </button>
+
+          <!-- 3. Municipal -->
+          <button onclick="setTab('EQUITY')" id="tab-equity" class="px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors flex items-center gap-1">
+            <i data-lucide="landmark" class="w-3 h-3 text-info"></i> Municipal (9)
+          </button>
+
+          <!-- 4. Crypto -->
+          <button onclick="setTab('CRYPTO')" id="tab-crypto" class="px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors flex items-center gap-1">
+            <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Crypto (10)
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Event Banner -->
+      <div class="mb-2.5 p-2 rounded-lg bg-info/10 border border-info/20 flex items-center justify-between text-xs shrink-0">
+        <div class="flex items-center gap-2 truncate text-[11px]">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-accent shrink-0"></i>
+          <span class="font-bold text-info mr-1">[Distressed Equity Capital Restructuring]</span>
+          <span class="text-primary/90">Municipal regulators approve 1:5 reverse stock split!</span>
+        </div>
+        <span class="text-[9px] text-muted font-mono shrink-0 ml-2">Active</span>
+      </div>
+
+      <!-- VIEW 1: INDICES TAB VIEW (Showing Indices & their calculated prices) -->
+      <div id="view-indices" class="flex-1 overflow-y-auto pr-0.5">
+        <table class="w-full text-xs text-left min-w-[340px]">
+          <thead class="text-[10px] text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface z-10 font-mono">
+            <tr>
+              <th class="pb-1.5 font-bold">Index Benchmark</th>
+              <th class="pb-1.5 font-bold text-right">Value (Price)</th>
+              <th class="pb-1.5 font-bold text-right">24h Change</th>
+              <th class="pb-1.5 font-bold text-center">Tracked Basket</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60 font-mono">
+            <!-- Index 1: Midgard Composite -->
+            <tr onclick="openIndexModal('MIDGARD_CORE')" id="row-idx-midgard" class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2.5 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-accent"></span>
+                  <span class="text-accent font-bold">MIDX</span>
+                  <span class="text-[10px] text-muted font-normal">Midgard Composite Index</span>
+                </div>
+              </td>
+              <td class="py-2.5 text-right font-bold text-primary">1,482.40 Z</td>
+              <td class="py-2.5 text-right font-bold text-success">▲ +2.4%</td>
+              <td class="py-2.5 text-center font-sans text-[10px] text-muted">
+                70% Defensive / 30% Growth
+              </td>
+            </tr>
+
+            <!-- Index 2: Schwarzwald Tech 100 -->
+            <tr onclick="openIndexModal('LHZ100')" id="row-idx-lhz" class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2.5 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                  <span class="text-purple-400 font-bold">LHZ100</span>
+                  <span class="text-[10px] text-muted font-normal">Schwarzwald Tech Index</span>
+                </div>
+              </td>
+              <td class="py-2.5 text-right font-bold text-primary">2,140.80 Z</td>
+              <td class="py-2.5 text-right font-bold text-success">▲ +5.8%</td>
+              <td class="py-2.5 text-center font-sans text-[10px] text-muted">
+                60% LHZ / 30% YUN / 10% EIN
+              </td>
+            </tr>
+
+            <!-- Index 3: Rune Defensive Index -->
+            <tr onclick="openIndexModal('RNDEF')" id="row-idx-rndef" class="hover:bg-surface2/60 cursor-pointer transition-colors group">
+              <td class="py-2.5 font-sans">
+                <div class="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span class="text-info font-bold">RNDEF</span>
+                  <span class="text-[10px] text-muted font-normal">Rune Defensive Index</span>
+                </div>
+              </td>
+              <td class="py-2.5 text-right font-bold text-primary">980.10 Z</td>
+              <td class="py-2.5 text-right font-bold text-danger">▼ -0.8%</td>
+              <td class="py-2.5 text-center font-sans text-[10px] text-muted">
+                50% PRT / 30% ADB / 20% PAY
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- VIEW 2: NORMAL STOCKS VIEW (Hidden when on Indices tab) -->
+      <div id="view-stocks" class="hidden flex-1 overflow-y-auto pr-0.5">
+        <table class="w-full text-xs text-left min-w-[340px]">
+          <thead class="text-[10px] text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface z-10 font-mono">
+            <tr>
+              <th class="pb-1.5 font-bold">Ticker & Organization</th>
+              <th class="pb-1.5 font-bold text-right">Price</th>
+              <th class="pb-1.5 font-bold text-right">24h Change</th>
+              <th class="pb-1.5 font-bold text-center">Trend</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60 font-mono">
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors">
+              <td class="py-2 font-sans font-bold text-primary">ALB <span class="text-[10px] text-muted font-normal">Alberta Maritime</span></td>
+              <td class="py-2 text-right font-bold text-primary">122 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +9.9%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors">
+              <td class="py-2 font-sans font-bold text-primary">EMP <span class="text-[10px] text-muted font-normal">Emperium Shard</span></td>
+              <td class="py-2 text-right font-bold text-primary">133 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +75.0%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+            <tr class="hover:bg-surface2/60 cursor-pointer transition-colors">
+              <td class="py-2 font-sans font-bold text-primary">LHZ <span class="text-[10px] text-muted font-normal">Rekenber Biotech</span></td>
+              <td class="py-2 text-right font-bold text-primary">132 Z</td>
+              <td class="py-2 text-right font-bold text-success">▲ +15.8%</td>
+              <td class="py-2 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-success/10 text-success">▲ Bullish</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== RICH INDEX DETAIL & LORE MODAL (EXACTLY LIKE STOCKS) ==================== -->
+  <div id="index-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bento-card max-w-xl w-full p-5 border-accent/40 bg-surface shadow-2xl relative animate-fadeIn flex flex-col max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-border pb-3 mb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent font-bold">
+            <i data-lucide="line-chart" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="modal-idx-name" class="font-extrabold text-sm text-primary">Midgard Composite Index (MIDX)</h3>
+              <span id="modal-idx-cat" class="px-1.5 py-0.2 rounded text-[9px] font-mono bg-accent/20 text-accent border border-accent/40 font-bold uppercase">COMPOSITE BENCHMARK</span>
+            </div>
+            <p id="modal-idx-publisher" class="text-[11px] text-muted font-sans">Published by: <strong>Crown Ministry of Finance & Royal Mint</strong></p>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="text-muted hover:text-primary p-1 rounded-lg hover:bg-surface2 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Lore & Heritage Box (Formatted Exactly Like Stocks) -->
+      <div class="p-3 rounded-lg bg-surface2/60 border border-border/80 text-xs mb-3 font-sans leading-relaxed">
+        <div class="font-bold text-primary mb-1 text-[11px] uppercase tracking-wider text-accent flex items-center gap-1">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Index Heritage & Lore
+        </div>
+        <p id="modal-idx-lore" class="text-[11px] text-muted">
+          The sovereign economic benchmark of the Rune-Midgarts Kingdom, established by King Tristan III to measure the combined economic power of municipal capitals and frontier science hubs. Calculated as a market-cap weighted index balancing defensive public utilities with private high-growth research.
+        </p>
+      </div>
+
+      <!-- Sector & Archetype Intel Tags -->
+      <div class="grid grid-cols-2 gap-2 mb-3 text-xs font-mono">
+        <div class="p-2 rounded bg-surface2/40 border border-border">
+          <span class="text-[9px] text-muted font-sans uppercase">Benchmark Sector</span>
+          <div id="modal-idx-sector" class="font-bold text-primary mt-0.5">Broad Realm Composite</div>
+        </div>
+        <div class="p-2 rounded bg-surface2/40 border border-border">
+          <span class="text-[9px] text-muted font-sans uppercase">Risk Archetype</span>
+          <div id="modal-idx-archetype" class="font-bold text-info mt-0.5">Balanced Growth & Value</div>
+        </div>
+      </div>
+
+      <!-- Underlying Constituents Table -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between text-xs font-bold text-primary mb-1.5">
+          <span>Tracked Constituent Baskets</span>
+          <span class="text-[10px] text-muted font-mono font-normal">Rebalanced via MariaDB Indices</span>
+        </div>
+        <div id="modal-constituents-list" class="space-y-1.5 text-xs font-mono">
+          <!-- Dynamic JSON constituents rendered here -->
+        </div>
+      </div>
+
+      <button onclick="closeModal()" class="w-full py-2 rounded-lg bg-surface2 hover:bg-surface2/80 text-primary font-bold text-xs transition-colors border border-border">
+        Close Index Intel
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT STATE & INTERACTIONS ==================== -->
+  <script>
+    const INDICES_DATA = {
+      MIDGARD_CORE: {
+        indexId: 'MIDGARD_CORE',
+        ticker: 'MIDX',
+        name: 'Midgard Composite Index (MIDX)',
+        category: 'COMPOSITE BENCHMARK',
+        publisher: 'Crown Ministry of Finance & Royal Mint',
+        sector: 'Broad Realm Composite',
+        archetype: 'Balanced Growth & Value',
+        lore: 'The sovereign economic benchmark of the Rune-Midgarts Kingdom, established by King Tristan III to measure the combined economic power of municipal capitals and frontier science hubs. Calculated as a weighted basket balancing 70% defensive public utilities with 30% private high-growth research.',
+        constituents: [
+          { ticker: 'PRT', name: 'Prontera Capital', weight: 0.25, type: 'Defensive Blue-Chip', price: 118 },
+          { ticker: 'ADB', name: 'Kafra Global Corporation', weight: 0.25, type: 'Teleport Utilities', price: 105 },
+          { ticker: 'PAY', name: 'Payon Timber & Craft', weight: 0.20, type: 'Forestry Value', price: 110 },
+          { ticker: 'LHZ', name: 'Rekenber Frontier Biotech', weight: 0.15, type: 'Pure Growth Tech', price: 210 },
+          { ticker: 'YUN', name: 'Yuno Arcane Institute', weight: 0.10, type: 'Deep Tech Speculative', price: 145 },
+          { ticker: 'EMP', name: 'Emperium Shard Protocol', weight: 0.05, type: 'Protocol Store of Value', price: 94 },
+        ]
+      },
+      LHZ100: {
+        indexId: 'LHZ100',
+        ticker: 'LHZ100',
+        name: 'Schwarzwald Tech Index (LHZ100)',
+        category: 'TECH & VENTURE BENCHMARK',
+        publisher: 'Schwarzwald Republic Trade Commission',
+        sector: 'Biotechnology & Steam Robotics',
+        archetype: 'High-Beta Speculative Growth',
+        lore: 'The premier benchmark of industrial and arcane technology in the Schwarzwald Republic. Tracks Somatology Bio-Labs breakthroughs, Juperos archaeological extractions, and Einbroch blast furnace steel manufacturing turnover.',
+        constituents: [
+          { ticker: 'LHZ', name: 'Rekenber Frontier Biotech', weight: 0.60, type: 'Biotech Monopoly', price: 210 },
+          { ticker: 'YUN', name: 'Yuno Arcane Institute', weight: 0.30, type: 'Ancient Deep-Tech', price: 145 },
+          { ticker: 'EIN', name: 'Einbroch Heavy Industries', weight: 0.10, type: 'Steam Manufacturing', price: 90 },
+        ]
+      },
+      RNDEF: {
+        indexId: 'RNDEF',
+        ticker: 'RNDEF',
+        name: 'Rune Defensive Index (RNDEF)',
+        category: 'DIVIDEND & VALUE BENCHMARK',
+        publisher: 'Midgard Merchant Consortium',
+        sector: 'Public Utilities & Agro-Forestry',
+        archetype: 'Low-Beta Dividend Aristocrat',
+        lore: 'A conservative basket of continent-wide utility monopolies and essential primary commodities. Designed to provide steady inflation resistance and maximum dividend yield during market volatility.',
+        constituents: [
+          { ticker: 'PRT', name: 'Prontera Capital', weight: 0.50, type: 'Sovereign Treasury', price: 118 },
+          { ticker: 'ADB', name: 'Kafra Global Corporation', weight: 0.30, type: 'Teleport Utilities', price: 105 },
+          { ticker: 'PAY', name: 'Payon Timber & Craft', weight: 0.20, type: 'Forestry Commodities', price: 110 },
+        ]
+      }
+    };
+
+    function setTab(tab) {
+      const tabs = ['indices', 'all', 'equity', 'crypto'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) {
+          el.className = "px-2.5 py-0.5 rounded text-muted hover:text-primary transition-colors flex items-center gap-1";
+        }
+      });
+
+      const activeBtn = document.getElementById(`tab-${tab.toLowerCase()}`);
+      if (activeBtn) {
+        activeBtn.className = "px-2.5 py-0.5 rounded bg-surface text-accent font-bold shadow-sm transition-colors flex items-center gap-1";
+      }
+
+      if (tab === 'INDICES') {
+        document.getElementById('view-indices').classList.remove('hidden');
+        document.getElementById('view-stocks').classList.add('hidden');
+      } else {
+        document.getElementById('view-indices').classList.add('hidden');
+        document.getElementById('view-stocks').classList.remove('hidden');
+      }
+
+      lucide.createIcons();
+    }
+
+    function setPortfolioCategory(cat) {
+      const chips = ['pchip-all', 'pchip-muni', 'pchip-etf'];
+      chips.forEach(c => {
+        document.getElementById(c).className = "p-1.5 rounded-lg bg-surface2/50 text-muted hover:text-primary border border-border flex items-center justify-between transition-all";
+      });
+
+      if (cat === 'ALL') {
+        document.getElementById('pchip-all').className = "p-1.5 rounded-lg bg-surface text-accent border border-accent/40 font-bold flex items-center justify-between transition-all";
+      } else if (cat === 'MUNICIPAL') {
+        document.getElementById('pchip-muni').className = "p-1.5 rounded-lg bg-surface text-info border border-info/40 font-bold flex items-center justify-between transition-all";
+      } else if (cat === 'ETF') {
+        document.getElementById('pchip-etf').className = "p-1.5 rounded-lg bg-surface text-accent border border-accent/40 font-bold flex items-center justify-between transition-all";
+        // Live sync to Indices tab on Exchange!
+        setTab('INDICES');
+      }
+    }
+
+    function selectAndSyncETF(ticker) {
+      // Switch exchange board to Indices tab and open the linked Midgard Core index modal!
+      setTab('INDICES');
+      openIndexModal('MIDGARD_CORE');
+    }
+
+    function openIndexModal(indexKey) {
+      const idx = INDICES_DATA[indexKey];
+      if (!idx) return;
+
+      document.getElementById('modal-idx-name').innerText = idx.name;
+      document.getElementById('modal-idx-cat').innerText = idx.category;
+      document.getElementById('modal-idx-publisher').innerHTML = `Published by: <strong>${idx.publisher}</strong>`;
+      document.getElementById('modal-idx-sector').innerText = idx.sector;
+      document.getElementById('modal-idx-archetype').innerText = idx.archetype;
+      document.getElementById('modal-idx-lore').innerText = idx.lore;
+
+      const list = document.getElementById('modal-constituents-list');
+      list.innerHTML = '';
+
+      idx.constituents.forEach(c => {
+        const row = document.createElement('div');
+        row.className = "p-2 rounded bg-surface2/50 border border-border/60 flex items-center justify-between";
+        row.innerHTML = `
+          <div class="flex items-center gap-2 font-sans">
+            <span class="font-bold text-primary">${c.name}</span>
+            <span class="text-[10px] text-muted font-mono">(${c.ticker})</span>
+            <span class="text-[10px] text-muted bg-surface2 px-1.5 py-0.2 rounded border border-border">${c.type}</span>
+          </div>
+          <div class="flex items-center gap-3 font-mono">
+            <span class="text-primary">${c.price} Z</span>
+            <span class="font-bold text-accent">${(c.weight * 100).toFixed(0)}%</span>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+
+      document.getElementById('index-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('index-modal').classList.add('hidden');
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
