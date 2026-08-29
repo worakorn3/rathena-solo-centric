@@ -118,6 +118,16 @@ export class AuthService {
       return { error: "Failed to create account" };
     }
 
+    // Seed initial citizen starter MS500 ETF shares (500 shares, DRIP enabled)
+    try {
+      await primaryExecute(
+        "INSERT INTO `solo_stock_player` (`account_id`, `ticker`, `shares`, `total_cost`, `pending_div`, `drip_enabled`, `drip_carryover`) VALUES (?, 'MS500', 500, 0, 0, 1, 0)",
+        [newAccountId]
+      );
+    } catch (e) {
+      console.warn("[AuthService] Failed to seed initial MS500 ETF grant for account:", newAccountId, e);
+    }
+
     const user: AuthUser = {
       accountId: newAccountId,
       userid: trimmedUser,

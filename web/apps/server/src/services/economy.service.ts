@@ -9,6 +9,8 @@ import {
   TickerNewsResponse,
   StockHolding,
   StockMarketQuote,
+  StockIndex,
+  StockIndexConstituent,
   DailyBounty,
   BountyPlayerHolding,
   BountyQuotaSummary,
@@ -57,12 +59,24 @@ interface StockMarketRow {
   sector?: string;
   archetype?: string;
   lore?: string;
-  asset_type?: "EQUITY" | "CRYPTO";
+  asset_type?: "EQUITY" | "CRYPTO" | "ETF";
+  trade_status?: "TRADABLE" | "NON_TRADABLE" | "TRACKED_ONLY";
+  index_id?: string;
   price: number;
   price_old: number;
   dividend: number;
   div_acc: number;
   split_count: number;
+}
+
+interface StockIndexDbRow {
+  index_id: string;
+  name: string;
+  publisher: string;
+  sector: string;
+  archetype: string;
+  lore?: string;
+  constituents: string | StockIndexConstituent[];
 }
 
 interface StockPlayerRow {
@@ -200,7 +214,7 @@ export class EconomyService {
     let marketRows: StockMarketRow[] = [];
     try {
       marketRows = await query<StockMarketRow>(
-        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
     } catch {
       // If table doesn't exist yet, return empty
@@ -218,6 +232,8 @@ export class EconomyService {
         ticker: m.ticker,
         name: m.name || `${m.ticker} Enterprises`,
         assetType,
+        tradeStatus: m.trade_status || "TRADABLE",
+        indexId: m.index_id || undefined,
         sector: m.sector || undefined,
         archetype: m.archetype || undefined,
         lore: m.lore || undefined,
@@ -233,13 +249,88 @@ export class EconomyService {
 
     const quoteMap = new Map(quotes.map((q) => [q.ticker, q]));
 
-    // 4. Player Stock Holdings
+    // 4. Macro Stock Indices (Calculated live from constituents)
+    let indexRows: StockIndexDbRow[] = [];
+    try {
+      indexRows = await query<StockIndexDbRow>(
+        "SELECT index_id, name, publisher, sector, archetype, lore, constituents FROM `solo_stock_indices` ORDER BY index_id ASC"
+      );
+    } catch {
+      indexRows = [];
+    }
+
+    const indices: StockIndex[] = indexRows.map((idx) => {
+      let rawConstituents: StockIndexConstituent[] = [];
+      try {
+        rawConstituents = typeof idx.constituents === "string" ? JSON.parse(idx.constituents) : idx.constituents || [];
+      } catch {
+        rawConstituents = [];
+      }
+
+      let compositePrice = 0;
+      let compositePriceOld = 0;
+
+      const enrichedConstituents: StockIndexConstituent[] = rawConstituents.map((c) => {
+        const q = quoteMap.get(c.ticker);
+        const curPrice = q ? q.price : 100;
+        const oldPrice = q ? q.priceOld : curPrice;
+        compositePrice += curPrice * (c.weight || 0);
+        compositePriceOld += oldPrice * (c.weight || 0);
+
+        return {
+          ticker: c.ticker,
+          name: c.name || q?.name || c.ticker,
+          weight: c.weight,
+          type: c.type,
+          currentPrice: curPrice,
+        };
+      });
+
+      const price = Math.max(10, Math.round(compositePrice));
+      const priceOld = Math.max(10, Math.round(compositePriceOld));
+      const changeAmount = price - priceOld;
+      const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
+
+      return {
+        indexId: idx.index_id,
+        name: idx.name,
+        publisher: idx.publisher || "Crown Ministry of Finance",
+        sector: idx.sector || "Broad Realm Composite",
+        archetype: idx.archetype || "Balanced Growth & Value",
+        lore: idx.lore || undefined,
+        price,
+        priceOld,
+        changeAmount,
+        changePercent,
+        constituents: enrichedConstituents,
+      };
+    });
+
+    // 5. Player Stock Holdings
     let playerStockRows: StockPlayerRow[] = [];
     try {
       playerStockRows = await query<StockPlayerRow>(
         "SELECT ticker, shares, total_cost, pending_div, drip_enabled, drip_carryover FROM `solo_stock_player` WHERE account_id = ? AND shares > 0",
         [accountId]
       );
+
+      // Ponytail: If account has no MS500 holding record, seed initial 500 shares Day 1 Citizen Grant
+      if (!playerStockRows.some((r) => r.ticker === "MS500")) {
+        try {
+          await primaryExecute(
+            "INSERT IGNORE INTO `solo_stock_player` (`account_id`, `ticker`, `shares`, `total_cost`, `pending_div`, `drip_enabled`, `drip_carryover`) VALUES (?, 'MS500', 500, 0, 0, 1, 0)",
+            [accountId]
+          );
+          playerStockRows.push({
+            ticker: "MS500",
+            shares: 500,
+            total_cost: 0,
+            pending_div: 0,
+            drip_enabled: 1,
+            drip_carryover: 0,
+          });
+        } catch {}
+      }
     } catch {
       playerStockRows = [];
     }
@@ -247,6 +338,7 @@ export class EconomyService {
     let stockMarketValue = 0;
     let municipalMarketValue = 0;
     let cryptoMarketValue = 0;
+    let etfMarketValue = 0;
     let stockTotalCost = 0;
 
     const holdings: StockHolding[] = playerStockRows.map((p) => {
@@ -265,10 +357,13 @@ export class EconomyService {
         totalCost > 0 ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2)) : 0;
 
       const pendingDividends = Number(p.pending_div) || 0;
+      const isEtf = quote?.assetType === "ETF";
       const cryptoAsset = isCryptoAsset(p.ticker, quote?.assetType || quote?.sector);
 
       stockMarketValue += marketValue;
-      if (cryptoAsset) {
+      if (isEtf) {
+        etfMarketValue += marketValue;
+      } else if (cryptoAsset) {
         cryptoMarketValue += marketValue;
       } else {
         municipalMarketValue += marketValue;
@@ -278,7 +373,9 @@ export class EconomyService {
       return {
         ticker: p.ticker,
         name: quote ? quote.name : `${p.ticker} Enterprises`,
-        assetType: cryptoAsset ? "CRYPTO" : "EQUITY",
+        assetType: isEtf ? "ETF" : (cryptoAsset ? "CRYPTO" : "EQUITY"),
+        tradeStatus: quote?.tradeStatus || "TRADABLE",
+        indexId: quote?.indexId,
         sector: quote?.sector,
         archetype: quote?.archetype,
         shares,
@@ -304,7 +401,7 @@ export class EconomyService {
 
     const totalNetWorth = liquidZeny + accrual.totalAvailable + stockMarketValue;
 
-    // 5. Active & Latest Events + Market Meta
+    // 6. Active & Latest Events + Market Meta
     let activeEvents: StockActiveEvent[] = [];
     let latestEvent: StockEventLog | null = null;
     let equitiesMood = 0;
@@ -339,12 +436,14 @@ export class EconomyService {
       stockMarketValue,
       municipalMarketValue,
       cryptoMarketValue,
+      etfMarketValue,
       stockTotalCost,
       stockUnrealizedPnL,
       stockUnrealizedPnLPercent,
       characterZenyBreakdown,
       holdings,
       quotes,
+      indices,
       bank,
       activeEvents,
       latestEvent,
@@ -360,7 +459,7 @@ export class EconomyService {
   static async getMarketQuotes(): Promise<StockMarketQuote[]> {
     try {
       const marketRows = await query<StockMarketRow>(
-        "SELECT ticker, name, broker_title, sector, archetype, lore, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
 
       return marketRows.map((m) => {
@@ -368,10 +467,14 @@ export class EconomyService {
         const priceOld = Number(m.price_old) || price;
         const changeAmount = price - priceOld;
         const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
+        const assetType = m.asset_type || (isCryptoAsset(m.ticker, m.sector) ? "CRYPTO" : "EQUITY");
 
         return {
           ticker: m.ticker,
           name: m.name || `${m.ticker} Enterprises`,
+          assetType,
+          tradeStatus: m.trade_status || "TRADABLE",
+          indexId: m.index_id || undefined,
           sector: m.sector || undefined,
           archetype: m.archetype || undefined,
           lore: m.lore || undefined,
@@ -1002,15 +1105,16 @@ export class EconomyService {
       name: string;
       price: number;
       enabled: number;
+      trade_status?: string;
     }>(
-      "SELECT ticker, name, price, enabled FROM `solo_stock_market` WHERE ticker = ?",
+      "SELECT ticker, name, price, enabled, trade_status FROM `solo_stock_market` WHERE ticker = ?",
       [cleanTicker]
     );
 
-    if (!stock || stock.enabled !== 1) {
+    if (!stock || stock.enabled !== 1 || (stock.trade_status && stock.trade_status !== "TRADABLE")) {
       return {
         success: false,
-        error: `Stock ticker '${cleanTicker}' is not available for trading.`,
+        error: `Asset '${cleanTicker}' is not available for spot trading.`,
       };
     }
 

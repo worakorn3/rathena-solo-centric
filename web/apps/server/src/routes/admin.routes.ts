@@ -470,7 +470,7 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
     },
     {
       body: t.Object({
-        id: t.String(),
+        id: t.Optional(t.String()),
         category: t.String(),
         prev_milestone_id: t.Optional(t.Nullable(t.String())),
         target_mob_id: t.Number(),
@@ -480,10 +480,30 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
         reward_zeny: t.Optional(t.Number()),
         reward_item_id: t.Optional(t.Number()),
         reward_item_amount: t.Optional(t.Number()),
+        reward_stock_ticker: t.Optional(t.Nullable(t.String())),
+        reward_stock_shares: t.Optional(t.Number()),
         reward_desc: t.Optional(t.String()),
         tier_label: t.Optional(t.String()),
         is_active: t.Optional(t.Boolean()),
         sort_order: t.Optional(t.Number()),
+      }),
+    }
+  )
+  .post(
+    "/milestones/reorder",
+    async ({ verifyAdmin, body, set }) => {
+      verifyAdmin();
+      try {
+        await TrackingService.reorderMilestonesAdmin(body.ids);
+        return { success: true, message: "Milestones reordered successfully" };
+      } catch (err: any) {
+        set.status = 400;
+        return { success: false, error: err.message || "Failed to reorder milestones" };
+      }
+    },
+    {
+      body: t.Object({
+        ids: t.Array(t.String()),
       }),
     }
   )

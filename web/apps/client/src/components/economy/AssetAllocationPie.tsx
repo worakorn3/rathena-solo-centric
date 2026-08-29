@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { formatZeny } from "../../lib/assets";
 import { CharacterSummary } from "@rathena/shared";
-import { PieChart, Filter, Landmark, Coins, Wallet, ShieldCheck, TrendingUp, ChevronDown } from "lucide-react";
+import { PieChart, Filter, Landmark, Coins, Wallet, ShieldCheck, TrendingUp, ChevronDown, Sparkles } from "lucide-react";
 
-export type AssetCategory = "ALL" | "EQUITY" | "CRYPTO";
+export type AssetCategory = "ALL" | "EQUITY" | "CRYPTO" | "ETF";
 
 interface AssetAllocationPieProps {
   liquidZeny: number;
@@ -11,6 +11,7 @@ interface AssetAllocationPieProps {
   stockMarketValue: number;
   municipalMarketValue?: number;
   cryptoMarketValue?: number;
+  etfMarketValue?: number;
   totalNetWorth: number;
   characters?: CharacterSummary[];
   selectedAssetCategory?: AssetCategory;
@@ -23,6 +24,7 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
   stockMarketValue,
   municipalMarketValue,
   cryptoMarketValue,
+  etfMarketValue,
   totalNetWorth,
   characters = [],
   selectedAssetCategory = "ALL",
@@ -41,15 +43,17 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
   const total = Math.max(1, totalNetWorth);
   const mVal = municipalMarketValue !== undefined ? municipalMarketValue : stockMarketValue;
   const cVal = cryptoMarketValue !== undefined ? cryptoMarketValue : 0;
+  const eVal = etfMarketValue !== undefined ? etfMarketValue : 0;
 
   const liquidPct = (calculatedLiquid / total) * 100;
   const bankPct = (bankTotal / total) * 100;
   const muniPct = (mVal / total) * 100;
   const cryptoPct = (cVal / total) * 100;
+  const etfPct = (eVal / total) * 100;
 
   const liquidCombined = calculatedLiquid + bankTotal;
   const liquidCombinedPct = (liquidCombined / total) * 100;
-  const marketCombined = mVal + cVal;
+  const marketCombined = mVal + cVal + eVal;
   const marketCombinedPct = (marketCombined / total) * 100;
 
   const assets = [
@@ -81,6 +85,24 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
       icon: Coins,
       isFilterable: true,
     },
+    ...(eVal > 0
+      ? [
+          {
+            category: "ETF" as const,
+            label: "Sovereign ETFs",
+            sublabel: "Index tracked baskets",
+            value: eVal,
+            pct: etfPct,
+            color: "#f59e0b",
+            dot: "bg-accent",
+            barColor: "bg-accent",
+            textColor: "text-accent",
+            activeClass: "border-accent/50 bg-accent/10",
+            icon: Sparkles,
+            isFilterable: true,
+          },
+        ]
+      : []),
     {
       category: null,
       label: "Bank Vault Principal",

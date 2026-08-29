@@ -171,6 +171,33 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Client Locked State & Admin Selector** | ✅ [DONE] | Display lock status with prerequisite badge in `KillTracker.tsx` and dropdown selector in `AdminMilestoneManager.tsx` · [`KillTracker.tsx`](../web/apps/client/src/components/tracking/KillTracker.tsx) & [`AdminMilestoneManager.tsx`](../web/apps/client/src/components/admin/AdminMilestoneManager.tsx) |
 
 
+### Phase 22: Financial Proxy Model — ETF Positions, Synced Exchange Indices & Rich Lore
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Decoupled Index Schema (`solo_stock_indices`)** | ✅ [DONE] | Dedicated MariaDB table storing index definitions, publisher authority, sector/archetype, rich lore, and constituent JSON weights · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Proxy ETF & Tracked Municipal Simulation** | ✅ [DONE] | List ETF (`MS500`) pointing to `index_id = 'MIDGARD_CORE'` and enable 18 unlisted stocks as `trade_status = 'TRACKED_ONLY'` for dynamic background index drift · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) & [`marketSimulation.service.ts`](../web/apps/server/src/services/marketSimulation.service.ts) |
+| **Milestone ETF Grants** | ✅ [DONE] | Allow hunt milestones to award non-tradable ETF shares on claim (`reward_stock_ticker`, `reward_stock_shares`) · [`tracking.service.ts`](../web/apps/server/src/services/tracking.service.ts) & [`AdminMilestoneManager.tsx`](../web/apps/client/src/components/admin/AdminMilestoneManager.tsx) |
+| **Exchange Board Dedicated Indices Tab** | ✅ [DONE] | Render `[📊 Indices]` tab before `[All]` on the exchange board, displaying composite calculated prices, 24h changes, and rich lore modal · [`MarketWatch.tsx`](../web/apps/client/src/components/economy/MarketWatch.tsx) & [`TickerDetailModal.tsx`](../web/apps/client/src/components/economy/TickerDetailModal.tsx) |
+| **Portfolio ETF Filter & Live Sync** | ✅ [DONE] | List ETFs cleanly in Positions, add `[ETF]` category filter chip, and sync ETF selections directly to the Exchange Indices tab · [`StockPortfolio.tsx`](../web/apps/client/src/components/economy/StockPortfolio.tsx) |
+
+
+### Phase 23: Pan-Midgard All-World Total Market Index & Investable Global ETF
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Pan-Midgard All-World Benchmark (`ALL_WORLD`)** | ✅ [DONE] | Macro index in `solo_stock_indices` holding all 27 non-crypto municipal stocks across 5 continents, weighted proportionally to realm economic size (0% crypto) · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Tradable Global Index ETF (`WORLD`)** | ✅ [DONE] | Investable ETF ticker in `solo_stock_market` (`asset_type = 'ETF'`, `trade_status = 'TRADABLE'`) tracking `index_id = 'ALL_WORLD'` for spot buying/selling on the exchange · [`solo_schema_migrations.sql`](../sql-files/custom/solo_schema_migrations.sql) |
+| **Exchange Board ETF Filtering & Dynamic Index Sync** | ✅ [DONE] | Add `[ETF]` filter tab in `MarketWatch.tsx` and dynamically sync ticker clicks to their associated benchmark index (`holding.indexId`) · [`MarketWatch.tsx`](../web/apps/client/src/components/economy/MarketWatch.tsx) & [`App.tsx`](../web/apps/client/src/App.tsx) |
+| **Monorepo Tests & Container Validation** | ✅ [DONE] | Verify multi-constituent composite calculation, spot trading on `TRADABLE` ETFs, and monorepo test suite (253 pass) · [`stock_indices.test.ts`](../web/apps/server/test/stock_indices.test.ts) |
+
+
+### Phase 24: Non-Tradable Sovereign ETF Integrity & Modal Filter State Preservation
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Spot Market Order Book Filter Guard** | ✅ [DONE] | Restrict the spot order book table exclusively to `trade_status === 'TRADABLE'`, keeping soulbound non-tradable assets (`MS500`) and unlisted stocks (`TRACKED_ONLY`) out of spot trade list · [`MarketWatch.tsx`](../web/apps/client/src/components/economy/MarketWatch.tsx) |
+| **Sovereign Citizen Endowment Intel Panel** | ✅ [DONE] | Replace buy/sell trading drawer with a dedicated non-tradable citizen endowment banner explaining soulbound mechanics, lifetime dividend earnings, and DRIP compounding · [`TickerDetailModal.tsx`](../web/apps/client/src/components/economy/TickerDetailModal.tsx) |
+| **Portfolio Intel Action & Category Badge** | ✅ [DONE] | Distinguish `SOVEREIGN ETF` from `SPOT ETF`, and label non-tradable holding action button as `[View Intel]` · [`StockPortfolio.tsx`](../web/apps/client/src/components/economy/StockPortfolio.tsx) |
+| **Active Filter Tab State Preservation** | ✅ [DONE] | Prevent opening or closing ticker detail modals from mutating or resetting the user's active `portfolioAssetFilter` tab · [`App.tsx`](../web/apps/client/src/App.tsx) |
+
 ---
 
 

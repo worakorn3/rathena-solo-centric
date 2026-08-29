@@ -16,6 +16,7 @@ import {
   Loader2,
   AlertCircle,
   HelpCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { StockHolding, StockMarketQuote, getAssetVocabulary, isCryptoAsset, DripToggleResponse } from "@rathena/shared";
 import { formatZeny } from "../../lib/assets";
@@ -24,7 +25,7 @@ import { getTickerTheme } from "../../lib/tickerTheme";
 import { TickerDetailModal } from "./TickerDetailModal";
 import { DividendHarvestModal } from "./DividendHarvestModal";
 
-export type AssetClassFilter = "ALL" | "EQUITY" | "CRYPTO";
+export type AssetClassFilter = "ALL" | "EQUITY" | "CRYPTO" | "ETF";
 type FilterTab = "ALL" | "GAINERS" | "LOSERS";
 type SortOption = "VALUE" | "WEIGHT" | "PNL";
 
@@ -70,15 +71,35 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     [safeHoldings]
   );
 
-  const municipalValue = useMemo(
-    () =>
-      safeHoldings
-        .filter((h) => !isCryptoAsset(h.ticker, h.assetType))
-        .reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+  const etfHoldings = useMemo(
+    () => safeHoldings.filter((h) => h.assetType === "ETF"),
     [safeHoldings]
   );
+  const etfHoldingsCount = etfHoldings.length;
+  const etfValue = useMemo(
+    () => etfHoldings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+    [etfHoldings]
+  );
 
-  const cryptoValue = totalStockValue - municipalValue;
+  const cryptoHoldings = useMemo(
+    () => safeHoldings.filter((h) => isCryptoAsset(h.ticker, h.assetType)),
+    [safeHoldings]
+  );
+  const cryptoHoldingsCount = cryptoHoldings.length;
+  const cryptoValue = useMemo(
+    () => cryptoHoldings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+    [cryptoHoldings]
+  );
+
+  const municipalHoldings = useMemo(
+    () => safeHoldings.filter((h) => h.assetType !== "ETF" && !isCryptoAsset(h.ticker, h.assetType)),
+    [safeHoldings]
+  );
+  const municipalHoldingsCount = municipalHoldings.length;
+  const municipalValue = useMemo(
+    () => municipalHoldings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0),
+    [municipalHoldings]
+  );
 
   // Calculate total pending dividends & cash-harvestable dividends (DRIP off)
   const totalPendingDividends = useMemo(
@@ -98,6 +119,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   const enrichedHoldings = useMemo(() => {
     return safeHoldings.map((h) => {
       const isCrypto = isCryptoAsset(h.ticker, h.assetType);
+      const isEtf = h.assetType === "ETF";
       const marketVal = h.currentPrice * h.shares;
       const stockRatio =
         totalStockValue > 0 ? (marketVal / totalStockValue) * 100 : 0;
@@ -109,6 +131,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
       return {
         ...h,
         isCrypto,
+        isEtf,
         marketVal,
         stockRatio,
         netWorthRatio,
@@ -120,8 +143,9 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
   // Filter holdings by Asset Class and PnL
   const filteredHoldings = useMemo(() => {
     return enrichedHoldings.filter((h) => {
-      if (assetClassTab === "EQUITY" && h.isCrypto) return false;
-      if (assetClassTab === "CRYPTO" && !h.isCrypto) return false;
+      if (assetClassTab === "ETF" && !h.isEtf) return false;
+      if (assetClassTab === "EQUITY" && (h.isCrypto || h.isEtf)) return false;
+      if (assetClassTab === "CRYPTO" && (!h.isCrypto || h.isEtf)) return false;
 
       if (filterTab === "GAINERS") return h.unrealizedPnL > 0;
       if (filterTab === "LOSERS") return h.unrealizedPnL < 0;
@@ -160,9 +184,6 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
     }
   };
 
-  const municipalHoldingsCount = safeHoldings.filter((h) => !isCryptoAsset(h.ticker, h.assetType)).length;
-  const cryptoHoldingsCount = safeHoldings.length - municipalHoldingsCount;
-
   return (
     <div className="bento-card p-3 sm:p-3.5 flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* Header: Title + Total Portfolio Value */}
@@ -175,7 +196,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             <h3 className="font-bold text-xs uppercase tracking-wider text-primary whitespace-nowrap">
               Investment Portfolio
             </h3>
-            <span className="text-[10px] text-muted leading-none">Equities & Crypto Positions</span>
+            <span className="text-[10px] text-muted leading-none">Equities, Crypto & ETFs</span>
           </div>
         </div>
 
@@ -190,7 +211,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
       {safeHoldings.length > 0 && (
         <div className="space-y-1.5 shrink-0 mb-2">
           {/* Subtotal Allocation Chips */}
-          <div className="grid grid-cols-2 gap-1.5 font-mono">
+          <div className={`grid ${etfHoldingsCount > 0 ? "grid-cols-3" : "grid-cols-2"} gap-1.5 font-mono`}>
             <button
               type="button"
               onClick={() => setAssetClassTab(assetClassTab === "EQUITY" ? "ALL" : "EQUITY")}
@@ -254,6 +275,40 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                 {formatZeny(cryptoValue)} <span className="text-[9px] text-muted font-normal">Z</span>
               </div>
             </button>
+
+            {etfHoldingsCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setAssetClassTab(assetClassTab === "ETF" ? "ALL" : "ETF")}
+                className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
+                  assetClassTab === "ETF"
+                    ? "bg-accent/25 border-accent text-accent shadow-xs ring-1 ring-accent/30"
+                    : "bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"
+                }`}
+                title={
+                  assetClassTab === "ETF"
+                    ? "Filter active: Sovereign ETFs (Click to show all)"
+                    : "Filter list by Sovereign ETFs"
+                }
+              >
+                <div className="flex items-center justify-between gap-1 min-w-0">
+                  <span className="flex items-center gap-1 font-sans font-semibold text-[9.5px] truncate text-accent">
+                    <Sparkles className="w-3 h-3 text-accent shrink-0" />
+                    <span className="truncate">ETF</span>
+                  </span>
+                  <span
+                    className={`text-[8.5px] font-mono font-bold px-1 rounded shrink-0 ${
+                      assetClassTab === "ETF" ? "bg-accent text-black" : "bg-accent/20 text-accent"
+                    }`}
+                  >
+                    {etfHoldingsCount}
+                  </span>
+                </div>
+                <div className="font-bold text-[11px] font-mono text-primary truncate whitespace-nowrap">
+                  {formatZeny(etfValue)} <span className="text-[9px] text-muted font-normal">Z</span>
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Accrued Dividends Summary & Harvest Action Banner */}
@@ -406,6 +461,22 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                         {h.isCrypto && (
                           <span className="px-1 py-0.2 rounded bg-amber-400/10 text-amber-400 text-[8.5px] font-mono border border-amber-400/20">
                             CRYPTO
+                          </span>
+                        )}
+                        {h.isEtf && h.tradeStatus === "NON_TRADABLE" && (
+                          <span
+                            className="px-1 py-0.2 rounded bg-purple-500/10 text-purple-300 text-[8.5px] font-mono border border-purple-500/20 font-bold"
+                            title="Sovereign Citizen Endowment (Non-Tradable)"
+                          >
+                            SOVEREIGN ETF
+                          </span>
+                        )}
+                        {h.isEtf && h.tradeStatus !== "NON_TRADABLE" && (
+                          <span
+                            className="px-1 py-0.2 rounded bg-accent/10 text-accent text-[8.5px] font-mono border border-accent/20 font-bold"
+                            title="Investable Spot ETF"
+                          >
+                            SPOT ETF
                           </span>
                         )}
                         <span className="text-[10px] text-muted font-normal truncate hidden sm:inline">
@@ -632,6 +703,9 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                                 name: h.name,
                                 sector: h.sector,
                                 archetype: h.archetype,
+                                assetType: h.assetType,
+                                tradeStatus: h.tradeStatus,
+                                indexId: h.indexId,
                                 price: h.currentPrice,
                                 priceOld: h.priceOld,
                                 changeAmount: h.changeAmount,
@@ -642,11 +716,28 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                               });
                             }
                           }}
-                          className="px-2 py-0.5 rounded bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                          title="View price action, lore, and trade via Web Terminal"
+                          className={`px-2 py-0.5 rounded border font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                            h.tradeStatus === "NON_TRADABLE"
+                              ? "bg-purple-500/15 hover:bg-purple-500/25 border-purple-500/30 text-purple-300"
+                              : "bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent"
+                          }`}
+                          title={
+                            h.tradeStatus === "NON_TRADABLE"
+                              ? "View benchmark lore, basket constituents, and dividend performance"
+                              : "View price action, lore, and trade via Web Terminal"
+                          }
                         >
-                          <Newspaper className="w-2.5 h-2.5" />
-                          <span>Trade / Detail</span>
+                          {h.tradeStatus === "NON_TRADABLE" ? (
+                            <>
+                              <ShieldCheck className="w-2.5 h-2.5" />
+                              <span>View Intel</span>
+                            </>
+                          ) : (
+                            <>
+                              <Newspaper className="w-2.5 h-2.5" />
+                              <span>Trade / Detail</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>

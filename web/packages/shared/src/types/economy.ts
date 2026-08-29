@@ -1,7 +1,34 @@
+export const MS_PER_SECOND = 1000;
+export const SECONDS_PER_DAY = 86_400;
+
+export interface StockIndexConstituent {
+  ticker: string;
+  name?: string;
+  weight: number;
+  type?: string;
+  currentPrice?: number;
+}
+
+export interface StockIndex {
+  indexId: string;
+  name: string;
+  publisher: string;
+  sector: string;
+  archetype: string;
+  lore?: string;
+  price: number;
+  priceOld: number;
+  changeAmount: number;
+  changePercent: number;
+  constituents: StockIndexConstituent[];
+}
+
 export interface StockHolding {
   ticker: string;
   name: string;
-  assetType?: "EQUITY" | "CRYPTO";
+  assetType?: "EQUITY" | "CRYPTO" | "ETF";
+  tradeStatus?: "TRADABLE" | "NON_TRADABLE" | "TRACKED_ONLY";
+  indexId?: string;
   sector?: string;
   archetype?: string;
   shares: number;
@@ -23,7 +50,9 @@ export interface StockHolding {
 export interface StockMarketQuote {
   ticker: string;
   name: string;
-  assetType?: "EQUITY" | "CRYPTO";
+  assetType?: "EQUITY" | "CRYPTO" | "ETF";
+  tradeStatus?: "TRADABLE" | "NON_TRADABLE" | "TRACKED_ONLY";
+  indexId?: string;
   sector?: string;
   archetype?: string;
   lore?: string;
@@ -53,7 +82,7 @@ export const DEFAULT_BANK_CONFIG: BankConfig = {
   depositFeeDivisor: 50,
   maxPrincipalLimit: 1_900_000_000,
   minDepositZeny: 100,
-  secondsPerDay: 86_400,
+  secondsPerDay: SECONDS_PER_DAY,
 };
 
 export const MAX_CHARACTER_ZENY = 2_100_000_000;
@@ -122,6 +151,7 @@ export interface NetWorthSummary {
   stockMarketValue: number;
   municipalMarketValue: number;
   cryptoMarketValue: number;
+  etfMarketValue?: number;
   stockTotalCost: number;
   stockUnrealizedPnL: number;
   stockUnrealizedPnLPercent: number;
@@ -134,6 +164,7 @@ export interface NetWorthSummary {
   }[];
   holdings: StockHolding[];
   quotes: StockMarketQuote[];
+  indices?: StockIndex[];
   bank: BankData;
   activeEvents?: StockActiveEvent[];
   latestEvent?: StockEventLog | null;
@@ -280,7 +311,7 @@ export interface AssetVocabulary {
   tradeGuidance: string;
 }
 
-export const ASSET_VOCABULARY: Record<"EQUITY" | "CRYPTO", AssetVocabulary> = {
+export const ASSET_VOCABULARY: Record<"EQUITY" | "CRYPTO" | "ETF", AssetVocabulary> = {
   EQUITY: {
     classLabel: "Municipal Equities",
     badgeLabel: "Municipal Equity",
@@ -309,11 +340,28 @@ export const ASSET_VOCABULARY: Record<"EQUITY" | "CRYPTO", AssetVocabulary> = {
     profileHeader: "Protocol Whitepaper & Tokenomics",
     tradeGuidance: "Tokens swapped & staked via Rune Protocol Contracts, Kafra DEX, and decentralized liquidity pools.",
   },
+  ETF: {
+    classLabel: "Sovereign ETFs & Funds",
+    badgeLabel: "Sovereign ETF",
+    unitLabel: "Units",
+    unitAbbr: "units",
+    yieldLabel: "Dividend Yield",
+    yieldRateLabel: "Annualized Yield",
+    rewardsLabel: "Claimable Dividends",
+    reinvestLabel: "DRIP Auto-Compound",
+    valuationLabel: "Net Asset Value (NAV)",
+    splitLabel: "Fund Unit Split",
+    profileHeader: "Sovereign Fund Prospectus",
+    tradeGuidance: "Prestige sovereign fund proxies mirroring underlying realm composite indices. Granted by royal decree for heroic milestones.",
+  },
 };
 
 export function getAssetVocabulary(assetType?: string): AssetVocabulary {
   if (assetType === "CRYPTO") {
     return ASSET_VOCABULARY.CRYPTO;
+  }
+  if (assetType === "ETF") {
+    return ASSET_VOCABULARY.ETF;
   }
   return ASSET_VOCABULARY.EQUITY;
 }

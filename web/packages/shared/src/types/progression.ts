@@ -42,6 +42,8 @@ export interface HuntMilestone {
   reward_zeny: number;
   reward_item_id: number;
   reward_item_amount: number;
+  reward_stock_ticker?: string | null;
+  reward_stock_shares?: number;
   reward_desc: string;
   tier_label: string;
   is_active: boolean | number;
@@ -63,6 +65,8 @@ export interface EvaluatedMilestone {
   rewardZeny: number;
   rewardItemId: number;
   rewardItemAmount: number;
+  rewardStockTicker?: string | null;
+  rewardStockShares?: number;
   rewardDesc: string;
   tierLabel: string;
   isCompleted: boolean;

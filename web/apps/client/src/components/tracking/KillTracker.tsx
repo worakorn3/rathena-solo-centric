@@ -37,6 +37,12 @@ export const KillTracker: React.FC<KillTrackerProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   // ponytail: progressive chunking for 100+ monster kill records (10 initial)
   const [visibleCount, setVisibleCount] = useState<number>(10);
+  
+  // ponytail: mobile sub-tab switcher to prevent double-list vertical doom scrolling on small viewports
+  const [mobileTab, setMobileTab] = useState<"TARGETS" | "MILESTONES">("TARGETS");
+  const [milestoneFilter, setMilestoneFilter] = useState<"ALL" | "READY" | "IN_PROGRESS" | "CLAIMED">("ALL");
+  const [visibleMilestonesCount, setVisibleMilestonesCount] = useState<number>(6);
+
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -47,6 +53,10 @@ export const KillTracker: React.FC<KillTrackerProps> = ({
   useEffect(() => {
     setVisibleCount(10);
   }, [filter, searchQuery]);
+
+  useEffect(() => {
+    setVisibleMilestonesCount(6);
+  }, [milestoneFilter]);
 
   const filteredKills = useMemo(() => {
     let list = killRecords.filter((k) => {
@@ -59,6 +69,37 @@ export const KillTracker: React.FC<KillTrackerProps> = ({
     // Default sort by kill count descending
     return list.sort((a, b) => b.count - a.count);
   }, [killRecords, filter, searchQuery]);
+
+  const readyToClaimCount = useMemo(() => {
+    return milestones.filter((m) => m.isCompleted && !m.isClaimed && !m.isLocked).length;
+  }, [milestones]);
+
+  const filteredMilestones = useMemo(() => {
+    let list = milestones.filter((m) => {
+      if (milestoneFilter === "READY") return m.isCompleted && !m.isClaimed && !m.isLocked;
+      if (milestoneFilter === "IN_PROGRESS") return !m.isCompleted && !m.isLocked && !m.isClaimed;
+      if (milestoneFilter === "CLAIMED") return m.isClaimed;
+      return true;
+    });
+
+    return list.sort((a, b) => {
+      // 1. Ready to claim first
+      const isReadyA = a.isCompleted && !a.isClaimed && !a.isLocked;
+      const isReadyB = b.isCompleted && !b.isClaimed && !b.isLocked;
+      if (isReadyA !== isReadyB) return isReadyA ? -1 : 1;
+
+      // 2. Unclaimed before Claimed
+      if (a.isClaimed !== b.isClaimed) return a.isClaimed ? 1 : -1;
+
+      // 3. Unlocked before Locked
+      if (a.isLocked !== b.isLocked) return a.isLocked ? 1 : -1;
+
+      // 4. Higher progress % first
+      const pctA = a.requiredCount > 0 ? a.currentCount / a.requiredCount : 0;
+      const pctB = b.requiredCount > 0 ? b.currentCount / b.requiredCount : 0;
+      return pctB - pctA;
+    });
+  }, [milestones, milestoneFilter]);
 
   const claimedCount = milestones.filter((m) => m.isClaimed).length;
 
@@ -181,11 +222,48 @@ export const KillTracker: React.FC<KillTrackerProps> = ({
         </div>
       </div>
 
-      {/* 2. Main Progression Stage: Left Target Records (7 cols) + Right Dynamic Milestones (5 cols) */}
+      {/* 2. Mobile Sub-Navigation Segmented Switcher (Prevents double list doom scroll on mobile) */}
+      <div className="flex lg:hidden items-center justify-between p-1 bg-surface2/60 rounded-xl border border-border/80 shrink-0 text-xs font-mono">
+        <button
+          type="button"
+          onClick={() => setMobileTab("TARGETS")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-bold transition-all ${
+            mobileTab === "TARGETS"
+              ? "bg-surface text-primary shadow-sm border border-border"
+              : "text-muted hover:text-primary"
+          }`}
+        >
+          <Target className="w-4 h-4 text-danger" />
+          <span>Hunted Targets ({filteredKills.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("MILESTONES")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-bold transition-all relative ${
+            mobileTab === "MILESTONES"
+              ? "bg-surface text-primary shadow-sm border border-border"
+              : "text-muted hover:text-primary"
+          }`}
+        >
+          <Award className="w-4 h-4 text-accent" />
+          <span>Milestones ({milestones.length})</span>
+          {readyToClaimCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-success/20 text-success border border-success/30 font-black animate-pulse">
+              {readyToClaimCount} READY
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* 3. Main Progression Stage: Left Target Records (7 cols) + Right Dynamic Milestones (5 cols) */}
       <div className="grid grid-cols-12 gap-3 min-h-0 flex-1">
-        {/* Left: Hunt Target Records (7 Cols) */}
-        <div className="col-span-12 lg:col-span-7 bento-card p-3.5 flex flex-col min-h-0">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5 mb-2.5 shrink-0">
+        {/* Left: Hunt Target Records (7 Cols on desktop, full-width on mobile when active) */}
+        <div
+          className={`col-span-12 lg:col-span-7 bento-card p-3.5 flex flex-col min-h-0 ${
+            mobileTab === "TARGETS" ? "flex" : "hidden lg:flex"
+          }`}
+        >
+          <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5 mb-2.5 shrink-0">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-danger" />
               <h3 className="font-bold text-xs uppercase tracking-wider text-primary">
@@ -355,119 +433,194 @@ export const KillTracker: React.FC<KillTrackerProps> = ({
           </div>
         </div>
 
-        {/* Right: Hunt Milestones (5 Cols) */}
-        <div className="col-span-12 lg:col-span-5 bento-card p-3.5 flex flex-col justify-between min-h-0">
+        {/* Right: Hunt Milestones (5 Cols on desktop, full-width on mobile when active) */}
+        <div
+          className={`col-span-12 lg:col-span-5 bento-card p-3.5 flex flex-col justify-between min-h-0 ${
+            mobileTab === "MILESTONES" ? "flex" : "hidden lg:flex"
+          }`}
+        >
           <div className="space-y-3 min-h-0 flex flex-col flex-1">
-            <div className="flex items-center justify-between border-b border-border pb-2 shrink-0">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-2">
-                <Award className="w-4 h-4 text-accent" /> Hunt Milestones
-              </h3>
-              <span className="text-[10px] text-muted font-mono">
-                {claimedCount} of {milestones.length} Claimed
-              </span>
+            {/* Milestones Header with Filter Pills */}
+            <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-accent" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-primary">
+                  Milestones
+                </h3>
+                <span className="text-[10px] text-muted font-mono">
+                  ({claimedCount}/{milestones.length})
+                </span>
+              </div>
+
+              {/* Milestone Filter Tabs */}
+              <div className="flex items-center gap-1 bg-surface2 p-0.5 rounded-lg border border-border text-[10px] font-mono">
+                <button
+                  onClick={() => setMilestoneFilter("ALL")}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    milestoneFilter === "ALL"
+                      ? "bg-accent text-background font-bold"
+                      : "text-muted hover:text-primary"
+                  }`}
+                >
+                  All ({milestones.length})
+                </button>
+                {readyToClaimCount > 0 && (
+                  <button
+                    onClick={() => setMilestoneFilter("READY")}
+                    className={`px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                      milestoneFilter === "READY"
+                        ? "bg-success text-background font-bold shadow-sm"
+                        : "text-success font-bold hover:bg-surface2"
+                    }`}
+                  >
+                    <span>Ready</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    <span>({readyToClaimCount})</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setMilestoneFilter("IN_PROGRESS")}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    milestoneFilter === "IN_PROGRESS"
+                      ? "bg-surface text-primary font-bold shadow-sm"
+                      : "text-muted hover:text-primary"
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => setMilestoneFilter("CLAIMED")}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    milestoneFilter === "CLAIMED"
+                      ? "bg-surface text-primary font-bold shadow-sm"
+                      : "text-muted hover:text-primary"
+                  }`}
+                >
+                  Claimed ({claimedCount})
+                </button>
+              </div>
             </div>
 
+            {/* Milestones List with Progressive Chunking */}
             <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 min-h-0">
-              {milestones.length === 0 ? (
+              {filteredMilestones.length === 0 ? (
                 <div className="text-center py-10 text-muted text-xs font-mono">
-                  No active hunt milestones available.
+                  {milestoneFilter === "READY"
+                    ? "No completed milestones ready to claim right now. Keep hunting!"
+                    : "No milestones matching the selected filter."}
                 </div>
               ) : (
-                milestones.map((m) => {
-                  const pct = Math.min(100, (m.currentCount / m.requiredCount) * 100);
-                  const isClaimReady = m.isCompleted && !m.isClaimed && !m.isLocked;
+                <>
+                  {filteredMilestones.slice(0, visibleMilestonesCount).map((m) => {
+                    const pct = Math.min(100, (m.currentCount / m.requiredCount) * 100);
+                    const isClaimReady = m.isCompleted && !m.isClaimed && !m.isLocked;
 
-                  return (
-                    <div
-                      key={m.id}
-                      className={`p-2.5 rounded-lg bg-surface2/30 border ${
-                        isClaimReady
-                          ? "border-success shadow-[0_0_12px_rgba(74,222,128,0.25)]"
-                          : m.isLocked
-                          ? "border-border/50 opacity-70"
-                          : "border-border"
-                      } space-y-1.5 transition-all`}
-                    >
-                      <div className="flex items-center justify-between text-xs font-bold gap-2">
-                        <span className="text-primary flex items-center gap-1.5 truncate">
-                          {m.category === "MVP" ? (
-                            <Crown className="w-3.5 h-3.5 text-accent shrink-0" />
-                          ) : m.category === "MINI_BOSS" ? (
-                            <Swords className="w-3.5 h-3.5 text-info shrink-0" />
-                          ) : m.category === "SPECIFIC_MOB" ? (
-                            <Target className="w-3.5 h-3.5 text-info shrink-0" />
+                    return (
+                      <div
+                        key={m.id}
+                        className={`bento-list-item p-2.5 rounded-lg bg-surface2/30 border ${
+                          isClaimReady
+                            ? "border-success shadow-[0_0_12px_rgba(74,222,128,0.25)]"
+                            : m.isLocked
+                            ? "border-border/50 opacity-70"
+                            : "border-border"
+                        } space-y-1.5 transition-all`}
+                      >
+                        <div className="flex items-center justify-between text-xs font-bold gap-2">
+                          <span className="text-primary flex items-center gap-1.5 truncate">
+                            {m.category === "MVP" ? (
+                              <Crown className="w-3.5 h-3.5 text-accent shrink-0" />
+                            ) : m.category === "MINI_BOSS" ? (
+                              <Swords className="w-3.5 h-3.5 text-info shrink-0" />
+                            ) : m.category === "SPECIFIC_MOB" ? (
+                              <Target className="w-3.5 h-3.5 text-info shrink-0" />
+                            ) : (
+                              <Skull className="w-3.5 h-3.5 text-danger shrink-0" />
+                            )}
+                            <span className="truncate">{m.title}</span>
+                            {m.tierLabel && (
+                              <span className="text-[9px] font-mono font-bold px-1 rounded bg-surface2 text-muted shrink-0">
+                                {m.tierLabel}
+                              </span>
+                            )}
+                          </span>
+                          {m.isLocked ? (
+                            <span className="font-mono text-[11px] text-muted flex items-center gap-1 shrink-0">
+                              <Lock className="w-3 h-3 text-muted" /> LOCKED
+                            </span>
                           ) : (
-                            <Skull className="w-3.5 h-3.5 text-danger shrink-0" />
-                          )}
-                          <span className="truncate">{m.title}</span>
-                          {m.tierLabel && (
-                            <span className="text-[9px] font-mono font-bold px-1 rounded bg-surface2 text-muted shrink-0">
-                              {m.tierLabel}
+                            <span
+                              className={`font-mono text-xs shrink-0 ${
+                                m.isCompleted ? "text-success font-bold" : "text-accent"
+                              }`}
+                            >
+                              {m.currentCount.toLocaleString()} / {m.requiredCount.toLocaleString()}
                             </span>
                           )}
-                        </span>
-                        {m.isLocked ? (
-                          <span className="font-mono text-[11px] text-muted flex items-center gap-1 shrink-0">
-                            <Lock className="w-3 h-3 text-muted" /> LOCKED
-                          </span>
-                        ) : (
-                          <span
-                            className={`font-mono text-xs shrink-0 ${
-                              m.isCompleted ? "text-success font-bold" : "text-accent"
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              m.isLocked
+                                ? "bg-muted/30"
+                                : m.isCompleted
+                                ? "bg-success shadow-[0_0_8px_rgba(74,222,128,0.6)]"
+                                : "bg-accent"
                             }`}
-                          >
-                            {m.currentCount.toLocaleString()} / {m.requiredCount.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
+                            style={{ width: `${m.isLocked ? 0 : pct}%` }}
+                          />
+                        </div>
 
-                      {/* Progress Bar */}
-                      <div className="w-full bg-surface2 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`h-1.5 rounded-full transition-all duration-300 ${
-                            m.isLocked
-                              ? "bg-muted/30"
-                              : m.isCompleted
-                              ? "bg-success shadow-[0_0_8px_rgba(74,222,128,0.6)]"
-                              : "bg-accent"
-                          }`}
-                          style={{ width: `${m.isLocked ? 0 : pct}%` }}
-                        />
-                      </div>
+                        {/* Bottom Rewards Text and 1-Click Claim Action */}
+                        <div className="flex items-center justify-between text-[10px] gap-2 pt-0.5">
+                          <span className="text-muted truncate">
+                            Reward:{" "}
+                            <span className="text-primary font-medium">{m.rewardDesc}</span>
+                          </span>
 
-                      {/* Bottom Rewards Text and 1-Click Claim Action */}
-                      <div className="flex items-center justify-between text-[10px] gap-2 pt-0.5">
-                        <span className="text-muted truncate">
-                          Reward:{" "}
-                          <span className="text-primary font-medium">{m.rewardDesc}</span>
-                        </span>
-
-                        {m.isClaimed ? (
-                          <span className="text-muted font-mono font-bold flex items-center gap-1 text-[9px] bg-surface px-2 py-0.5 rounded border border-border shrink-0">
-                            <MailCheck className="w-3 h-3 text-success" /> CLAIMED
-                          </span>
-                        ) : m.isLocked ? (
-                          <span className="text-amber-400/90 font-mono text-[9px] flex items-center gap-1 font-semibold shrink-0">
-                            <Lock className="w-3 h-3 shrink-0" /> Requires: {m.prevMilestoneTitle || "Prerequisite"}
-                          </span>
-                        ) : m.isCompleted ? (
-                          <button
-                            onClick={() => handleClaim(m)}
-                            disabled={claimingId === m.id}
-                            className="px-2.5 py-0.5 bg-success hover:bg-emerald-400 text-background font-bold rounded text-[10px] font-mono flex items-center gap-1 shadow-sm shrink-0 transition-transform active:scale-95 disabled:opacity-50"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>{claimingId === m.id ? "DISPATCHING..." : "CLAIM"}</span>
-                          </button>
-                        ) : (
-                          <span className="text-muted font-mono text-[9px] shrink-0">
-                            {Math.floor(pct)}% COMPLETE
-                          </span>
-                        )}
+                          {m.isClaimed ? (
+                            <span className="text-muted font-mono font-bold flex items-center gap-1 text-[9px] bg-surface px-2 py-0.5 rounded border border-border shrink-0">
+                              <MailCheck className="w-3 h-3 text-success" /> CLAIMED
+                            </span>
+                          ) : m.isLocked ? (
+                            <span className="text-amber-400/90 font-mono text-[9px] flex items-center gap-1 font-semibold shrink-0">
+                              <Lock className="w-3 h-3 shrink-0" /> Requires: {m.prevMilestoneTitle || "Prerequisite"}
+                            </span>
+                          ) : m.isCompleted ? (
+                            <button
+                              onClick={() => handleClaim(m)}
+                              disabled={claimingId === m.id}
+                              className="px-2.5 py-0.5 bg-success hover:bg-emerald-400 text-background font-bold rounded text-[10px] font-mono flex items-center gap-1 shadow-sm shrink-0 transition-transform active:scale-95 disabled:opacity-50 cursor-pointer"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>{claimingId === m.id ? "DISPATCHING..." : "CLAIM"}</span>
+                            </button>
+                          ) : (
+                            <span className="text-muted font-mono text-[9px] shrink-0">
+                              {Math.floor(pct)}% COMPLETE
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    );
+                  })}
+
+                  {/* ponytail: progressive chunking load more trigger for milestones */}
+                  {filteredMilestones.length > visibleMilestonesCount && (
+                    <div className="pt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleMilestonesCount((prev) => prev + 6)}
+                        className="px-4 py-1.5 rounded-lg bg-surface2 hover:bg-surface text-xs font-bold text-muted hover:text-primary border border-border hover:border-accent/40 shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5 text-accent animate-bounce" />
+                        <span>Show More Milestones ({filteredMilestones.length - visibleMilestonesCount} remaining)</span>
+                      </button>
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
             </div>
           </div>

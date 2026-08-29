@@ -28,6 +28,8 @@ interface MilestoneDbRow {
   reward_zeny: number;
   reward_item_id: number;
   reward_item_amount: number;
+  reward_stock_ticker?: string | null;
+  reward_stock_shares?: number;
   reward_desc: string;
   tier_label: string;
   is_active: number | boolean;
@@ -170,6 +172,8 @@ export class TrackingService {
         rewardZeny: Number(m.reward_zeny) || 0,
         rewardItemId: Number(m.reward_item_id) || 0,
         rewardItemAmount: Number(m.reward_item_amount) || 0,
+        rewardStockTicker: m.reward_stock_ticker || null,
+        rewardStockShares: Number(m.reward_stock_shares) || 0,
         rewardDesc: m.reward_desc || "",
         tierLabel: m.tier_label || "Global / Boss",
         isCompleted,
@@ -191,7 +195,7 @@ export class TrackingService {
   }
 
   /**
-   * Claim a completed hunt milestone and dispatch rewards directly to character's RODEX (RO Mail)
+   * Claim a completed hunt milestone and dispatch rewards directly to character's RODEX (RO Mail) & Portfolio
    */
   static async claimMilestoneToRodex(
     accountId: number,
@@ -286,7 +290,22 @@ export class TrackingService {
       [accountId, milestoneId, charId]
     );
 
-    // 6. Dispatch in-game RODEX mail parcel to recipient character
+    // 6. Dispatch Stock / ETF Endowment Rewards directly to Account Portfolio
+    const stockTickerReward = milestone.reward_stock_ticker ? String(milestone.reward_stock_ticker).trim().toUpperCase() : null;
+    const stockSharesReward = Number(milestone.reward_stock_shares) || 0;
+
+    if (stockTickerReward && stockSharesReward > 0) {
+      await primaryExecute(
+        "INSERT INTO `solo_stock_player` (account_id, ticker, shares, total_cost) VALUES (?, ?, ?, 0) ON DUPLICATE KEY UPDATE shares = shares + VALUES(shares)",
+        [accountId, stockTickerReward, stockSharesReward]
+      );
+      await primaryExecute(
+        "INSERT INTO `solo_stock_transactions` (account_id, char_id, ticker, action, shares, price, total_amount, fee, destination) VALUES (?, ?, ?, 'DIVIDEND', ?, 0, 0, 0, 'WALLET')",
+        [accountId, charId, stockTickerReward, stockSharesReward]
+      );
+    }
+
+    // 7. Dispatch in-game RODEX mail parcel to recipient character
     const zenyReward = Number(milestone.reward_zeny) || 0;
     const itemIdReward = Number(milestone.reward_item_id) || 0;
     const itemAmountReward = Number(milestone.reward_item_amount) || 0;
@@ -337,6 +356,8 @@ export class TrackingService {
       reward_zeny: Number(r.reward_zeny) || 0,
       reward_item_id: Number(r.reward_item_id) || 0,
       reward_item_amount: Number(r.reward_item_amount) || 0,
+      reward_stock_ticker: r.reward_stock_ticker || null,
+      reward_stock_shares: Number(r.reward_stock_shares) || 0,
       reward_desc: r.reward_desc || "",
       tier_label: r.tier_label || "Global / Boss",
       is_active: Boolean(r.is_active),
@@ -348,14 +369,27 @@ export class TrackingService {
    * Admin: Create or update a hunt milestone
    */
   static async saveMilestoneAdmin(data: Partial<HuntMilestone>): Promise<void> {
-    if (!data.id || !data.title) {
-      throw new Error("Milestone ID and Title are required.");
+    const milestoneId = data.id && data.id.trim() ? data.id.trim() : `m_${Date.now()}`;
+    if (!data.title || !data.title.trim()) {
+      throw new Error("Milestone Title is required.");
+    }
+
+    let sortOrder = Number(data.sort_order);
+    if (isNaN(sortOrder) || sortOrder <= 0) {
+      try {
+        const maxRow = await primaryQueryOne<{ max_order: number }>(
+          "SELECT COALESCE(MAX(`sort_order`), 0) AS max_order FROM `solo_milestones`"
+        );
+        sortOrder = (maxRow?.max_order || 0) + 1;
+      } catch {
+        sortOrder = 1;
+      }
     }
 
     await primaryExecute(
       `INSERT INTO \`solo_milestones\` 
-       (\`id\`, \`category\`, \`prev_milestone_id\`, \`target_mob_id\`, \`required_count\`, \`title\`, \`description\`, \`reward_zeny\`, \`reward_item_id\`, \`reward_item_amount\`, \`reward_desc\`, \`tier_label\`, \`is_active\`, \`sort_order\`)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       (\`id\`, \`category\`, \`prev_milestone_id\`, \`target_mob_id\`, \`required_count\`, \`title\`, \`description\`, \`reward_zeny\`, \`reward_item_id\`, \`reward_item_amount\`, \`reward_stock_ticker\`, \`reward_stock_shares\`, \`reward_desc\`, \`tier_label\`, \`is_active\`, \`sort_order\`)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        \`category\` = VALUES(\`category\`),
        \`prev_milestone_id\` = VALUES(\`prev_milestone_id\`),
@@ -366,27 +400,44 @@ export class TrackingService {
        \`reward_zeny\` = VALUES(\`reward_zeny\`),
        \`reward_item_id\` = VALUES(\`reward_item_id\`),
        \`reward_item_amount\` = VALUES(\`reward_item_amount\`),
+       \`reward_stock_ticker\` = VALUES(\`reward_stock_ticker\`),
+       \`reward_stock_shares\` = VALUES(\`reward_stock_shares\`),
        \`reward_desc\` = VALUES(\`reward_desc\`),
        \`tier_label\` = VALUES(\`tier_label\`),
        \`is_active\` = VALUES(\`is_active\`),
        \`sort_order\` = VALUES(\`sort_order\`)`,
       [
-        data.id,
+        milestoneId,
         data.category || "SPECIFIC_MOB",
         data.prev_milestone_id && String(data.prev_milestone_id).trim() ? String(data.prev_milestone_id).trim() : null,
         Number(data.target_mob_id) || 0,
         Number(data.required_count) || 100,
-        data.title,
+        data.title.trim(),
         data.description || "",
         Number(data.reward_zeny) || 0,
         Number(data.reward_item_id) || 0,
         Number(data.reward_item_amount) || 0,
+        data.reward_stock_ticker && String(data.reward_stock_ticker).trim() ? String(data.reward_stock_ticker).trim().toUpperCase() : null,
+        Number(data.reward_stock_shares) || 0,
         data.reward_desc || "",
         data.tier_label || "Global / Boss",
         data.is_active ? 1 : 0,
-        Number(data.sort_order) || 0,
+        sortOrder,
       ]
     );
+  }
+
+  /**
+   * Admin: Batch reorder milestones
+   */
+  static async reorderMilestonesAdmin(orderedIds: string[]): Promise<void> {
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) return;
+    for (let i = 0; i < orderedIds.length; i++) {
+      await primaryExecute(
+        "UPDATE `solo_milestones` SET `sort_order` = ? WHERE `id` = ?",
+        [i + 1, orderedIds[i]]
+      );
+    }
   }
 
   /**

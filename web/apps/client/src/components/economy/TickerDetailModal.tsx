@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import {
   StockMarketQuote,
+  StockIndex,
   TickerNewsResponse,
   TradeStockResponse,
   CharacterSummary,
@@ -37,7 +38,8 @@ import { useAuth } from "../../context/AuthContext";
 import { CandlestickChart } from "./CandlestickChart";
 
 interface TickerDetailModalProps {
-  quote: StockMarketQuote | null;
+  quote?: StockMarketQuote | null;
+  indexData?: StockIndex | null;
   onClose: () => void;
   onTradeSuccess?: () => void;
 }
@@ -91,6 +93,7 @@ const getCategoryBadge = (category: string) => {
 
 export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
   quote,
+  indexData,
   onClose,
   onTradeSuccess,
 }) => {
@@ -148,15 +151,17 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     }
   }, [user]);
 
+  const currentTicker = quote?.ticker;
+
   useEffect(() => {
-    if (user && quote) {
+    if (user && currentTicker) {
       loadPlayerData();
     }
-  }, [user, quote, loadPlayerData]);
+  }, [user, currentTicker, loadPlayerData]);
 
-  // Fetch real-time active and historical triggered Black Swan news when quote changes
+  // Fetch real-time active and historical triggered Black Swan news when ticker changes
   useEffect(() => {
-    if (!quote) {
+    if (!currentTicker) {
       setNewsData(null);
       return;
     }
@@ -168,7 +173,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     setZenyInput("");
 
     api
-      .get<TickerNewsResponse>(`/api/economy/events/ticker/${quote.ticker}`)
+      .get<TickerNewsResponse>(`/api/economy/events/ticker/${currentTicker}`)
       .then((res) => {
         if (isMounted && res.success) {
           setNewsData(res);
@@ -184,7 +189,7 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [quote]);
+  }, [currentTicker]);
 
   // Auto-focus share input when trade form expands
   useEffect(() => {
@@ -194,6 +199,121 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
       }, 50);
     }
   }, [isTradeExpanded, tradeAction]);
+
+  if (indexData) {
+    const isUp = indexData.changeAmount >= 0;
+    return (
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+        onClick={onClose}
+      >
+        <div
+          className="bento-card max-w-xl w-full p-4 sm:p-5 border-accent/40 bg-surface shadow-2xl relative flex flex-col max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div className="flex items-start justify-between border-b border-border pb-3 mb-3 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-bold">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm text-primary">{indexData.name}</h3>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-accent/20 text-accent border border-accent/40 font-bold uppercase">
+                    COMPOSITE BENCHMARK
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted font-sans mt-0.5">
+                  Published by: <strong className="text-primary">{indexData.publisher}</strong>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-muted hover:text-primary p-1 rounded-lg hover:bg-surface2 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Pricing & Performance Metric Strip */}
+          <div className="grid grid-cols-2 gap-2 mb-3 font-mono text-xs">
+            <div className="p-2.5 rounded-lg bg-surface2/60 border border-border">
+              <span className="text-[9px] text-muted font-sans uppercase">Composite Benchmark Value</span>
+              <div className="text-base font-extrabold text-primary mt-0.5">{formatZeny(indexData.price)} Z</div>
+            </div>
+            <div className="p-2.5 rounded-lg bg-surface2/60 border border-border">
+              <span className="text-[9px] text-muted font-sans uppercase">24h Benchmark Shift</span>
+              <div className={`text-base font-extrabold mt-0.5 ${isUp ? "text-success" : "text-danger"}`}>
+                {isUp ? "▲ +" : "▼ "}{Math.abs(indexData.changePercent).toFixed(2)}%
+              </div>
+            </div>
+          </div>
+
+          {/* Lore & Heritage Box */}
+          {indexData.lore && (
+            <div className="p-3 rounded-lg bg-surface2/60 border border-border/80 text-xs mb-3 font-sans leading-relaxed">
+              <div className="font-bold text-accent mb-1 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                <Newspaper className="w-3.5 h-3.5" />
+                <span>Index Heritage & Methodology</span>
+              </div>
+              <p className="text-[11px] text-muted">{indexData.lore}</p>
+            </div>
+          )}
+
+          {/* Sector & Archetype Intel Tags */}
+          <div className="grid grid-cols-2 gap-2 mb-3 text-xs font-mono">
+            <div className="p-2 rounded bg-surface2/40 border border-border">
+              <span className="text-[9px] text-muted font-sans uppercase">Benchmark Sector</span>
+              <div className="font-bold text-primary mt-0.5">{indexData.sector}</div>
+            </div>
+            <div className="p-2 rounded bg-surface2/40 border border-border">
+              <span className="text-[9px] text-muted font-sans uppercase">Risk Archetype</span>
+              <div className="font-bold text-info mt-0.5">{indexData.archetype}</div>
+            </div>
+          </div>
+
+          {/* Underlying Constituents Table */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs font-bold text-primary mb-1.5">
+              <span>Tracked Constituent Baskets ({indexData.constituents?.length || 0})</span>
+              <span className="text-[10px] text-muted font-mono font-normal">Rebalanced via MariaDB Indices</span>
+            </div>
+            <div className="space-y-1.5 text-xs font-mono">
+              {(indexData.constituents || []).map((c) => (
+                <div
+                  key={c.ticker}
+                  className="p-2 rounded-lg bg-surface2/50 border border-border/60 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 font-sans">
+                    <span className="font-bold text-primary">{c.name || c.ticker}</span>
+                    <span className="text-[10px] text-muted font-mono">({c.ticker})</span>
+                    {c.type && (
+                      <span className="text-[10px] text-muted bg-surface2 px-1.5 py-0.2 rounded border border-border">
+                        {c.type}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 font-mono">
+                    <span className="text-primary">{c.currentPrice ? `${formatZeny(c.currentPrice)} Z` : "—"}</span>
+                    <span className="font-bold text-accent">{(c.weight * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-lg bg-surface2 hover:bg-surface2/80 text-primary font-bold text-xs transition-colors border border-border"
+          >
+            Close Index Intel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!quote) return null;
 
@@ -210,6 +330,9 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
     (quote.sector?.toLowerCase().includes("defi") ?? false);
 
   const vocab = getAssetVocabulary(isCrypto ? "CRYPTO" : "EQUITY");
+  const isTradable = !quote.tradeStatus || quote.tradeStatus === "TRADABLE";
+  const isNonTradable = quote.tradeStatus === "NON_TRADABLE";
+  const isTrackedOnly = quote.tradeStatus === "TRACKED_ONLY";
 
   // Selected character & holdings
   const activeChar =
@@ -274,6 +397,14 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
 
   // Trade Execution
   const handleExecuteTrade = async () => {
+    if (!isTradable) {
+      setTradeFeedback({
+        type: "error",
+        message: `Asset '${quote.ticker}' is not available for spot trading.`,
+      });
+      return;
+    }
+
     if (!user) {
       setTradeFeedback({ type: "error", message: "Please log in to trade stocks via Web Terminal." });
       return;
@@ -460,8 +591,68 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
             </div>
           </div>
 
-          {/* 🚀 EXPANDABLE ACTION TRIGGER BAR: BUY OR SELL BUTTONS */}
-          {user && (
+          {/* 👑 NON-TRADABLE SOVEREIGN CITIZEN ENDOWMENT BANNER */}
+          {isNonTradable && (
+            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-xs text-purple-300 flex items-center gap-2">
+                      <span>Sovereign Citizen Endowment</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8.5px] font-mono uppercase bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold">
+                        Soulbound Asset
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted mt-0.5 font-mono">
+                      Non-Tradable Macro Index Composite • Lifetime Compounding Dividends
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-primary/85 leading-relaxed font-sans">
+                This asset is soulbound and non-tradable on the open order book. Shares are granted as civic endowments (Day 1 Citizen Grant) and monster milestone hunting rewards. All held shares generate continuous daily dividends and can be automatically compounded via DRIP.
+              </p>
+
+              {user && holding && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 font-mono text-[10px]">
+                  <div className="p-2 rounded bg-surface/60 border border-purple-500/20">
+                    <span className="text-muted block text-[9px]">Endowed Shares Held</span>
+                    <span className="font-bold text-primary text-xs">{sharesHeld.toLocaleString()} shares</span>
+                  </div>
+                  <div className="p-2 rounded bg-surface/60 border border-purple-500/20">
+                    <span className="text-muted block text-[9px]">Total Holding Value</span>
+                    <span className="font-bold text-accent text-xs">{formatZeny(sharesHeld * quote.price)} Z</span>
+                  </div>
+                  <div className="p-2 rounded bg-surface/60 border border-purple-500/20 col-span-2 sm:col-span-1">
+                    <span className="text-muted block text-[9px]">Accrued Dividends</span>
+                    <span className="font-bold text-success text-xs">+{formatZeny(holding.pendingDividends || 0)} Z</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 🏛️ TRACKED ONLY UNLISTED ENTERPRISE BANNER */}
+          {isTrackedOnly && (
+            <div className="p-3.5 rounded-xl bg-surface2/60 border border-border/80 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-muted shrink-0 border border-border">
+                <Globe className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-primary">Unlisted Municipal Enterprise</div>
+                <div className="text-[11px] text-muted leading-tight mt-0.5">
+                  Tracked reference only for regional macroeconomic indices. Not listed for open spot trading.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🚀 EXPANDABLE ACTION TRIGGER BAR: BUY OR SELL BUTTONS (TRADABLE ONLY) */}
+          {isTradable && user && (
             <div className="space-y-3">
               {/* Trigger Bar: Buy vs Sell Action Buttons */}
               <div className="grid grid-cols-2 gap-2.5">

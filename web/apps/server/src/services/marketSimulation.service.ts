@@ -41,8 +41,19 @@ export class MarketSimulationService {
     const tickerMoods = new Map(activeMoodRows.map((r: any) => [r.ticker, r.mood_override]));
 
     // Query all active stock tickers dynamically from DB
-    const stockRows = await primaryQuery(
-      "SELECT ticker, sector, asset_type, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+    const stockRows = await primaryQuery<{
+      ticker: string;
+      sector?: string;
+      asset_type?: "EQUITY" | "CRYPTO" | "ETF";
+      trade_status?: string;
+      index_id?: string;
+      price: number;
+      dividend: number;
+      split_count: number;
+      beta: number;
+      target_yield_bps: number;
+    }>(
+      "SELECT ticker, sector, asset_type, trade_status, index_id, price, dividend, split_count, beta, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
     );
 
     // Shared sector drifts (lightweight peer correlation)
@@ -63,7 +74,12 @@ export class MarketSimulationService {
     let cryptoTotalCount = 0;
     const candlesToInsert: { ticker: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
 
-    for (const stock of stockRows) {
+    // Separate standard underlying stocks from ETF proxies
+    const standardStocks = stockRows.filter((s) => s.asset_type !== "ETF" && !s.index_id);
+    const etfStocks = stockRows.filter((s) => s.asset_type === "ETF" || Boolean(s.index_id));
+    const updatedPriceMap = new Map<string, { price: number; dividend: number }>();
+
+    for (const stock of standardStocks) {
       const city = stock.ticker;
       const price = Number(stock.price) || 0;
       const beta = Number(stock.beta) || 1.0;
@@ -124,10 +140,13 @@ export class MarketSimulationService {
       let newPrice = price + delta;
       if (newPrice < 10) newPrice = 10;
 
+      let currentDiv = Number(stock.dividend) || 0;
+
       if (newPrice >= 1000) {
         newPrice = Math.floor(newPrice / 10);
         const targetBps = Number(stock.target_yield_bps) || 0;
         const postSplitDiv = targetBps === 0 ? 0 : Math.max(1, Math.round((newPrice * targetBps) / 1000));
+        currentDiv = postSplitDiv;
         await primaryExecute(
           "UPDATE `solo_stock_market` SET price = ?, price_old = price_old / 10, dividend = ?, split_count = split_count + 1 WHERE ticker = ?",
           [newPrice, postSplitDiv, city]
@@ -137,6 +156,8 @@ export class MarketSimulationService {
       } else {
         await primaryExecute("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?", [newPrice, city]);
       }
+
+      updatedPriceMap.set(city, { price: newPrice, dividend: currentDiv });
 
       if (newPrice > price) {
         if (cryptoAsset) cryptoUpCount++;
@@ -153,6 +174,54 @@ export class MarketSimulationService {
       const high = Math.max(open, close) + Math.floor(Math.random() * wickSpread);
       const low = Math.max(1, Math.min(open, close) - Math.floor(Math.random() * wickSpread));
       candlesToInsert.push({ ticker: city, open, high, low, close, volume });
+    }
+
+    // Dynamic Composite Calculation for ETF Proxies linked to solo_stock_indices
+    if (etfStocks.length > 0) {
+      let indexRows: any[] = [];
+      try {
+        indexRows = await primaryQuery("SELECT index_id, constituents FROM `solo_stock_indices`");
+      } catch {
+        indexRows = [];
+      }
+      const indexMap = new Map<string, any[]>();
+      for (const idx of indexRows) {
+        try {
+          const parsed = typeof idx.constituents === "string" ? JSON.parse(idx.constituents) : idx.constituents || [];
+          indexMap.set(idx.index_id, parsed);
+        } catch {
+          indexMap.set(idx.index_id, []);
+        }
+      }
+
+      for (const etf of etfStocks) {
+        const constituents = indexMap.get(etf.index_id || "") || [];
+        if (constituents.length > 0) {
+          let compPrice = 0;
+          let compDiv = 0;
+          for (const c of constituents) {
+            const stockData = updatedPriceMap.get(c.ticker) || { price: 100, dividend: 3 };
+            compPrice += stockData.price * (Number(c.weight) || 0);
+            compDiv += stockData.dividend * (Number(c.weight) || 0);
+          }
+
+          const newEtfPrice = Math.max(10, Math.round(compPrice));
+          const newEtfDiv = Math.max(1, Math.round(compDiv));
+          const oldEtfPrice = Number(etf.price) || newEtfPrice;
+
+          await primaryExecute(
+            "UPDATE `solo_stock_market` SET price = ?, dividend = ? WHERE ticker = ?",
+            [newEtfPrice, newEtfDiv, etf.ticker]
+          );
+
+          const wickSpread = Math.max(1, Math.round(newEtfPrice * 0.005));
+          const open = oldEtfPrice;
+          const close = newEtfPrice;
+          const high = Math.max(open, close) + Math.floor(Math.random() * wickSpread);
+          const low = Math.max(1, Math.min(open, close) - Math.floor(Math.random() * wickSpread));
+          candlesToInsert.push({ ticker: etf.ticker, open, high, low, close, volume: 50 });
+        }
+      }
     }
 
     // Atomic multi-row batch insert of 10-minute snapshot in 1 single SQL query

@@ -157,3 +157,26 @@ Instead of overloading players with all Ragnarok Online cities at once, 27 munic
 2. **Deterministic Volatility Scaling:** The simulation engine applies `f = Math.round(f * beta)` directly. A `POR` ticker with Beta 4.5 experiences swings \(\pm 25\%\) to \(\pm 80\%\) during volatile shifts, perfectly capturing memecoin euphoria and despair without needing bespoke algorithmic forks.
 3. **Black Swan Integration:** High-volatility crypto shocks (halvings, rug pulls, gas surges, de-pegs) trigger through `solo_stock_events_def` and are gated by active ticker status.
 
+---
+
+## 9. Phase 22: Financial Proxy Model — ETF Positions, Synced Exchange Indices & Rich Lore
+
+> [!NOTE]
+> Phase 22 introduces the **Financial Proxy Model**, cleanly separating **Indices (Read-Only Statistical Benchmarks)** from **ETFs (Investable / Soulbound Proxy Assets)**.
+
+### 9.1 Core Financial Rules & Invariants
+1. **Indices as Pure Benchmarks**:
+   - Stored in `solo_stock_indices` (`index_id`, `name`, `publisher`, `sector`, `archetype`, `lore`, `constituents JSON`).
+   - Indices are **never traded directly**. They live in a dedicated `[📊 Indices]` tab on the exchange board, displaying composite calculated prices, 24h changes, and rich lore formatted identically to stocks.
+2. **ETFs as Investable Proxies in Positions**:
+   - Stored in `solo_stock_market` referencing `index_id`.
+   - Listed directly in the player's Positions list with clean styling (no intrusive labels).
+   - Category filter chip `[ETF]` in the portfolio automatically syncs the exchange board to the `[📊 Indices]` tab and highlights the tracked benchmark.
+3. **Decoupled Basket Weighting**:
+   - Constituents and weights are adjusted **exclusively inside `solo_stock_indices`**. The ETF proxy dynamically inherits the basket and calculated prices.
+4. **Background Municipal Simulation**:
+   - 18 unlisted municipal stocks are set to `enabled = 1` and `trade_status = 'TRACKED_ONLY'`, simulating price shifts in the background to drive the indices.
+5. **Milestone Achievement Grants**:
+   - In-game milestones grant soulbound ETF shares upon claim (`reward_stock_ticker`, `reward_stock_shares`).
+
+

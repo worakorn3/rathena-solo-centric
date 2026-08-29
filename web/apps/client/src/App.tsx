@@ -67,8 +67,10 @@ export const AppContent: React.FC = () => {
   const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
   const [selectedCharDetail, setSelectedCharDetail] = useState<CharacterDetail | null>(null);
   const [progression, setProgression] = useState<ProgressionSummary | null>(null);
-  const [portfolioAssetFilter, setPortfolioAssetFilter] = useState<"ALL" | "EQUITY" | "CRYPTO">("ALL");
+  const [portfolioAssetFilter, setPortfolioAssetFilter] = useState<"INDICES" | "ALL" | "EQUITY" | "CRYPTO" | "ETF">("ALL");
   const [portfolioTab, setPortfolioTab] = useState<"HOLDINGS" | "BANK" | "BREAKDOWN" | "HISTORY">("HOLDINGS");
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [selectedIndexId, setSelectedIndexId] = useState<string | null>(null);
 
   // Public Market Data
   const [quotes, setQuotes] = useState<StockMarketQuote[]>([]);
@@ -416,7 +418,13 @@ export const AppContent: React.FC = () => {
                           holdings={netWorth.holdings}
                           totalNetWorth={netWorth.totalNetWorth}
                           assetClassTab={portfolioAssetFilter}
-                          onAssetClassChange={setPortfolioAssetFilter}
+                          onAssetClassChange={(tab) => {
+                            setPortfolioAssetFilter(tab);
+                          }}
+                          onSelectTicker={(ticker) => {
+                            setSelectedTicker(ticker);
+                            setSelectedIndexId(null);
+                          }}
                           onRefresh={loadUserData}
                         />
                       )}
@@ -437,6 +445,7 @@ export const AppContent: React.FC = () => {
                           stockMarketValue={netWorth.stockMarketValue}
                           municipalMarketValue={netWorth.municipalMarketValue}
                           cryptoMarketValue={netWorth.cryptoMarketValue}
+                          etfMarketValue={netWorth.etfMarketValue}
                           totalNetWorth={netWorth.totalNetWorth}
                           characters={characters}
                           selectedAssetCategory={portfolioAssetFilter}
@@ -458,6 +467,7 @@ export const AppContent: React.FC = () => {
                   <div className="col-span-12 lg:col-span-7 min-h-0">
                     <MarketWatch
                       quotes={netWorth.quotes}
+                      indices={netWorth.indices}
                       marketMood={netWorth.marketMood}
                       marketDrift={netWorth.marketDrift}
                       equitiesMood={netWorth.equitiesMood}
@@ -465,6 +475,16 @@ export const AppContent: React.FC = () => {
                       cryptoMood={netWorth.cryptoMood}
                       cryptoDrift={netWorth.cryptoDrift}
                       latestEvent={netWorth.latestEvent}
+                      selectedTicker={selectedTicker}
+                      selectedIndexId={selectedIndexId}
+                      onSelectTicker={(t) => {
+                        setSelectedTicker(t);
+                        setSelectedIndexId(null);
+                      }}
+                      onSelectIndex={(idxId) => {
+                        setSelectedIndexId(idxId);
+                        setSelectedTicker(null);
+                      }}
                       filterTab={portfolioAssetFilter}
                       onFilterChange={setPortfolioAssetFilter}
                       onTradeSuccess={() => loadUserData(true)}
