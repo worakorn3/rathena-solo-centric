@@ -8,6 +8,7 @@ interface GachaSummonModalProps {
   onClose: () => void;
   items: GachaRewardItem[];
   onScrapR?: () => void;
+  isScrappingR?: boolean;
 }
 
 export const GachaSummonModal: React.FC<GachaSummonModalProps> = ({
@@ -15,6 +16,7 @@ export const GachaSummonModal: React.FC<GachaSummonModalProps> = ({
   onClose,
   items,
   onScrapR,
+  isScrappingR = false,
 }) => {
   // Modal Ergonomics: Escape key dismiss listener
   useEffect(() => {
@@ -31,6 +33,7 @@ export const GachaSummonModal: React.FC<GachaSummonModalProps> = ({
 
   const hasSSR = items.some((i) => i.tier === "SSR");
   const hasSR = items.some((i) => i.tier === "SR");
+  const rCount = items.filter((i) => i.tier === "R").length;
 
   return (
     <div
@@ -151,18 +154,20 @@ export const GachaSummonModal: React.FC<GachaSummonModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {onScrapR && (
+            {onScrapR && rCount > 0 && (
               <button
                 onClick={onScrapR}
-                className="bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-500/40 font-bold text-xs py-2 px-3 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                disabled={isScrappingR}
+                className="bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-500/40 font-bold text-xs py-2 px-3 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                <Recycle className="w-3.5 h-3.5" />
-                <span>Dismantle R Items</span>
+                <Recycle className={`w-3.5 h-3.5 ${isScrappingR ? "animate-spin" : ""}`} />
+                <span>{isScrappingR ? "Dismantling..." : `Dismantle R Items (${rCount})`}</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2 px-4 rounded-lg transition-colors shadow-sm cursor-pointer"
+              disabled={isScrappingR}
+              className="bg-accent hover:bg-accent/90 text-background font-bold text-xs py-2 px-4 rounded-lg transition-colors shadow-sm cursor-pointer disabled:opacity-50"
             >
               Collect to Stash
             </button>

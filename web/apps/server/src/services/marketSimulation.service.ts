@@ -123,10 +123,12 @@ export class MarketSimulationService {
           f += isValue ? Math.floor(discount * 5) + 2 : Math.floor(discount * 14) + 6;
           if (!isValue && discount > 0.4) volume = Math.floor(Math.random() * 250) + 200;
         }
-      } else if (price > 100) {
-        const overbought = (price - 100) / 900; // 0.0 at 100z -> 1.0 at 1000z
-        if (Math.random() < Math.pow(overbought, 1.8) * 0.90) {
-          f -= Math.floor(overbought * 6) + 2;
+      } else if (price > 120) {
+        // ponytail: Non-linear parabolic resistance scaled with beta creates natural resistance walls
+        const stretchRatio = Math.min(1.0, (price - 120) / 1880); // 0.0 at 120z -> 1.0 at 2,000z
+        if (Math.random() < Math.pow(stretchRatio, 1.3) * 0.85) {
+          const maxDrag = Math.min(45, Math.floor(stretchRatio * 30 * Math.max(1.0, beta * 0.75)));
+          f -= Math.floor(Math.random() * maxDrag) + 3;
         }
       }
 
@@ -142,17 +144,36 @@ export class MarketSimulationService {
 
       let currentDiv = Number(stock.dividend) || 0;
 
-      if (newPrice >= 1000) {
-        newPrice = Math.floor(newPrice / 10);
-        const targetBps = Number(stock.target_yield_bps) || 0;
-        const postSplitDiv = targetBps === 0 ? 0 : Math.max(1, Math.round((newPrice * targetBps) / 1000));
-        currentDiv = postSplitDiv;
-        await primaryExecute(
-          "UPDATE `solo_stock_market` SET price = ?, price_old = price_old / 10, dividend = ?, split_count = split_count + 1 WHERE ticker = ?",
-          [newPrice, postSplitDiv, city]
+      if (newPrice >= 2000) {
+        const splitKey = `SplitTime_${city}`;
+        const splitMeta = await primaryQuery<{ mval: number }>(
+          "SELECT mval FROM `solo_stock_meta` WHERE mkey = ?",
+          [splitKey]
         );
-        await primaryExecute("UPDATE `solo_stock_player` SET shares = shares * 10 WHERE ticker = ?", [city]);
-        console.log(`[MarketSimulation] Stock Split for ${city}!`);
+        const lastSplitTime = splitMeta.length > 0 ? Number(splitMeta[0].mval) : 0;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const COOLDOWN_SEC = 72 * 3600; // 72 hours minimum between splits
+
+        if (lastSplitTime === 0 || nowSec - lastSplitTime >= COOLDOWN_SEC) {
+          newPrice = Math.floor(newPrice / 2);
+          const targetBps = Number(stock.target_yield_bps) || 0;
+          const postSplitDiv = targetBps === 0 ? 0 : Math.max(1, Math.round((newPrice * targetBps) / 1000));
+          currentDiv = postSplitDiv;
+          await primaryExecute(
+            "UPDATE `solo_stock_market` SET price = ?, price_old = price_old / 2, dividend = ?, split_count = split_count + 1 WHERE ticker = ?",
+            [newPrice, postSplitDiv, city]
+          );
+          await primaryExecute("UPDATE `solo_stock_player` SET shares = shares * 2 WHERE ticker = ?", [city]);
+          await primaryExecute(
+            "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES (?, ?) ON DUPLICATE KEY UPDATE mval = ?",
+            [splitKey, nowSec, nowSec]
+          );
+          console.log(`[MarketSimulation] Corporate Action: 2-for-1 Stock Split approved for ${city}!`);
+        } else {
+          // Cooldown active: Clamp price near 2,000z resistance ceiling until consolidation window passes
+          newPrice = Math.min(2050, 1940 + Math.floor(Math.random() * 80));
+          await primaryExecute("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?", [newPrice, city]);
+        }
       } else {
         await primaryExecute("UPDATE `solo_stock_market` SET price = ? WHERE ticker = ?", [newPrice, city]);
       }
@@ -270,6 +291,19 @@ export class MarketSimulationService {
       "INSERT INTO `solo_stock_meta` (mkey, mval) VALUES ('LastShiftTime', ?) ON DUPLICATE KEY UPDATE mval = ?",
       [Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)]
     );
+
+    // 10-Minute Threshold Event Detection (Circuit Breakers / Distress Bailouts & Mania Regulation)
+    try {
+      await this.checkThresholdEvents(
+        standardStocks.map((s) => ({
+          ticker: s.ticker,
+          price: updatedPriceMap.get(s.ticker)?.price ?? s.price,
+        }))
+      );
+    } catch (err) {
+      console.error("[MarketSimulation] Error checking threshold events:", err);
+    }
+
     console.log(`[MarketSimulation] Hourly shift complete. Equities Mood: ${equitiesMood}, Crypto Mood: ${cryptoMood}`);
   }
 
@@ -312,10 +346,22 @@ export class MarketSimulationService {
       console.error("[MarketSimulation] Error during daily OHLC downsampling:", err);
     }
 
-    const bscRows = await primaryQuery("SELECT mval FROM `solo_stock_meta` WHERE mkey = 'BlackSwanChance'");
-    const bsc = bscRows.length > 0 ? bscRows[0].mval : 2;
-    if (Math.floor(Math.random() * 100) + 1 <= bsc) {
-      await this.processBlackSwan();
+    // Accumulating PRD Hazard Tension based on elapsed hours since LatestEventTime
+    const metaRows = await primaryQuery<{ mkey: string; mval: number }>(
+      "SELECT mkey, mval FROM `solo_stock_meta` WHERE mkey IN ('BlackSwanChance', 'LatestEventTime')"
+    );
+    const metaMap = new Map(metaRows.map((r) => [r.mkey, Number(r.mval)]));
+
+    const latestEventTime = metaMap.get("LatestEventTime") || 0;
+    const now = Math.floor(Date.now() / 1000);
+    const hoursSinceLast = latestEventTime > 0 ? Math.max(0, (now - latestEventTime) / 3600) : 48;
+
+    // Base 0.5% + 0.15% per hour elapsed (e.g. 24h = 4.1%, 48h = 7.7%, 96h = 14.9%, max 30%)
+    const baseConfigChance = metaMap.get("BlackSwanChance") ?? 2;
+    const dynamicEventChance = baseConfigChance === 0 ? 0 : Math.min(30, 0.5 + (hoursSinceLast * 0.15));
+
+    if (dynamicEventChance > 0 && Math.random() * 100 < dynamicEventChance) {
+      await this.processBlackSwan("MIDNIGHT_CRON");
     }
 
     let marketMood = 0;
@@ -333,15 +379,17 @@ export class MarketSimulationService {
       let dividend = Number(stock.dividend) || 0;
       const targetBps = Number(stock.target_yield_bps) ?? 50;
 
-      let target = targetBps === 0 ? 0 : Math.max(1, Math.round((price * targetBps) / 1000));
-
-      if (target === 0) {
+      if (targetBps === 0) {
         dividend = 0;
       } else {
-        // Dynamic target yield tracking with sentiment sensitivity:
-        // Bullish market provides slight yield premium (+10%), Bearish slight discount (-10%)
-        const moodMultiplier = marketMood === 1 ? 1.1 : marketMood === 2 ? 0.9 : 1.0;
-        const dynamicTarget = Math.max(1, Math.round(target * moodMultiplier));
+        // ponytail: dynamic target yield tracking with anti-cyclical valuation tilt + sentiment sensitivity:
+        // 1. Valuation Tilt: Undervalued stocks (<80z) hike target yield (+25%) to attract value capital; bubbles (>300z) compress yield (-25%) to curb inflation
+        const valuationMult = price < 80 ? 1.25 : price > 300 ? 0.75 : 1.0;
+        // 2. Market Sentiment Tilt: Bullish (+10%), Bearish (-10%)
+        const moodMultiplier = marketMood === 1 ? 1.10 : marketMood === 2 ? 0.90 : 1.0;
+
+        const effectiveBps = Math.round(targetBps * valuationMult * moodMultiplier);
+        const dynamicTarget = Math.max(1, Math.round((price * effectiveBps) / 1000));
 
         if (dividend === 0) {
           dividend = dynamicTarget;
@@ -494,10 +542,11 @@ export class MarketSimulationService {
             f += isValue ? Math.floor(discount * 5) + 2 : Math.floor(discount * 14) + 6;
             if (!isValue && discount > 0.4) volume = Math.floor(Math.random() * 250) + 200;
           }
-        } else if (oldPrice > 100) {
-          const overbought = (oldPrice - 100) / 900; // 0.0 at 100z -> 1.0 at 1000z
-          if (Math.random() < Math.pow(overbought, 1.8) * 0.90) {
-            f -= Math.floor(overbought * 6) + 2;
+        } else if (oldPrice > 120) {
+          const stretchRatio = Math.min(1.0, (oldPrice - 120) / 1880);
+          if (Math.random() < Math.pow(stretchRatio, 1.3) * 0.85) {
+            const maxDrag = Math.min(45, Math.floor(stretchRatio * 30 * Math.max(1.0, stock.beta * 0.75)));
+            f -= Math.floor(Math.random() * maxDrag) + 3;
           }
         }
 
@@ -510,9 +559,9 @@ export class MarketSimulationService {
         let newPrice = oldPrice + delta;
         if (newPrice < 10) newPrice = 10;
 
-        // Handle stock split
-        if (newPrice >= 1000) {
-          newPrice = Math.floor(newPrice / 10);
+        // Handle stock split (2-for-1 at 2,000z)
+        if (newPrice >= 2000) {
+          newPrice = Math.floor(newPrice / 2);
           stock.splitCount++;
           stock.totalSplitsDuringOffline++;
         }
@@ -562,7 +611,7 @@ export class MarketSimulationService {
     // 4. Update final state in solo_stock_market
     for (const stock of state) {
       if (stock.totalSplitsDuringOffline > 0) {
-        const multiplier = Math.pow(10, stock.totalSplitsDuringOffline);
+        const multiplier = Math.pow(2, stock.totalSplitsDuringOffline);
         await primaryExecute(
           "UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?",
           [stock.price, stock.splitCount, stock.ticker]
@@ -623,7 +672,182 @@ export class MarketSimulationService {
     return missedCycles;
   }
 
-  static async processBlackSwan() {
+  static async checkThresholdEvents(stocks: { ticker: string; price: number }[]) {
+    const distressStocks = stocks.filter((s) => s.price <= 20);
+    const maniaStocks = stocks.filter((s) => s.price >= 750);
+
+    if (distressStocks.length === 0 && maniaStocks.length === 0) return;
+
+    // Cooldown check 1: Active ongoing events
+    let activeTickerSet = new Set<string>();
+    try {
+      const activeEvents = await primaryQuery<{ ticker: string }>(
+        "SELECT ticker FROM `solo_stock_events_active` WHERE remaining_shifts > 0"
+      );
+      activeTickerSet = new Set(activeEvents.map((e) => e.ticker));
+    } catch {
+      activeTickerSet = new Set();
+    }
+
+    // Cooldown check 2: Events logged within last 24 hours
+    let recentLogSet = new Set<string>();
+    try {
+      const recentLogs = await primaryQuery<{ ticker_target: string }>(
+        "SELECT ticker_target FROM `solo_stock_events_log` WHERE created_at >= NOW() - INTERVAL 24 HOUR"
+      );
+      recentLogSet = new Set(recentLogs.map((l) => l.ticker_target));
+    } catch {
+      recentLogSet = new Set();
+    }
+
+    const enabledRows = await primaryQuery<{ ticker: string; price: number }>(
+      "SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1"
+    );
+    if (enabledRows.length === 0) return;
+    const enabledTickers = enabledRows.map((r) => r.ticker);
+    const enabledSet = new Set(enabledTickers);
+
+    // 1. Evaluate distress threshold (price <= 20z): triggers rescue, reverse split, or crisis bailout
+    for (const stock of distressStocks) {
+      if (activeTickerSet.has(stock.ticker) || activeTickerSet.has("ALL") || recentLogSet.has(stock.ticker)) {
+        continue;
+      }
+
+      const candidateEvents = await primaryQuery<any>(
+        "SELECT * FROM `solo_stock_events_def` WHERE enabled = 1 AND (category = 'STRUCTURAL' OR category = 'MUNICIPAL_CRISIS' OR category = 'MUNICIPAL_BOOM') AND (ticker_target = ? OR ticker_target = 'LOWEST') ORDER BY RAND() LIMIT 1",
+        [stock.ticker]
+      );
+
+      if (candidateEvents.length > 0) {
+        const ev = candidateEvents[0];
+        let targets = [stock.ticker];
+        if (ev.ticker_target === "LOWEST") {
+          const sorted = [...enabledRows].sort((a, b) => Number(a.price) - Number(b.price));
+          targets = sorted.length > 0 ? [sorted[0].ticker] : [stock.ticker];
+        }
+        console.log(`[MarketSimulation] Threshold Distress Trigger for ${stock.ticker} (${stock.price}z): [${ev.event_id}]`);
+        await this.applyEvent(ev, targets, enabledTickers, enabledSet, "THRESHOLD_TRIGGER");
+        return; // At most 1 threshold event per hourly shift
+      }
+    }
+
+    // 2. Evaluate mania threshold (price >= 750z): triggers regulation / profit-taking
+    for (const stock of maniaStocks) {
+      if (activeTickerSet.has(stock.ticker) || activeTickerSet.has("ALL") || recentLogSet.has(stock.ticker)) {
+        continue;
+      }
+
+      const candidateEvents = await primaryQuery<any>(
+        "SELECT * FROM `solo_stock_events_def` WHERE enabled = 1 AND (category = 'MUNICIPAL_BOOM' OR category = 'STRUCTURAL' OR category = 'MUNICIPAL_CRISIS') AND (ticker_target = ? OR ticker_target = 'ALL') ORDER BY RAND() LIMIT 1",
+        [stock.ticker]
+      );
+
+      if (candidateEvents.length > 0) {
+        const ev = candidateEvents[0];
+        const targets = ev.ticker_target === "ALL" ? enabledTickers : [stock.ticker];
+        console.log(`[MarketSimulation] Threshold Mania Trigger for ${stock.ticker} (${stock.price}z): [${ev.event_id}]`);
+        await this.applyEvent(ev, targets, enabledTickers, enabledSet, "THRESHOLD_TRIGGER");
+        return;
+      }
+    }
+  }
+
+  static async applyEvent(
+    ev: any,
+    targetTickers: string[],
+    enabledTickers: string[],
+    enabledSet: Set<string>,
+    triggeredBy: string = "MIDNIGHT_CRON"
+  ) {
+    console.log(`[MarketSimulation] Applying Event [${ev.event_id}] ${ev.event_name} via ${triggeredBy}`);
+
+    // 1. Apply primary price, dividend, and direct windfall shifts
+    for (const t of targetTickers) {
+      const pricePct = Number(ev.price_pct_change) || 0;
+      const divChange = Number(ev.dividend_change) || 0;
+      const directPayout = Number(ev.direct_payout_per_share) || 0;
+      const revSplit = Number(ev.reverse_split_ratio) || 0;
+
+      if (pricePct !== 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+          [pricePct, t]
+        );
+      }
+      if (divChange !== 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET dividend = GREATEST(0, dividend + ?) WHERE ticker = ?",
+          [divChange, t]
+        );
+      }
+      if (directPayout > 0) {
+        await primaryExecute(
+          "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * ?) WHERE ticker = ? AND shares > 0",
+          [directPayout, t]
+        );
+      }
+      if (revSplit > 1) {
+        await primaryExecute(
+          "UPDATE `solo_stock_market` SET price = price * ?, dividend = dividend * ? WHERE ticker = ?",
+          [revSplit, revSplit, t]
+        );
+        await primaryExecute(
+          "UPDATE `solo_stock_player` SET shares = FLOOR(shares / ?) WHERE ticker = ?",
+          [revSplit, t]
+        );
+      }
+    }
+
+    // 2. Apply secondary ticker shift
+    if (ev.ticker_secondary) {
+      const secPricePct = Number(ev.price_secondary_pct_change) || 0;
+      if (secPricePct !== 0) {
+        let secondaryTickers: string[] = [];
+        if (ev.ticker_secondary === "ALL") {
+          secondaryTickers = enabledTickers.filter((t) => !targetTickers.includes(t));
+        } else {
+          secondaryTickers = ev.ticker_secondary
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter((t: string) => enabledSet.has(t));
+        }
+
+        for (const secTicker of secondaryTickers) {
+          await primaryExecute(
+            "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
+            [secPricePct, secTicker]
+          );
+        }
+      }
+    }
+
+    // 3. Tax Rate & Mood Overrides
+    if (Number(ev.tax_rate_override) >= 0) {
+      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'DivTaxRate'", [ev.tax_rate_override]);
+    }
+    if (Number(ev.mood_override) > 0 && Number(ev.duration_shifts) <= 0) {
+      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [ev.mood_override]);
+    }
+
+    // 4. Active Event & Audit Log
+    const duration = Number(ev.duration_shifts) || 0;
+    const now = Math.floor(Date.now() / 1000);
+    if (duration > 0) {
+      const targetDisplay = targetTickers.length === 1 ? targetTickers[0] : ev.ticker_target || "ALL";
+      await primaryExecute(
+        "INSERT INTO `solo_stock_events_active` (event_id, ticker, start_time, end_time, remaining_shifts, tax_rate_override, mood_override, headline) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [ev.event_id, targetDisplay, now, now + duration * 3600, duration, ev.tax_rate_override ?? -1, ev.mood_override ?? 0, ev.headline]
+      );
+    }
+
+    await primaryExecute(
+      "INSERT INTO `solo_stock_events_log` (event_id, event_name, category, ticker_target, headline, details, triggered_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [ev.event_id, ev.event_name, ev.category, ev.ticker_target, ev.headline, ev.description || "", triggeredBy]
+    );
+    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LatestEventTime'", [now]);
+  }
+
+  static async processBlackSwan(triggeredBy: string = "MIDNIGHT_CRON") {
     console.log("[MarketSimulation] Checking and triggering Black Swan event...");
 
     // 1. Query active enabled tickers (rolling unlock safety)
@@ -661,8 +885,6 @@ export class MarketSimulationService {
       randomWeight -= w;
     }
 
-    console.log(`[MarketSimulation] Black Swan Event: [${ev.event_id}] ${ev.event_name}`);
-
     // 3. Resolve primary target tickers
     let targetTickers: string[] = [];
     if (ev.ticker_target === "ALL") {
@@ -674,86 +896,6 @@ export class MarketSimulationService {
       targetTickers = ev.ticker_target.split(",").map((s: string) => s.trim()).filter((t: string) => enabledSet.has(t));
     }
 
-    // 4. Apply primary price, dividend, and direct windfall shifts
-    for (const t of targetTickers) {
-      const pricePct = Number(ev.price_pct_change) || 0;
-      const divChange = Number(ev.dividend_change) || 0;
-      const directPayout = Number(ev.direct_payout_per_share) || 0;
-      const revSplit = Number(ev.reverse_split_ratio) || 0;
-
-      if (pricePct !== 0) {
-        await primaryExecute(
-          "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
-          [pricePct, t]
-        );
-      }
-      if (divChange !== 0) {
-        await primaryExecute(
-          "UPDATE `solo_stock_market` SET dividend = GREATEST(0, dividend + ?) WHERE ticker = ?",
-          [divChange, t]
-        );
-      }
-      if (directPayout > 0) {
-        await primaryExecute(
-          "UPDATE `solo_stock_player` SET pending_div = pending_div + (shares * ?) WHERE ticker = ? AND shares > 0",
-          [directPayout, t]
-        );
-      }
-      if (revSplit > 1) {
-        await primaryExecute(
-          "UPDATE `solo_stock_market` SET price = price * ?, dividend = dividend * ? WHERE ticker = ?",
-          [revSplit, revSplit, t]
-        );
-        await primaryExecute(
-          "UPDATE `solo_stock_player` SET shares = FLOOR(shares / ?) WHERE ticker = ?",
-          [revSplit, t]
-        );
-      }
-    }
-
-    // 5. Apply secondary ticker shift
-    if (ev.ticker_secondary) {
-      const secPricePct = Number(ev.price_secondary_pct_change) || 0;
-      if (secPricePct !== 0) {
-        let secondaryTickers: string[] = [];
-        if (ev.ticker_secondary === "ALL") {
-          secondaryTickers = enabledTickers.filter(t => !targetTickers.includes(t));
-        } else {
-          secondaryTickers = ev.ticker_secondary.split(",").map((s: string) => s.trim()).filter((t: string) => enabledSet.has(t));
-        }
-
-        for (const secTicker of secondaryTickers) {
-          await primaryExecute(
-            "UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?",
-            [secPricePct, secTicker]
-          );
-        }
-      }
-    }
-
-    // 6. Tax Rate & Mood Overrides
-    if (Number(ev.tax_rate_override) >= 0) {
-      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'DivTaxRate'", [ev.tax_rate_override]);
-    }
-    if (Number(ev.mood_override) > 0 && Number(ev.duration_shifts) <= 0) {
-      await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'MarketMood'", [ev.mood_override]);
-    }
-
-    // 7. Active Event & Audit Log
-    const duration = Number(ev.duration_shifts) || 0;
-    const now = Math.floor(Date.now() / 1000);
-    if (duration > 0) {
-      const targetDisplay = targetTickers.length === 1 ? targetTickers[0] : (ev.ticker_target || "ALL");
-      await primaryExecute(
-        "INSERT INTO `solo_stock_events_active` (event_id, ticker, start_time, end_time, remaining_shifts, tax_rate_override, mood_override, headline) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [ev.event_id, targetDisplay, now, now + duration * 3600, duration, ev.tax_rate_override ?? -1, ev.mood_override ?? 0, ev.headline]
-      );
-    }
-
-    await primaryExecute(
-      "INSERT INTO `solo_stock_events_log` (event_id, event_name, category, ticker_target, headline, details, triggered_by) VALUES (?, ?, ?, ?, ?, ?, 'MIDNIGHT_CRON')",
-      [ev.event_id, ev.event_name, ev.category, ev.ticker_target, ev.headline, ev.description || ""]
-    );
-    await primaryExecute("UPDATE `solo_stock_meta` SET mval = ? WHERE mkey = 'LatestEventTime'", [now]);
+    await this.applyEvent(ev, targetTickers, enabledTickers, enabledSet, triggeredBy);
   }
 }

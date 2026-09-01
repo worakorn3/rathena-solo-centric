@@ -154,6 +154,53 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
     }
   };
 
+  // 2. Directly Dismantle Rank-R items from current pull
+  const [isScrappingR, setIsScrappingR] = useState(false);
+  const handleScrapJustPulledR = async () => {
+    const rItems = revealedRewards.filter((r) => r.tier === "R");
+    if (rItems.length === 0) return;
+
+    // Collect stash IDs
+    let idsToScrap = rItems
+      .map((r) => r.stashId)
+      .filter((id): id is number => typeof id === "number" && id > 0);
+
+    // Fallback: If stashId was not attached on reward objects, find matching R items from stash
+    if (idsToScrap.length === 0) {
+      idsToScrap = stashItems.filter((i) => i.tier === "R").slice(0, rItems.length).map((i) => i.id);
+    }
+
+    if (idsToScrap.length === 0) {
+      setFeedback({ type: "error", text: "No Rank-R items found to dismantle." });
+      setRevealModalOpen(false);
+      return;
+    }
+
+    setIsScrappingR(true);
+    try {
+      const res = await api.post<{ success: boolean; shardsGained: number; totalShards: number; error?: string }>(
+        "/api/gacha/stash/scrap",
+        { stashIds: idsToScrap }
+      );
+
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          text: `💎 Dismantled ${idsToScrap.length} Rank-R items for +${res.shardsGained} Gacha Shards! Total: ${res.totalShards} 💎`,
+        });
+        setRevealModalOpen(false);
+        fetchData();
+        if (onRefreshBalances) onRefreshBalances();
+      } else {
+        throw new Error(res.error || "Failed to dismantle items.");
+      }
+    } catch (err: any) {
+      setFeedback({ type: "error", text: err.message || "Failed to dismantle items." });
+    } finally {
+      setIsScrappingR(false);
+    }
+  };
+
   // Helper for banner icons
   const getBannerIcon = (iconName: string) => {
     switch (iconName) {
@@ -533,10 +580,8 @@ export const GachaAltar: React.FC<GachaAltarProps> = ({
         isOpen={revealModalOpen}
         onClose={() => setRevealModalOpen(false)}
         items={revealedRewards}
-        onScrapR={() => {
-          setRevealModalOpen(false);
-          setActiveTab("stash");
-        }}
+        onScrapR={handleScrapJustPulledR}
+        isScrappingR={isScrappingR}
       />
 
       <GachaRatesModal

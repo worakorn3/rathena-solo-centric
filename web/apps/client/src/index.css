@@ -11,10 +11,10 @@
 @layer components {
   /* Bento Grid Card */
   .bento-card {
-    @apply bg-surface border border-border rounded-xl p-6 transition-all duration-200;
+    @apply bg-surface border border-border rounded-xl p-6 transition-colors duration-150;
   }
   .bento-card:hover {
-    @apply border-surface2 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4)];
+    @apply border-surface2;
   }
   
   /* RO Icons with pixelated rendering */
@@ -32,7 +32,12 @@
   /* ponytail: native browser virtualization with 0 JS observer overhead */
   .bento-list-item {
     content-visibility: auto;
-    contain-intrinsic-size: 0 72px;
+    contain-intrinsic-size: 0 54px;
+  }
+
+  .bento-table-row {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 42px;
   }
 }
 

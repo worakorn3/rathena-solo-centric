@@ -215,7 +215,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             <button
               type="button"
               onClick={() => setAssetClassTab(assetClassTab === "EQUITY" ? "ALL" : "EQUITY")}
-              className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
+              className={`p-1.5 px-2 rounded-lg transition-colors cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
                 assetClassTab === "EQUITY"
                   ? "bg-info/20 border-info text-info shadow-xs ring-1 ring-info/30"
                   : "bg-info/10 border-info/20 text-info hover:bg-info/15"
@@ -247,7 +247,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             <button
               type="button"
               onClick={() => setAssetClassTab(assetClassTab === "CRYPTO" ? "ALL" : "CRYPTO")}
-              className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
+              className={`p-1.5 px-2 rounded-lg transition-colors cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
                 assetClassTab === "CRYPTO"
                   ? "bg-amber-500/20 border-amber-500 text-amber-400 shadow-xs ring-1 ring-amber-500/30"
                   : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/15"
@@ -280,7 +280,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
               <button
                 type="button"
                 onClick={() => setAssetClassTab(assetClassTab === "ETF" ? "ALL" : "ETF")}
-                className={`p-1.5 px-2 rounded-lg transition-all cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
+                className={`p-1.5 px-2 rounded-lg transition-colors cursor-pointer border text-left flex flex-col justify-between gap-0.5 ${
                   assetClassTab === "ETF"
                     ? "bg-accent/25 border-accent text-accent shadow-xs ring-1 ring-accent/30"
                     : "bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"
@@ -343,7 +343,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                 type="button"
                 onClick={() => setHarvestModalHolding(null)}
                 disabled={cashHarvestableDividends <= 0}
-                className={`px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                   cashHarvestableDividends > 0
                     ? "bg-success text-black hover:bg-success/90 shadow-xs"
                     : "bg-surface2 text-muted border border-border cursor-not-allowed opacity-60"
@@ -428,7 +428,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
             return (
               <div
                 key={h.ticker}
-                className={`rounded-lg border transition-all duration-200 overflow-hidden ${
+                className={`bento-list-item rounded-lg border transition-colors duration-150 overflow-hidden ${
                   isExpanded
                     ? "bg-surface2/60 border-border shadow-md"
                     : "bg-surface2/25 border-border/70 hover:border-border hover:bg-surface2/40"
@@ -559,16 +559,29 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                         <span className="text-[8.5px] text-muted block">
                           {h.isCrypto ? "Cost Basis" : "Avg Buy Price"}
                         </span>
-                        <span className="font-bold text-primary">
-                          {formatZeny(h.avgBuyPrice)} Z
+                        <span className="font-bold text-primary font-mono">
+                          {h.totalCost === 0 ? (
+                            <span className="text-accent font-sans font-semibold text-[9.5px]">0 Z (Grant)</span>
+                          ) : h.avgBuyPrice < 1.0 ? (
+                            <span title={`Exact Unit Cost: ${(h.totalCost / h.shares).toFixed(4)} Z`}>
+                              {(h.totalCost / h.shares).toFixed(2)} Z
+                            </span>
+                          ) : (
+                            `${formatZeny(Math.round(h.avgBuyPrice))} Z`
+                          )}
                         </span>
                       </div>
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
                         <span className="text-[8.5px] text-muted block">
-                          Current Price
+                          Fair Value / Rating
                         </span>
-                        <span className="font-bold text-primary">
-                          {formatZeny(h.currentPrice)} Z
+                        <span className="font-bold text-primary flex items-center gap-1">
+                          <span>{formatZeny(h.fairValue ?? 100)} Z</span>
+                          {h.valuationRating && (
+                            <span className="text-[8px] px-1 py-0.2 rounded bg-surface border border-border/60 text-accent font-mono">
+                              {h.valuationRating.replace(/_/g, " ")}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <div className="p-1.5 rounded bg-surface2/40 border border-border/30">
@@ -626,7 +639,7 @@ export const StockPortfolio: React.FC<StockPortfolioProps> = ({
                           handleToggleDrip(h.ticker, Boolean(h.dripEnabled));
                         }}
                         disabled={isDripLoading}
-                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded font-bold text-[10px] transition-all cursor-pointer border ${
+                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded font-bold text-[10px] transition-colors cursor-pointer border ${
                           h.dripEnabled
                             ? "bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30 shadow-sm"
                             : "bg-surface text-muted border-border hover:text-primary hover:bg-surface2"

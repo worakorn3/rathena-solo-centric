@@ -54,6 +54,7 @@ export interface GachaPullRequest {
 
 export interface GachaRewardItem {
   id: number;
+  stashId?: number;
   nameId: number;
   itemName: string;
   amount: number;

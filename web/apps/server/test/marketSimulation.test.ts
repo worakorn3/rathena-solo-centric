@@ -10,6 +10,7 @@ mock.module("../src/db/pool", () => ({
 }));
 
 import { MarketSimulationService } from "../src/services/marketSimulation.service";
+import { calculateStockValuation } from "@rathena/shared";
 
 describe("MarketSimulationService", () => {
   beforeEach(() => {
@@ -173,6 +174,38 @@ describe("MarketSimulationService", () => {
         Math.random = originalRandom;
       }
     });
+
+    it("should apply anti-cyclical valuation tilt (1.25x on dip <80z, 0.75x on bubble >300z)", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey = 'BlackSwanChance'")) return [{ mval: 0 }];
+        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 0 }]; // Neutral mood = 1.0x
+        if (query.includes("solo_stock_market")) {
+          return [
+            // Dip stock: price 60z, base target 50 bps -> effective bps = round(50 * 1.25) = 63 -> target = round(60 * 63 / 1000) = 4z
+            { ticker: "DIP", price: 60, dividend: 0, div_acc: 0, target_yield_bps: 50 },
+            // Bubble stock: price 400z, base target 50 bps -> effective bps = round(50 * 0.75) = 38 -> target = round(400 * 38 / 1000) = 15z
+            { ticker: "BUBBLE", price: 400, dividend: 0, div_acc: 0, target_yield_bps: 50 },
+          ];
+        }
+        if (query.includes("solo_stock_player")) return [];
+        return [];
+      });
+
+      await MarketSimulationService.processMidnightDrip();
+
+      const divUpdates = primaryExecuteMock.mock.calls.filter(call =>
+        (call[0] as string).includes("UPDATE `solo_stock_market` SET dividend = ?, div_acc = div_acc + ? WHERE ticker = ?")
+      );
+      expect(divUpdates.length).toBe(2);
+
+      const dipUpdate = divUpdates.find(u => u[1][2] === "DIP");
+      expect(dipUpdate).toBeDefined();
+      expect(dipUpdate![1][0]).toBe(4); // 1.25x valuation boost applied
+
+      const bubbleUpdate = divUpdates.find(u => u[1][2] === "BUBBLE");
+      expect(bubbleUpdate).toBeDefined();
+      expect(bubbleUpdate![1][0]).toBe(15); // 0.75x valuation compression applied
+    });
   });
 
   describe("processBlackSwan", () => {
@@ -267,6 +300,180 @@ describe("MarketSimulationService", () => {
       expect(playerShareConsolidations.length).toBe(1);
       expect(playerShareConsolidations[0][1][0]).toBe(5);
       expect(playerShareConsolidations[0][1][1]).toBe("HUG");
+    });
+
+    it("should trigger via accumulating PRD hazard tension when elapsed time is 48h", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("mkey IN ('BlackSwanChance', 'LatestEventTime')")) {
+          // 48 hours elapsed -> dynamic chance = min(30, 0.5 + 48 * 0.15) = 7.7%
+          return [
+            { mkey: "BlackSwanChance", mval: 2 },
+            { mkey: "LatestEventTime", mval: now - 48 * 3600 },
+          ];
+        }
+        if (query.includes("mkey = 'MarketMood'")) return [{ mval: 1 }];
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [{ ticker: "PRT", price: 100 }];
+        }
+        if (query.includes("solo_stock_market")) {
+          return [{ ticker: "PRT", price: 100, dividend: 5, target_yield_bps: 50 }];
+        }
+        if (query.includes("solo_stock_events_def")) {
+          return [
+            {
+              event_id: "PRT_BOOM_ROYAL",
+              category: "MUNICIPAL_BOOM",
+              event_name: "Royal Grant",
+              ticker_target: "PRT",
+              price_pct_change: 50,
+              dividend_change: 5,
+              weight: 10,
+            },
+          ];
+        }
+        return [];
+      });
+
+      const originalRandom = Math.random;
+      // 0.05 * 100 = 5.0 <= 7.7 -> triggers Black Swan
+      Math.random = () => 0.05;
+
+      try {
+        await MarketSimulationService.processMidnightDrip();
+        const logInserts = primaryExecuteMock.mock.calls.filter((call) =>
+          (call[0] as string).includes("INSERT INTO `solo_stock_events_log`")
+        );
+        expect(logInserts.length).toBe(1);
+        expect(logInserts[0][1][0]).toBe("PRT_BOOM_ROYAL");
+      } finally {
+        Math.random = originalRandom;
+      }
+    });
+  });
+
+  describe("checkThresholdEvents", () => {
+    it("should trigger distress threshold event on stock at 18z", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("solo_stock_events_active")) return [];
+        if (query.includes("solo_stock_events_log")) return [];
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [
+            { ticker: "PRT", price: 100 },
+            { ticker: "DISTRESSED_CORP", price: 18 },
+          ];
+        }
+        if (query.includes("solo_stock_events_def")) {
+          return [
+            {
+              event_id: "CRISIS_BAILOUT",
+              category: "STRUCTURAL",
+              event_name: "Emergency Crown Bailout",
+              ticker_target: "DISTRESSED_CORP",
+              price_pct_change: 60,
+              dividend_change: 0,
+              headline: "Crown injects liquidity into distressed firm",
+            },
+          ];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.checkThresholdEvents([
+        { ticker: "PRT", price: 100 },
+        { ticker: "DISTRESSED_CORP", price: 18 },
+      ]);
+
+      const eventLogs = primaryExecuteMock.mock.calls.filter((call) =>
+        (call[0] as string).includes("INSERT INTO `solo_stock_events_log`")
+      );
+      expect(eventLogs.length).toBe(1);
+      expect(eventLogs[0][1][0]).toBe("CRISIS_BAILOUT");
+      expect(eventLogs[0][1][6]).toBe("THRESHOLD_TRIGGER");
+
+      const priceUpdates = primaryExecuteMock.mock.calls.filter((call) =>
+        (call[0] as string).includes("UPDATE `solo_stock_market` SET price = GREATEST(10, ROUND(price * (1 + ? / 100))) WHERE ticker = ?")
+      );
+      expect(priceUpdates.length).toBe(1);
+      expect(priceUpdates[0][1][0]).toBe(60);
+      expect(priceUpdates[0][1][1]).toBe("DISTRESSED_CORP");
+    });
+
+    it("should trigger mania threshold event on bubble stock at 820z", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("solo_stock_events_active")) return [];
+        if (query.includes("solo_stock_events_log")) return [];
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [
+            { ticker: "PRT", price: 100 },
+            { ticker: "MANIA_CORP", price: 820 },
+          ];
+        }
+        if (query.includes("solo_stock_events_def")) {
+          return [
+            {
+              event_id: "ANTITRUST_CRACKDOWN",
+              category: "MUNICIPAL_CRISIS",
+              event_name: "Anti-Monopoly Investigation",
+              ticker_target: "MANIA_CORP",
+              price_pct_change: -35,
+              dividend_change: 0,
+              headline: "Regulators investigate monopolistic pricing",
+            },
+          ];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.checkThresholdEvents([
+        { ticker: "PRT", price: 100 },
+        { ticker: "MANIA_CORP", price: 820 },
+      ]);
+
+      const eventLogs = primaryExecuteMock.mock.calls.filter((call) =>
+        (call[0] as string).includes("INSERT INTO `solo_stock_events_log`")
+      );
+      expect(eventLogs.length).toBe(1);
+      expect(eventLogs[0][1][0]).toBe("ANTITRUST_CRACKDOWN");
+      expect(eventLogs[0][1][6]).toBe("THRESHOLD_TRIGGER");
+    });
+
+    it("should suppress threshold trigger if ticker already has an active ongoing event (cooldown lock)", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("solo_stock_events_active")) {
+          return [{ ticker: "DISTRESSED_CORP" }]; // Active lock
+        }
+        if (query.includes("solo_stock_events_log")) return [];
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [{ ticker: "DISTRESSED_CORP", price: 15 }];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.checkThresholdEvents([
+        { ticker: "DISTRESSED_CORP", price: 15 },
+      ]);
+
+      expect(primaryExecuteMock).not.toHaveBeenCalled();
+    });
+
+    it("should suppress threshold trigger if ticker logged an event within last 24h", async () => {
+      primaryQueryMock.mockImplementation(async (query: string, params?: any[]) => {
+        if (query.includes("solo_stock_events_active")) return [];
+        if (query.includes("solo_stock_events_log")) {
+          return [{ ticker_target: "MANIA_CORP" }]; // 24h log lock
+        }
+        if (query.includes("SELECT ticker, price FROM `solo_stock_market` WHERE enabled = 1")) {
+          return [{ ticker: "MANIA_CORP", price: 850 }];
+        }
+        return [];
+      });
+
+      await MarketSimulationService.checkThresholdEvents([
+        { ticker: "MANIA_CORP", price: 850 },
+      ]);
+
+      expect(primaryExecuteMock).not.toHaveBeenCalled();
     });
   });
 
@@ -417,7 +624,7 @@ describe("MarketSimulationService", () => {
         }
         if (query.includes("solo_stock_market")) {
           return [
-            { ticker: "SPLIT_CORP", price: 990, dividend: 10, split_count: 0, beta: 1.0 },
+            { ticker: "SPLIT_CORP", price: 1980, dividend: 10, split_count: 0, beta: 1.0 },
           ];
         }
         if (query.includes("solo_stock_events_active")) {
@@ -427,7 +634,7 @@ describe("MarketSimulationService", () => {
       });
 
       const originalRandom = Math.random;
-      Math.random = () => 0.95; // f = 0 + 2 = +2% -> 990 * 1.02 = 1010 >= 1000 -> split to 101
+      Math.random = () => 0.95;
 
       try {
         const shifts = await MarketSimulationService.catchUpOfflineShifts();
@@ -437,14 +644,14 @@ describe("MarketSimulationService", () => {
           (call[0] as string).includes("UPDATE `solo_stock_market` SET price = ?, split_count = ? WHERE ticker = ?")
         );
         expect(splitStockUpdates.length).toBe(1);
-        expect(splitStockUpdates[0][1][0]).toBe(110); // 1109 / 10 = 110
+        expect(splitStockUpdates[0][1][0]).toBe(1109); // (1980 + 238) / 2 = 2218 / 2 = 1109
         expect(splitStockUpdates[0][1][1]).toBe(1); // split_count = 1
 
         const playerShareMultipliers = primaryExecuteMock.mock.calls.filter((call) =>
           (call[0] as string).includes("UPDATE `solo_stock_player` SET shares = shares * ? WHERE ticker = ?")
         );
         expect(playerShareMultipliers.length).toBe(1);
-        expect(playerShareMultipliers[0][1][0]).toBe(10); // 10^1 = 10x
+        expect(playerShareMultipliers[0][1][0]).toBe(2); // 2^1 = 2x
         expect(playerShareMultipliers[0][1][1]).toBe("SPLIT_CORP");
       } finally {
         Math.random = originalRandom;
@@ -472,6 +679,54 @@ describe("MarketSimulationService", () => {
 
       const shifts = await MarketSimulationService.catchUpOfflineShifts();
       expect(shifts).toBe(6480);
+    });
+  });
+
+  describe("calculateStockValuation", () => {
+    it("should classify deep value when price is 40% below fair value", () => {
+      // 5z dividend @ 50 bps = Fair Value 100z. Price 60z -> -40% gap
+      const val = calculateStockValuation(60, 5, 50, "EQUITY");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(-40);
+      expect(val.valuationRating).toBe("DEEP_VALUE");
+      expect(val.pdRatio).toBe(12.0);
+    });
+
+    it("should classify undervalued when price is 15% below fair value", () => {
+      const val = calculateStockValuation(85, 5, 50, "EQUITY");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(-15);
+      expect(val.valuationRating).toBe("UNDERVALUED");
+      expect(val.pdRatio).toBe(17.0);
+    });
+
+    it("should classify fair value within normal bounds (-5% to +15%)", () => {
+      const val = calculateStockValuation(105, 5, 50, "EQUITY");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(5);
+      expect(val.valuationRating).toBe("FAIR_VALUE");
+    });
+
+    it("should classify overvalued when price is 40% above fair value", () => {
+      const val = calculateStockValuation(140, 5, 50, "EQUITY");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(40);
+      expect(val.valuationRating).toBe("OVERVALUED");
+    });
+
+    it("should classify bubble when price is 150% above fair value", () => {
+      const val = calculateStockValuation(250, 5, 50, "EQUITY");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(150);
+      expect(val.valuationRating).toBe("BUBBLE");
+    });
+
+    it("should safely fallback for crypto and zero target bps without NaN or div-by-zero", () => {
+      const val = calculateStockValuation(120, 0, 0, "CRYPTO");
+      expect(val.fairValue).toBe(100);
+      expect(val.valuationGapPct).toBe(20);
+      expect(val.valuationRating).toBe("OVERVALUED");
+      expect(val.pdRatio).toBeNull();
     });
   });
 });

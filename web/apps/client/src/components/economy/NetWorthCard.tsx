@@ -83,7 +83,7 @@ export const NetWorthCard: React.FC<NetWorthCardProps> = ({ summary, characters 
             </span>
             {safeHoldings.length > 0 && (
               <span
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border transition-all ${
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border transition-colors duration-150 ${
                   isPositive
                     ? "bg-success/15 border-success/30 text-success"
                     : isNegative
@@ -136,7 +136,7 @@ export const NetWorthCard: React.FC<NetWorthCardProps> = ({ summary, characters 
             <button
               type="button"
               onClick={() => setIsWalletsOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border/80 hover:border-accent/60 text-primary transition-all cursor-pointer text-left group"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/60 hover:bg-surface2 border border-border/80 hover:border-accent/60 text-primary transition-colors duration-150 cursor-pointer text-left group"
               title="Inspect Liquid Zeny balance across all characters"
               aria-expanded={isWalletsOpen}
               aria-label="Toggle character wallets popover"
@@ -189,7 +189,7 @@ export const NetWorthCard: React.FC<NetWorthCardProps> = ({ summary, characters 
                     return (
                       <div
                         key={char.charId || index}
-                        className="flex items-center justify-between p-2 rounded-lg bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition-all"
+                        className="flex items-center justify-between p-2 rounded-lg bg-surface2/30 border border-border/40 hover:bg-surface2/60 transition-colors duration-150"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="relative shrink-0">
@@ -243,7 +243,7 @@ export const NetWorthCard: React.FC<NetWorthCardProps> = ({ summary, characters 
         <button
           type="button"
           onClick={() => onSelectTab && onSelectTab("HOLDINGS")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-all cursor-pointer text-left"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2/40 hover:bg-surface2/80 border border-border/60 hover:border-info/50 transition-colors duration-150 cursor-pointer text-left"
           title="View Active Positions"
         >
           <Briefcase className="w-3.5 h-3.5 text-info shrink-0" />

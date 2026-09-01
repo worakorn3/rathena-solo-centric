@@ -28,6 +28,7 @@ import {
   getJobName,
   MAX_CHARACTER_ZENY,
   calculateBankAccrual,
+  calculateStockValuation,
 } from "@rathena/shared";
 
 export function getRAthenaDayOfYear(date = new Date()): number {
@@ -67,6 +68,7 @@ interface StockMarketRow {
   dividend: number;
   div_acc: number;
   split_count: number;
+  target_yield_bps?: number;
 }
 
 interface StockIndexDbRow {
@@ -214,7 +216,7 @@ export class EconomyService {
     let marketRows: StockMarketRow[] = [];
     try {
       marketRows = await query<StockMarketRow>(
-        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
     } catch {
       // If table doesn't exist yet, return empty
@@ -227,6 +229,9 @@ export class EconomyService {
       const changeAmount = price - priceOld;
       const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
       const assetType = m.asset_type || (isCryptoAsset(m.ticker, m.sector) ? "CRYPTO" : "EQUITY");
+      const dividend = Number(m.dividend) || 0;
+      const targetYieldBps = Number(m.target_yield_bps) || 0;
+      const valuation = calculateStockValuation(price, dividend, targetYieldBps, assetType);
 
       return {
         ticker: m.ticker,
@@ -241,9 +246,11 @@ export class EconomyService {
         priceOld,
         changeAmount,
         changePercent,
-        dividend: Number(m.dividend) || 0,
+        dividend,
         divAcc: Number(m.div_acc) || 0,
         splitCount: Number(m.split_count) || 0,
+        targetYieldBps,
+        ...valuation,
       };
     });
 
@@ -349,12 +356,16 @@ export class EconomyService {
       const priceOld = quote ? quote.priceOld : currentPrice;
       const changeAmount = currentPrice - priceOld;
       const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
-
       const marketValue = shares * currentPrice;
-      const avgBuyPrice = shares > 0 ? Math.round(totalCost / shares) : 0;
+      const isGrant = totalCost === 0 && shares > 0;
+      const avgBuyPrice = shares > 0 ? (totalCost > 0 ? Number((totalCost / shares).toFixed(4)) : 0) : 0;
       const unrealizedPnL = marketValue - totalCost;
       const unrealizedPnLPercent =
-        totalCost > 0 ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2)) : 0;
+        isGrant
+          ? 100.0
+          : totalCost > 0
+          ? Number(((unrealizedPnL / totalCost) * 100).toFixed(2))
+          : 0;
 
       const pendingDividends = Number(p.pending_div) || 0;
       const isEtf = quote?.assetType === "ETF";
@@ -392,6 +403,11 @@ export class EconomyService {
         pendingDividends,
         dripEnabled: Boolean(p.drip_enabled),
         dripCarryover: Number(p.drip_carryover) || 0,
+        targetYieldBps: quote?.targetYieldBps,
+        fairValue: quote?.fairValue,
+        valuationGapPct: quote?.valuationGapPct,
+        pdRatio: quote?.pdRatio,
+        valuationRating: quote?.valuationRating,
       };
     });
 
@@ -459,7 +475,7 @@ export class EconomyService {
   static async getMarketQuotes(): Promise<StockMarketQuote[]> {
     try {
       const marketRows = await query<StockMarketRow>(
-        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
+        "SELECT ticker, name, broker_title, sector, archetype, lore, asset_type, trade_status, index_id, price, price_old, dividend, div_acc, split_count, target_yield_bps FROM `solo_stock_market` WHERE enabled = 1 ORDER BY ticker ASC"
       );
 
       return marketRows.map((m) => {
@@ -468,6 +484,9 @@ export class EconomyService {
         const changeAmount = price - priceOld;
         const changePercent = priceOld > 0 ? Number(((changeAmount / priceOld) * 100).toFixed(2)) : 0;
         const assetType = m.asset_type || (isCryptoAsset(m.ticker, m.sector) ? "CRYPTO" : "EQUITY");
+        const dividend = Number(m.dividend) || 0;
+        const targetYieldBps = Number(m.target_yield_bps) || 0;
+        const valuation = calculateStockValuation(price, dividend, targetYieldBps, assetType);
 
         return {
           ticker: m.ticker,
@@ -482,9 +501,11 @@ export class EconomyService {
           priceOld,
           changeAmount,
           changePercent,
-          dividend: Number(m.dividend) || 0,
+          dividend,
           divAcc: Number(m.div_acc) || 0,
           splitCount: Number(m.split_count) || 0,
+          targetYieldBps,
+          ...valuation,
         };
       });
     } catch {
@@ -1269,8 +1290,10 @@ export class EconomyService {
         [accountId, cleanTicker]
       );
     } else {
-      const costReduction = Math.round((shares / Number(holding.shares)) * Number(holding.total_cost));
-      const newTotalCost = Math.max(0, Number(holding.total_cost) - costReduction);
+      // ponytail: Direct proportional retention rather than subtraction avoids rounding underflow
+      const newTotalCost = Number(holding.total_cost) > 0
+        ? Math.max(1, Math.round((remainingShares / Number(holding.shares)) * Number(holding.total_cost)))
+        : 0;
       await primaryExecute(
         "UPDATE `solo_stock_player` SET shares = ?, total_cost = ? WHERE account_id = ? AND ticker = ?",
         [remainingShares, newTotalCost, accountId, cleanTicker]

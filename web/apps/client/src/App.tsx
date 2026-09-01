@@ -120,14 +120,22 @@ export const AppContent: React.FC = () => {
     if (!user) return;
     if (!silent) setIsRefreshing(true);
     try {
-      const [nwRes, charsRes, progRes] = await Promise.all([
+      const fetchDetailPromise = selectedCharId
+        ? api.get<{ success: boolean; character: CharacterDetail }>(`/api/character/${selectedCharId}`).catch(() => null)
+        : Promise.resolve(null);
+
+      const [nwRes, charsRes, progRes, detailRes] = await Promise.all([
         api.get<{ success: boolean; data: NetWorthSummary }>("/api/economy/net-worth"),
         api.get<{ success: boolean; characters: CharacterSummary[] }>("/api/character/my-characters"),
         api.get<{ success: boolean; progression: ProgressionSummary }>("/api/tracking/progression"),
+        fetchDetailPromise,
       ]);
 
       if (nwRes.success) setNetWorth(nwRes.data);
       if (progRes.success) setProgression(progRes.progression);
+      if (detailRes && detailRes.success && detailRes.character) {
+        setSelectedCharDetail(detailRes.character);
+      }
 
       if (charsRes.success && charsRes.characters.length > 0) {
         setCharacters(charsRes.characters);
@@ -241,6 +249,17 @@ export const AppContent: React.FC = () => {
   });
 
   const isUserAdmin = Boolean(user && user.groupId >= 1);
+
+  const activeChar =
+    (selectedCharDetail && selectedCharDetail.charId === selectedCharId ? selectedCharDetail : null) ||
+    characters.find((c) => c.charId === selectedCharId) ||
+    (characters.length > 0 ? characters[0] : null);
+
+  const activeCharZeny =
+    characters.find((c) => c.charId === selectedCharId)?.zeny ??
+    selectedCharDetail?.zeny ??
+    activeChar?.zeny ??
+    0;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:max-h-screen md:overflow-hidden bg-background text-primary font-sans antialiased select-none">
@@ -363,7 +382,7 @@ export const AppContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("HOLDINGS")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-colors duration-150 whitespace-nowrap group ${
                             portfolioTab === "HOLDINGS"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
@@ -375,7 +394,7 @@ export const AppContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("BANK")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-colors duration-150 whitespace-nowrap group ${
                             portfolioTab === "BANK"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
@@ -387,7 +406,7 @@ export const AppContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("BREAKDOWN")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-colors duration-150 whitespace-nowrap group ${
                             portfolioTab === "BREAKDOWN"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
@@ -399,7 +418,7 @@ export const AppContent: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPortfolioTab("HISTORY")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap group ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold transition-colors duration-150 whitespace-nowrap group ${
                             portfolioTab === "HISTORY"
                               ? "bg-surface text-primary shadow-sm border border-border"
                               : "text-muted hover:text-primary hover:bg-surface2/80"
@@ -645,7 +664,7 @@ export const AppContent: React.FC = () => {
             <ErrorBoundary>
               <GachaAltar
                 charId={selectedCharId}
-                charZeny={selectedCharDetail?.zeny || 0}
+                charZeny={activeCharZeny}
                 onRefreshBalances={loadUserData}
               />
             </ErrorBoundary>

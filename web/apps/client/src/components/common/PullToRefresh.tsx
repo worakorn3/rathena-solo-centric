@@ -142,7 +142,11 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
 
       {/* Children Stage Content */}
       <div
-        className="flex-1 flex flex-col min-h-0 transition-transform duration-150"
+        className={`flex-1 flex flex-col min-h-0 ${
+          isPulling || pullDistance > 0
+            ? "transition-transform duration-150 will-change-transform"
+            : ""
+        }`}
         style={{
           transform:
             isPulling && pullDistance > 0

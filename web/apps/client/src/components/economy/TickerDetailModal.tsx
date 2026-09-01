@@ -591,6 +591,51 @@ export const TickerDetailModal: React.FC<TickerDetailModalProps> = ({
             </div>
           </div>
 
+          {/* 📊 Fundamental Valuation Intel Card */}
+          {quote.valuationRating && (
+            <div className="p-3 rounded-xl bg-surface2/40 border border-border/70 space-y-2 font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted uppercase tracking-wider font-bold flex items-center gap-1.5">
+                  <Landmark className="w-3.5 h-3.5 text-accent" />
+                  Fundamental Valuation
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase border ${
+                    quote.valuationRating === "DEEP_VALUE"
+                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                      : quote.valuationRating === "UNDERVALUED"
+                      ? "bg-info/15 text-info border-info/30"
+                      : quote.valuationRating === "FAIR_VALUE"
+                      ? "bg-surface2 text-muted border-border"
+                      : quote.valuationRating === "OVERVALUED"
+                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                      : "bg-danger/15 text-danger border-danger/30"
+                  }`}
+                >
+                  {quote.valuationRating.replace(/_/g, " ")} ({quote.valuationGapPct && quote.valuationGapPct > 0 ? "+" : ""}{quote.valuationGapPct ?? 0}%)
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[11px] pt-0.5">
+                <div className="p-1.5 rounded bg-surface/80 border border-border/50">
+                  <span className="text-[9px] text-muted block">Fair Value</span>
+                  <span className="font-bold text-primary">{formatZeny(quote.fairValue ?? 100)} Z</span>
+                </div>
+                <div className="p-1.5 rounded bg-surface/80 border border-border/50">
+                  <span className="text-[9px] text-muted block">Current APY</span>
+                  <span className="font-bold text-accent">
+                    {quote.price > 0 ? ((quote.dividend * 1000) / quote.price / 10).toFixed(1) : "0.0"}%
+                  </span>
+                </div>
+                <div className="p-1.5 rounded bg-surface/80 border border-border/50">
+                  <span className="text-[9px] text-muted block">P/D Ratio</span>
+                  <span className="font-bold text-primary">
+                    {quote.pdRatio ? `${quote.pdRatio}x` : "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 👑 NON-TRADABLE SOVEREIGN CITIZEN ENDOWMENT BANNER */}
           {isNonTradable && (
             <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-2.5">

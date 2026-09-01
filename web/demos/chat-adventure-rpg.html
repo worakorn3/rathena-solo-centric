@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midgard Chronicles — LLM Chat Adventure (Dungeon Master)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            background: '#0a0e17',
+            surface: '#111827',
+            surface2: '#1f293d',
+            surface3: '#2d3748',
+            border: '#1f2937',
+            accent: {
+              gold: '#f59e0b',
+              crimson: '#ef4444',
+              emerald: '#10b981',
+              cyan: '#06b6d4',
+              purple: '#a855f7',
+              blue: '#3b82f6',
+            }
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'dice-roll': 'diceRoll 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            'float-slow': 'floatSlow 4s ease-in-out infinite',
+            'stream-cursor': 'blink 1s step-end infinite',
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.4))' },
+              '50%': { opacity: '0.7', filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.2))' },
+            },
+            diceRoll: {
+              '0%': { transform: 'scale(0.5) rotate(-180deg)', opacity: '0' },
+              '70%': { transform: 'scale(1.15) rotate(15deg)' },
+              '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+            },
+            floatSlow: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            blink: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0a0e17;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.06) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(168, 85, 247, 0.06) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(17, 24, 39, 0.5); }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+    .pixel-art {
+      image-rendering: pixelated;
+    }
+
+    .glass-card {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- ==================== PROTOTYPE CONTROL BANNER ==================== -->
+  <header class="bg-slate-900/90 border-b border-slate-800 text-xs px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 backdrop-blur-md">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+        PROTOTYPE v1.0
+      </span>
+      <span class="text-slate-400 font-medium hidden sm:inline">LLM Chat Adventure (Dungeon Master)</span>
+      <span class="text-slate-600 hidden sm:inline">|</span>
+      <span class="text-slate-400">Status: <span class="text-emerald-400 font-medium">Pending User Review</span></span>
+    </div>
+
+    <!-- Scenario Preset Switchers -->
+    <div class="flex items-center gap-2">
+      <span class="text-slate-500 font-medium mr-1 hidden md:inline">Test Scenarios:</span>
+      <button onclick="switchScenario('dungeon')" id="btn-scenario-dungeon" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium transition-all hover:bg-amber-500/30">
+        🏹 Payon Cave (Combat)
+      </button>
+      <button onclick="switchScenario('town')" id="btn-scenario-town" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium transition-all hover:bg-slate-700 hover:text-slate-200">
+        🏰 Prontera (Town Safe)
+      </button>
+      <button onclick="switchScenario('boss')" id="btn-scenario-boss" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium transition-all hover:bg-slate-700 hover:text-slate-200">
+        💀 Glast Heim (Boss Climax)
+      </button>
+      
+      <div class="h-4 w-px bg-slate-700 mx-1"></div>
+
+      <button onclick="openAdminModal()" class="px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium flex items-center gap-1.5 hover:bg-indigo-500/30 transition-all">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+        <span>AI Config</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN BENTO APP LAYOUT ==================== -->
+  <main class="flex-1 max-w-[1720px] w-full mx-auto p-3 sm:p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
+
+    <!-- ================================================================= -->
+    <!-- LEFT COLUMN: LIVE CHARACTER HUD & MAP RADAR (3 COLS)               -->
+    <!-- ================================================================= -->
+    <aside class="lg:col-span-3 space-y-4 flex flex-col">
+      
+      <!-- Character Card -->
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <!-- Header & Character Picker -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800/80">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold text-lg shadow-inner">
+                <span id="char-avatar">🗡️</span>
+              </div>
+              <span class="absolute -bottom-1 -right-1 px-1.5 py-0.2 text-[10px] font-bold rounded bg-amber-500 text-slate-950 font-mono">
+                Lv.92
+              </span>
+            </div>
+            <div>
+              <h3 id="char-name" class="font-bold text-slate-100 text-base flex items-center gap-1.5">
+                ShadowFang
+                <span class="w-2 h-2 rounded-full bg-emerald-400" title="Synchronized with Server"></span>
+              </h3>
+              <p id="char-job" class="text-xs text-amber-400 font-medium">Assassin Cross (92 / 58)</p>
+            </div>
+          </div>
+
+          <select id="char-selector" onchange="switchCharacter(this.value)" class="bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:border-amber-500">
+            <option value="assassin">ShadowFang (SinX)</option>
+            <option value="knight">Ironclad (Lord Knight)</option>
+            <option value="priest">Aethelgard (High Priest)</option>
+          </select>
+        </div>
+
+        <!-- Live Vitals (HP / SP) -->
+        <div class="mt-4 space-y-2.5">
+          <!-- HP Bar -->
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-rose-400 flex items-center gap-1">
+                <i data-lucide="heart" class="w-3.5 h-3.5"></i> HP
+              </span>
+              <span id="char-hp-text" class="font-mono text-slate-300">4,820 / 5,200</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800 p-0.5">
+              <div id="char-hp-bar" class="bg-gradient-to-r from-rose-600 to-rose-400 h-full rounded-full transition-all duration-500" style="width: 92%;"></div>
+            </div>
+          </div>
+
+          <!-- SP Bar -->
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-cyan-400 flex items-center gap-1">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i> SP
+              </span>
+              <span id="char-sp-text" class="font-mono text-slate-300">420 / 680</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800 p-0.5">
+              <div id="char-sp-bar" class="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full rounded-full transition-all duration-500" style="width: 62%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Stats Grid -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80 grid grid-cols-6 gap-1 text-center font-mono">
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">STR</span>
+            <span id="stat-str" class="text-xs font-bold text-amber-300">82+6</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">AGI</span>
+            <span id="stat-agi" class="text-xs font-bold text-emerald-300">90+12</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">VIT</span>
+            <span id="stat-vit" class="text-xs font-bold text-rose-300">45+3</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">INT</span>
+            <span id="stat-int" class="text-xs font-bold text-indigo-300">20+2</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">DEX</span>
+            <span id="stat-dex" class="text-xs font-bold text-cyan-300">55+8</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">LUK</span>
+            <span id="stat-luk" class="text-xs font-bold text-purple-300">30+4</span>
+          </div>
+        </div>
+
+        <!-- Gear / Weapon on Hand -->
+        <div class="mt-3.5 bg-slate-900/60 rounded-xl p-2.5 border border-slate-800 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🗡️</span>
+            <div>
+              <span id="char-weapon" class="font-semibold text-slate-200 block">+7 Infiltrator [1]</span>
+              <span class="text-[10px] text-slate-400">Atk: 140 + 70 · Crit +15%</span>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px]">Equipped</span>
+        </div>
+      </div>
+
+      <!-- Map & World Radar Card -->
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 relative shadow-xl">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <i data-lucide="compass" class="w-4 h-4 text-amber-400"></i>
+            <h4 class="font-bold text-sm text-slate-100">Location Radar</h4>
+          </div>
+          <span id="map-code" class="font-mono text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">pay_dun01</span>
+        </div>
+
+        <div class="mt-3">
+          <h5 id="map-name" class="font-semibold text-slate-200 text-sm">Payon Cave (Floor 1)</h5>
+          <p id="map-desc" class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Damp ancient catacombs beneath Payon village. The stench of decaying wood and wandering spirits fills the humid subterranean air.
+          </p>
+        </div>
+
+        <!-- Connected Portals -->
+        <div class="mt-4 pt-3 border-t border-slate-800">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">Connected Portals:</span>
+          <div id="map-portals" class="flex flex-wrap gap-1.5">
+            <button onclick="handlePortalClick('pay_arche')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700/80 flex items-center gap-1.5 transition-colors">
+              <i data-lucide="door-open" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>To Payon Archer Village (pay_arche)</span>
+            </button>
+            <button onclick="handlePortalClick('pay_dun02')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700/80 flex items-center gap-1.5 transition-colors">
+              <i data-lucide="arrow-down-right" class="w-3.5 h-3.5 text-rose-400"></i>
+              <span>Debris Descent (pay_dun02)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- In-Area Spawns & Ambient NPCs -->
+        <div class="mt-3.5 pt-3 border-t border-slate-800">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">Area Spawns & Denizens:</span>
+          <div id="map-spawns" class="flex flex-wrap gap-1">
+            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 text-[11px] border border-rose-500/20">Archer Skeleton</span>
+            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 text-[11px] border border-rose-500/20">Zombie</span>
+            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 text-[11px] border border-rose-500/20">Familiar</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 text-[11px] border border-indigo-500/20">Lost Monk Spirit</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ================================================================= -->
+    <!-- CENTER COLUMN: STORY CHRONICLE & ACTION DOCK (6 COLS)              -->
+    <!-- ================================================================= -->
+    <section class="lg:col-span-6 flex flex-col h-[820px] glass-card rounded-2xl border border-slate-800 overflow-hidden shadow-2xl relative">
+      
+      <!-- Story Feed Header Strip -->
+      <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between backdrop-blur-sm z-10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+            <i data-lucide="book-open-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+              Chronicles of Midgard
+              <span class="px-2 py-0.5 text-[10px] rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI Dungeon Master</span>
+            </h2>
+            <p id="dm-subhead" class="text-xs text-slate-400">Live Ragnarok World Simulation · Act 1</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="clearAdventureChat()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="Clear Story Chronicle">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+          <button onclick="toggleAudioFx()" id="btn-audio" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors" title="Toggle Sound FX">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Story Dialogue Feed (Scrollable) -->
+      <div id="story-feed" class="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 text-sm leading-relaxed">
+        
+        <!-- Welcome / System Message -->
+        <div class="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800 text-slate-300 text-xs flex items-start gap-3">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-amber-300 block mb-0.5">Dungeon Master Connection Established</span>
+            You are exploring the world of Rune-Midgarts. Your character's stats, active skills, inventory, and location are synchronized in real-time. Actions you take roll against actual rAthena game parameters!
+          </div>
+        </div>
+
+        <!-- DM Story Block 1 -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+            <i data-lucide="scroll" class="w-3.5 h-3.5"></i>
+            <span>Dungeon Master</span>
+            <span class="text-[10px] text-slate-500 font-normal">Just now</span>
+          </div>
+          <div class="bg-slate-900/80 rounded-2xl rounded-tl-sm p-4 border border-slate-800/90 text-slate-200 space-y-2 shadow-sm">
+            <p>
+              You step quietly across the moldy stone steps of <strong class="text-amber-300">Payon Cave Floor 1</strong>. Water drips rhythmically from wooden ceiling braces into stagnant subterranean pools.
+            </p>
+            <p>
+              Ahead in the shadows, a faint clattering of dry bones echoes against the cavern walls. An <strong class="text-rose-400">Archer Skeleton</strong> raises its rotted wooden composite bow, string creaking as it notches a bone-tipped arrow directly at your heart!
+            </p>
+          </div>
+        </div>
+
+        <!-- Animated Dice Roll Check Banner -->
+        <div id="dice-banner" class="bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-slate-900/60 border border-amber-500/40 rounded-xl p-3.5 flex items-center justify-between shadow-lg animate-dice-roll">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 font-black text-lg shadow-inner">
+              🎲
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-amber-300 text-xs uppercase tracking-wider">${title}</span>
+                <span class="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">SUCCESS</span>
+              </div>
+              <p class="text-xs text-slate-300 font-mono mt-0.5">
+                Roll: <strong class="text-amber-400">d20 (16)</strong> + AGI Mod (+8) = <span class="text-emerald-400 font-bold">24</span> vs DC 14
+              </p>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-500/30 font-mono">
+            First Strike!
+          </span>
+        </div>
+
+        <!-- DM Story Block 2 (Resolution) -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+            <i data-lucide="scroll" class="w-3.5 h-3.5"></i>
+            <span>Dungeon Master</span>
+          </div>
+          <div class="bg-slate-900/80 rounded-2xl rounded-tl-sm p-4 border border-slate-800/90 text-slate-200 space-y-2 shadow-sm">
+            <p>
+              Your acute assassin reflexes allow you to dodge into the cavern shadows just as the bone shaft whistles through the air, embedding harmlessly into the wooden brace!
+            </p>
+            <p class="text-amber-200 italic">
+              "The undead archer pauses to draw another arrow from its rusted quiver. You have the upper hand!"
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LLM Generating / Streaming Indicator -->
+      <div id="streaming-indicator" class="hidden px-5 py-2 bg-slate-900/95 border-t border-slate-800 text-xs text-amber-400 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span class="font-medium font-mono">Dungeon Master is crafting narration...</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">gemini-2.0-flash</span>
+      </div>
+
+      <!-- Action Dock & Dynamic Suggested Chips -->
+      <div class="p-3 sm:p-4 bg-slate-900/95 border-t border-slate-800 space-y-3 z-10">
+        
+        <!-- Suggested Action Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+          <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mr-1 flex items-center gap-1">
+            <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Actions:
+          </span>
+          <div id="action-chips" class="flex items-center gap-1.5 flex-nowrap">
+            <button onclick="submitAction('attack')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-medium transition-all flex items-center gap-1.5">
+              <span>⚔️</span> Attack with +7 Infiltrator
+            </button>
+            <button onclick="submitAction('skill')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-medium transition-all flex items-center gap-1.5">
+              <span>⚡</span> Sonic Blow (SP 30)
+            </button>
+            <button onclick="submitAction('potion')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-medium transition-all flex items-center gap-1.5">
+              <span>🧪</span> Drink White Potion
+            </button>
+            <button onclick="submitAction('sneak')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 font-medium transition-all flex items-center gap-1.5">
+              <span>👤</span> Cloak into Shadows
+            </button>
+            <button onclick="submitAction('flee')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-all flex items-center gap-1.5">
+              <span>🏃</span> Retreat to pay_arche
+            </button>
+          </div>
+        </div>
+
+        <!-- Freeform Input Bar -->
+        <form onsubmit="handleCustomSubmit(event)" class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <input 
+              type="text" 
+              id="custom-input"
+              placeholder="Type any open-world action (e.g. 'I throw sand at its eyes and strike from behind')..." 
+              class="w-full bg-slate-950/90 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/40 transition-all font-sans"
+            />
+          </div>
+          <button 
+            type="submit"
+            id="btn-send"
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-md hover:shadow-amber-500/20 transition-all flex items-center gap-1.5 flex-shrink-0"
+          >
+            <span>Send</span>
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- RIGHT COLUMN: TARGET CARD & ADVENTURE LOOT DRAWER (3 COLS)         -->
+    <!-- ================================================================= -->
+    <aside class="lg:col-span-3 space-y-4 flex flex-col">
+      
+      <!-- Encounter / Target Monster Card -->
+      <div id="target-card" class="glass-card rounded-2xl p-5 border border-slate-800 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-rose-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <h4 class="font-bold text-sm text-slate-100">Engaged Target</h4>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[10px] font-bold font-mono">
+            HOSTILE
+          </span>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3.5">
+          <div class="w-16 h-16 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-3xl shadow-inner relative">
+            <span id="target-avatar">🏹</span>
+            <span class="absolute bottom-0 right-0 px-1 text-[9px] font-bold rounded bg-rose-600 text-white font-mono">Lv.32</span>
+          </div>
+          <div>
+            <h4 id="target-name" class="font-bold text-slate-100 text-base">Archer Skeleton</h4>
+            <p id="target-type" class="text-xs text-slate-400">Undead 1 · Medium · Undead</p>
+            <div class="flex items-center gap-1 mt-1 text-[11px]">
+              <span class="text-slate-500">Weakness:</span>
+              <span class="text-amber-400 font-semibold">Fire / Holy (+150%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Target HP Gauge -->
+        <div class="mt-4">
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-400">Monster HP</span>
+            <span id="target-hp-text" class="font-mono text-rose-400">1,850 / 3,200</span>
+          </div>
+          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800 p-0.5">
+            <div id="target-hp-bar" class="bg-gradient-to-r from-rose-600 to-amber-500 h-full rounded-full transition-all duration-500" style="width: 58%;"></div>
+          </div>
+        </div>
+
+        <!-- Potential Drop Intel -->
+        <div class="mt-4 pt-3 border-t border-slate-800 text-xs">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">Drop Intel (mob_db):</span>
+          <div class="space-y-1 text-slate-300 font-mono text-[11px]">
+            <div class="flex justify-between">
+              <span>🦴 Skeleton Bone</span>
+              <span class="text-slate-400">55.0%</span>
+            </div>
+            <div class="flex justify-between">
+              <span>🏹 Bow [4]</span>
+              <span class="text-slate-400">1.5%</span>
+            </div>
+            <div class="flex justify-between">
+              <span>💎 Oridecon Stone</span>
+              <span class="text-amber-400">2.2%</span>
+            </div>
+            <div class="flex justify-between">
+              <span>🃏 Archer Skeleton Card</span>
+              <span class="text-purple-400">0.02%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adventure Loot & Stash Bag -->
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 relative shadow-xl flex-1 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <i data-lucide="package-check" class="w-4 h-4 text-emerald-400"></i>
+              <h4 class="font-bold text-sm text-slate-100">Session Adventure Loot</h4>
+            </div>
+            <span id="loot-count-badge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
+              3 Items
+            </span>
+          </div>
+
+          <!-- EXP & Zeny Tally -->
+          <div class="grid grid-cols-2 gap-2 mt-3 text-xs">
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+              <span class="text-[10px] text-slate-500 block">EXP GAINED</span>
+              <span id="loot-exp" class="font-bold text-amber-300 font-mono text-xs">+32,400 Exp</span>
+            </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+              <span class="text-[10px] text-slate-500 block">ZENY EARNED</span>
+              <span id="loot-zeny" class="font-bold text-emerald-300 font-mono text-xs">+8,920 Z</span>
+            </div>
+          </div>
+
+          <!-- Unclaimed Item List -->
+          <div class="mt-3.5 space-y-1.5 max-h-48 overflow-y-auto pr-1" id="loot-item-list">
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>🦴</span>
+                <span class="text-slate-200">Skeleton Bone</span>
+              </div>
+              <span class="font-mono text-slate-400">x4</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>💎</span>
+                <span class="text-amber-300 font-medium">Oridecon Stone</span>
+              </div>
+              <span class="font-mono text-amber-400 font-bold">x1</span>
+            </div>
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>📦</span>
+                <span class="text-indigo-300 font-medium">Old Blue Box</span>
+              </div>
+              <span class="font-mono text-indigo-400 font-bold">x1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1-Click Stash Claim Button -->
+        <div class="mt-4 pt-3 border-t border-slate-800">
+          <button 
+            onclick="claimAdventureLoot()"
+            id="btn-claim-stash"
+            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+          >
+            <i data-lucide="archive-restore" class="w-4 h-4"></i>
+            <span>Deposit All to Web Stash</span>
+          </button>
+          <p class="text-[10px] text-slate-500 text-center mt-1.5">
+            Safe async sync · Claim in-game when offline or via Mailbox
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- ==================== ADMIN LLM CONFIG MODAL ==================== -->
+  <div id="admin-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card rounded-2xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl relative animate-float-slow">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+            <i data-lucide="cpu" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-100 text-base">Global AI Dungeon Master Config</h3>
+            <p class="text-xs text-slate-400">Server LLM Provider & Persona Settings</p>
+          </div>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4 text-xs">
+        <!-- Provider Select -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Active LLM Provider:</label>
+          <select id="llm-provider" onchange="handleProviderChange(this.value)" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 outline-none focus:border-indigo-500">
+            <option value="gemini">Google Gemini (Gemini 2.0 Flash) — [Recommended / Fast]</option>
+            <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+            <option value="anthropic">Anthropic (Claude 3.5 Haiku)</option>
+            <option value="ollama">Local Ollama / LM Studio (http://localhost:11434/v1)</option>
+          </select>
+        </div>
+
+        <!-- Model Name -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Model Name:</label>
+          <input type="text" id="llm-model" value="gemini-2.0-flash" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 outline-none font-mono focus:border-indigo-500" />
+        </div>
+
+        <!-- Base URL (for Ollama / custom proxy) -->
+        <div id="base-url-group" class="hidden">
+          <label class="block font-semibold text-slate-300 mb-1">Custom Base URL (Ollama/vLLM):</label>
+          <input type="text" id="llm-base-url" value="http://localhost:11434/v1" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 outline-none font-mono focus:border-indigo-500" />
+        </div>
+
+        <!-- API Key Input -->
+        <div id="api-key-group">
+          <label class="block font-semibold text-slate-300 mb-1">Provider API Key:</label>
+          <div class="relative">
+            <input type="password" id="llm-api-key" value="AIzaSyB***********************" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 outline-none font-mono focus:border-indigo-500 pr-10" />
+            <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <span class="text-[10px] text-slate-500 mt-1 block">Stored securely in server environment · Client requests proxy through backend</span>
+        </div>
+
+        <!-- Persona Preset -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">DM Narrative Persona Preset:</label>
+          <select id="dm-persona" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 outline-none focus:border-indigo-500">
+            <option value="bard">Classic Midgard Bard (Poetic, authentic Ragnarok lore, high fantasy immersion)</option>
+            <option value="gritty">Gritty Dungeon Master (Tactical, suspenseful, realistic combat checks)</option>
+            <option value="kafra">Cheerful Kafra Guide (Friendly, humorous anime quest companion)</option>
+            <option value="custom">Custom System Prompt Override</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+        <button onclick="testLLMConnection()" id="btn-test-llm" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+          <i data-lucide="wifi" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Test Ping</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button onclick="closeAdminModal()" class="px-3 py-2 rounded-xl text-slate-400 hover:text-slate-200 text-xs font-semibold">Cancel</button>
+          <button onclick="saveAdminSettings()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition-all">
+            Save Configuration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT STATE ENGINE ==================== -->
+  <script>
+    // State Store
+    let currentScenario = 'dungeon';
+    let isStreaming = false;
+    let audioEnabled = true;
+
+    const characters = {
+      assassin: {
+        name: 'ShadowFang',
+        job: 'Assassin Cross (92 / 58)',
+        avatar: '🗡️',
+        level: 92,
+        hp: { current: 4820, max: 5200 },
+        sp: { current: 420, max: 680 },
+        stats: { str: '82+6', agi: '90+12', vit: '45+3', int: '20+2', dex: '55+8', luk: '30+4' },
+        weapon: '+7 Infiltrator [1]',
+        weaponDesc: 'Atk: 140 + 70 · Crit +15%',
+      },
+      knight: {
+        name: 'Ironclad',
+        job: 'Lord Knight (95 / 62)',
+        avatar: '🛡️',
+        level: 95,
+        hp: { current: 14200, max: 14200 },
+        sp: { current: 310, max: 480 },
+        stats: { str: '94+10', agi: '72+4', vit: '85+10', int: '15+1', dex: '48+6', luk: '20+2' },
+        weapon: '+9 Dragon Slayer [2]',
+        weaponDesc: 'Atk: 220 + 90 · Dragon Pierce',
+      },
+      priest: {
+        name: 'Aethelgard',
+        job: 'High Priest (91 / 55)',
+        avatar: '✨',
+        level: 91,
+        hp: { current: 6200, max: 6200 },
+        sp: { current: 1350, max: 1420 },
+        stats: { str: '10+2', agi: '40+4', vit: '60+8', int: '95+14', dex: '70+10', luk: '40+6' },
+        weapon: '+7 Holy Stick [1]',
+        weaponDesc: 'Matk: 160 + 50 · Heal +15%',
+      }
+    };
+
+    const scenarios = {
+      dungeon: {
+        mapCode: 'pay_dun01',
+        mapName: 'Payon Cave (Floor 1)',
+        mapDesc: 'Damp ancient catacombs beneath Payon village. The stench of decaying wood and wandering spirits fills the humid subterranean air.',
+        portals: [
+          { name: 'To Payon Archer Village (pay_arche)', code: 'pay_arche', icon: 'door-open', color: 'emerald' },
+          { name: 'Debris Descent (pay_dun02)', code: 'pay_dun02', icon: 'arrow-down-right', color: 'rose' }
+        ],
+        spawns: ['Archer Skeleton', 'Zombie', 'Familiar', 'Lost Monk Spirit'],
+        target: {
+          name: 'Archer Skeleton',
+          avatar: '🏹',
+          level: 32,
+          type: 'Undead 1 · Medium · Undead',
+          weakness: 'Fire / Holy (+150%)',
+          hp: { current: 1850, max: 3200 },
+          drops: [
+            { item: '🦴 Skeleton Bone', rate: '55.0%' },
+            { item: '🏹 Bow [4]', rate: '1.5%' },
+            { item: '💎 Oridecon Stone', rate: '2.2%', highlight: 'amber' },
+            { item: '🃏 Archer Skeleton Card', rate: '0.02%', highlight: 'purple' }
+          ]
+        },
+        actions: [
+          { key: 'attack', text: '⚔️ Attack with +7 Infiltrator', color: 'rose' },
+          { key: 'skill', text: '⚡ Sonic Blow (SP 30)', color: 'amber' },
+          { key: 'potion', text: '🧪 Drink White Potion', color: 'cyan' },
+          { key: 'sneak', text: '👤 Cloak into Shadows', color: 'indigo' },
+          { key: 'flee', text: '🏃 Retreat to pay_arche', color: 'slate' }
+        ]
+      },
+      town: {
+        mapCode: 'prontera',
+        mapName: 'Prontera Capital City (Cathedral Square)',
+        mapDesc: 'The bustling cultural capital of the Rune-Midgarts Kingdom. Warm sunlight bathes the cobblestone streets as merchants, knights, and pilgrims gather around the holy cathedral fountain.',
+        portals: [
+          { name: 'North Gate to Plains (prt_fild01)', code: 'prt_fild01', icon: 'door-open', color: 'emerald' },
+          { name: 'Kafra Teleportation Service', code: 'kafra', icon: 'sparkles', color: 'cyan' }
+        ],
+        spawns: ['Town Guard Marcus', 'Kafra Employee Jasmine', 'High Acolyte Vane', 'Traveling Bard'],
+        target: {
+          name: 'Kafra Employee Jasmine',
+          avatar: '🎀',
+          level: 1,
+          type: 'NPC · Friendly · Service Provider',
+          weakness: 'None (Safe Zone)',
+          hp: { current: 500, max: 500 },
+          drops: [
+            { item: '📜 Midgard Rumors Bulletin', rate: '100%' },
+            { item: '🎟️ Free Storage Ticket', rate: 'Daily' },
+            { item: '🍵 Hot Herbal Tea', rate: 'Complimentary' }
+          ]
+        },
+        actions: [
+          { key: 'talk_kafra', text: '🗣️ Inquire about Local Rumors', color: 'cyan' },
+          { key: 'rest_inn', text: '🛏️ Rest at Prontera Tavern (Heal HP/SP)', color: 'emerald' },
+          { key: 'visit_blacksmith', text: '🔨 Visit Master Blacksmith Christopher', color: 'amber' },
+          { key: 'pray_cathedral', text: '🙏 Offer Prayer at Cathedral (+Blessing)', color: 'indigo' }
+        ]
+      },
+      boss: {
+        mapCode: 'glast_01',
+        mapName: 'Glast Heim Castle (Inner Sanctum)',
+        mapDesc: 'The cursed gothic throne room of the fallen empire. Sinister crimson runes illuminate crumbling marble pillars, and the chilling presence of the undead king suffocates the air.',
+        portals: [
+          { name: 'Castle Entrance (glast_knt01)', code: 'glast_knt01', icon: 'door-open', color: 'emerald' },
+          { name: 'Underground Prison Stairs', code: 'gl_prison', icon: 'arrow-down-right', color: 'rose' }
+        ],
+        spawns: ['Raydric', 'Dark Lord Avatar', 'Abysmal Knight', 'Wandering Ghoul'],
+        target: {
+          name: 'Abysmal Knight (Corrupted Guardian)',
+          avatar: '🐎',
+          level: 78,
+          type: 'Undead 4 · Large · Demon',
+          weakness: 'Holy (+200%) · Fire (+150%)',
+          hp: { current: 42000, max: 68000 },
+          drops: [
+            { item: '🛡️ Shield of Dark Knights', rate: '3.0%' },
+            { item: '🗡️ Zweihander [2]', rate: '1.2%' },
+            { item: '💎 Pure Oridecon', rate: '8.5%', highlight: 'amber' },
+            { item: '🃏 Abysmal Knight Card', rate: '0.01%', highlight: 'purple' }
+          ]
+        },
+        actions: [
+          { key: 'boss_flank', text: '⚔️ Dual Dagger Armor Pierce (Weak Point)', color: 'rose' },
+          { key: 'holy_scroll', text: '📜 Use Holy Water Imbue Scroll', color: 'amber' },
+          { key: 'shadow_step', text: '💨 Shadow Step behind Marble Pillar', color: 'indigo' },
+          { key: 'drink_panacea', text: '🧪 Drink Panacea & Yggdrasil Berry', color: 'emerald' }
+        ]
+      }
+    };
+
+    // Scenario Switching Logic
+    function switchScenario(scenarioKey) {
+      currentScenario = scenarioKey;
+      const data = scenarios[scenarioKey];
+
+      // Update button styles
+      ['dungeon', 'town', 'boss'].forEach(key => {
+        const btn = document.getElementById(`btn-scenario-${key}`);
+        if (key === scenarioKey) {
+          btn.className = 'px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium transition-all';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium transition-all hover:bg-slate-700 hover:text-slate-200';
+        }
+      });
+
+      // Update Radar & Map Info
+      document.getElementById('map-code').innerText = data.mapCode;
+      document.getElementById('map-name').innerText = data.mapName;
+      document.getElementById('map-desc').innerText = data.mapDesc;
+
+      // Update Portals
+      const portalsContainer = document.getElementById('map-portals');
+      portalsContainer.innerHTML = data.portals.map(p => `
+        <button onclick="handlePortalClick('${p.code}')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700/80 flex items-center gap-1.5 transition-colors">
+          <i data-lucide="${p.icon}" class="w-3.5 h-3.5 text-${p.color}-400"></i>
+          <span>${p.name}</span>
+        </button>
+      `).join('');
+
+      // Update Spawns
+      const spawnsContainer = document.getElementById('map-spawns');
+      spawnsContainer.innerHTML = data.spawns.map(s => `
+        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] border border-slate-700">${s}</span>
+      `).join('');
+
+      // Update Target Card
+      document.getElementById('target-name').innerText = data.target.name;
+      document.getElementById('target-avatar').innerText = data.target.avatar;
+      document.getElementById('target-type').innerText = data.target.type;
+      document.getElementById('target-hp-text').innerText = `${data.target.hp.current.toLocaleString()} / ${data.target.hp.max.toLocaleString()}`;
+      const hpPct = Math.round((data.target.hp.current / data.target.hp.max) * 100);
+      document.getElementById('target-hp-bar').style.width = `${hpPct}%`;
+
+      // Update Action Chips
+      const chipsContainer = document.getElementById('action-chips');
+      chipsContainer.innerHTML = data.actions.map(a => `
+        <button onclick="submitAction('${a.key}')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-${a.color}-500/15 hover:bg-${a.color}-500/25 text-${a.color}-300 border border-${a.color}-500/30 font-medium transition-all flex items-center gap-1.5">
+          ${a.text}
+        </button>
+      `).join('');
+
+      // Reset / Add Scenario Chronicle Entry
+      appendStoryEntry(
+        scenarioKey === 'town'
+          ? `You have arrived in <strong>Prontera</strong>. The holy chimes of the cathedral resonate across the square. Kafra employees offer storage and teleport services, and travelers share stories around the fountain.`
+          : scenarioKey === 'boss'
+          ? `You step into the foreboding <strong>Glast Heim Castle Inner Sanctum</strong>. The heavy iron gate slams shut behind you! The menacing silhouette of an <strong>Abysmal Knight</strong> turns with flaming spectral eyes, drawing a colossal zweihander!`
+          : `You enter <strong>Payon Cave Floor 1</strong>. An <strong>Archer Skeleton</strong> raises its bow in the damp darkness!`
+      );
+
+      lucide.createIcons();
+    }
+
+    // Character Switching Logic
+    function switchCharacter(charKey) {
+      const c = characters[charKey];
+      document.getElementById('char-name').innerHTML = `${c.name} <span class="w-2 h-2 rounded-full bg-emerald-400"></span>`;
+      document.getElementById('char-job').innerText = c.job;
+      document.getElementById('char-avatar').innerText = c.avatar;
+      document.getElementById('char-weapon').innerText = c.weapon;
+
+      document.getElementById('stat-str').innerText = c.stats.str;
+      document.getElementById('stat-agi').innerText = c.stats.agi;
+      document.getElementById('stat-vit').innerText = c.stats.vit;
+      document.getElementById('stat-int').innerText = c.stats.int;
+      document.getElementById('stat-dex').innerText = c.stats.dex;
+      document.getElementById('stat-luk').innerText = c.stats.luk;
+
+      document.getElementById('char-hp-text').innerText = `${c.hp.current.toLocaleString()} / ${c.hp.max.toLocaleString()}`;
+      document.getElementById('char-hp-bar').style.width = `${Math.round((c.hp.current / c.hp.max) * 100)}%`;
+
+      document.getElementById('char-sp-text').innerText = `${c.sp.current.toLocaleString()} / ${c.sp.max.toLocaleString()}`;
+      document.getElementById('char-sp-bar').style.width = `${Math.round((c.sp.current / c.sp.max) * 100)}%`;
+
+      appendStoryEntry(`<em>Switched active adventurer to <strong>${c.name} (${c.job})</strong>. Character stats and skill formulas updated.</em>`);
+    }
+
+    // Story Chronicle Helper
+    function appendStoryEntry(htmlContent, isPlayer = false) {
+      const feed = document.getElementById('story-feed');
+      const div = document.createElement('div');
+      div.className = 'space-y-2';
+
+      if (isPlayer) {
+        div.innerHTML = `
+          <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400 justify-end">
+            <span>You</span>
+            <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="bg-emerald-950/30 rounded-2xl rounded-tr-sm p-3.5 border border-emerald-500/30 text-emerald-100 text-right shadow-sm ml-8">
+            ${htmlContent}
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+            <i data-lucide="scroll" class="w-3.5 h-3.5"></i>
+            <span>Dungeon Master</span>
+          </div>
+          <div class="bg-slate-900/80 rounded-2xl rounded-tl-sm p-4 border border-slate-800/90 text-slate-200 space-y-2 shadow-sm mr-8">
+            ${htmlContent}
+          </div>
+        `;
+      }
+
+      feed.appendChild(div);
+      feed.scrollTop = feed.scrollHeight;
+      lucide.createIcons();
+    }
+
+    function appendDiceRoll(title, rollFormula, isSuccess, successText) {
+      const feed = document.getElementById('story-feed');
+      const div = document.createElement('div');
+      div.className = 'bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-slate-900/60 border border-amber-500/40 rounded-xl p-3.5 flex items-center justify-between shadow-lg animate-dice-roll';
+      div.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 font-black text-lg shadow-inner">
+            🎲
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-amber-300 text-xs uppercase tracking-wider">${title}</span>
+              <span class="px-2 py-0.2 rounded-full ${isSuccess ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'} text-[10px] font-bold border">
+                ${isSuccess ? 'SUCCESS' : 'FAILED'}
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 font-mono mt-0.5">${rollFormula}</p>
+          </div>
+        </div>
+        <span class="text-[11px] font-bold ${isSuccess ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30' : 'text-rose-400 bg-rose-950/40 border-rose-500/30'} px-2.5 py-1 rounded-lg border font-mono">
+          ${successText}
+        </span>
+      `;
+      feed.appendChild(div);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    // Action Dispatcher
+    function submitAction(actionType) {
+      if (isStreaming) return;
+      
+      const indicator = document.getElementById('streaming-indicator');
+      indicator.classList.remove('hidden');
+      isStreaming = true;
+
+      setTimeout(() => {
+        indicator.classList.add('hidden');
+        isStreaming = false;
+
+        if (actionType === 'attack') {
+          appendStoryEntry(`<em>⚔️ Strike with <strong>+7 Infiltrator</strong></em>`, true);
+          appendDiceRoll('Physical ATK vs Def Check', 'Roll: d20(18) + DEX(6) + Crit(15%) = <strong class="text-emerald-400">42</strong> vs AC 18', true, '1,420 CRIT DMG');
+          appendStoryEntry(`Your twin katars whistle through the cavern gloom, carving straight through the archer's wooden ribcage with a devastating critical strike! Bone fragments scatter across the wet floor, and the undead archer collapses into dust!`);
+          
+          // Update Target HP to 0 & Add Loot
+          document.getElementById('target-hp-text').innerText = '0 / 3,200';
+          document.getElementById('target-hp-bar').style.width = '0%';
+          addLootItem('💎 Oridecon Stone', 1);
+        } else if (actionType === 'skill') {
+          appendStoryEntry(`<em>⚡ Cast <strong>Sonic Blow</strong> (SP 30)</em>`, true);
+          appendDiceRoll('Skill Execution Check', 'Roll: d20(15) + AGI(10) = <strong class="text-amber-400">25</strong> (8-Hit Combo)', true, '2,840 TOTAL DMG');
+          appendStoryEntry(`Blades flash in an eight-strike blur of crimson sparks! The explosive onslaught obliterates the enemy into flying splinters!`);
+          document.getElementById('target-hp-text').innerText = '0 / 3,200';
+          document.getElementById('target-hp-bar').style.width = '0%';
+        } else if (actionType === 'potion') {
+          appendStoryEntry(`<em>🧪 Drink <strong>White Potion</strong></em>`, true);
+          appendStoryEntry(`You uncork a soothing White Potion. A warm restorative surge mends your wounds, restoring <strong class="text-emerald-400">+450 HP</strong>!`);
+          document.getElementById('char-hp-text').innerText = '5,200 / 5,200';
+          document.getElementById('char-hp-bar').style.width = '100%';
+        } else if (actionType === 'talk_kafra') {
+          appendStoryEntry(`<em>🗣️ Inquire about local rumors and kingdom news</em>`, true);
+          appendStoryEntry(`Kafra Jasmine beams warmly: <em>"Welcome back to Prontera! The Stock Exchange in the commercial quarter has been surging today, and rumors say the Geffen Magic Guild has detected unusual astral anomalies near Glast Heim. Travel safely!"</em>`);
+        } else {
+          appendStoryEntry(`<em>Action executed: ${actionType}</em>`, true);
+          appendStoryEntry(`The Dungeon Master processes your command against the active map rules.`);
+        }
+      }, 700);
+    }
+
+    function handleCustomSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('custom-input');
+      const val = input.value.trim();
+      if (!val || isStreaming) return;
+
+      appendStoryEntry(val, true);
+      input.value = '';
+
+      const indicator = document.getElementById('streaming-indicator');
+      indicator.classList.remove('hidden');
+      isStreaming = true;
+
+      setTimeout(() => {
+        indicator.classList.add('hidden');
+        isStreaming = false;
+        appendDiceRoll('Custom Maneuver Check', 'Roll: d20(14) + DEX(6) = <strong class="text-emerald-400">20</strong> vs DC 15', true, 'SUCCESS');
+        appendStoryEntry(`The Dungeon Master weaves your action seamlessly: <em>"Executing your maneuver with deft precision, you capitalize on the terrain to outflank your foe and gain tactical superiority!"</em>`);
+      }, 900);
+    }
+
+    function handlePortalClick(mapCode) {
+      appendStoryEntry(`<em>Traveling through portal to <strong>${mapCode}</strong>...</em>`, true);
+      if (mapCode.includes('prontera') || mapCode === 'pay_arche') {
+        switchScenario('town');
+      } else if (mapCode.includes('glast')) {
+        switchScenario('boss');
+      } else {
+        switchScenario('dungeon');
+      }
+    }
+
+    function addLootItem(itemName, count) {
+      const list = document.getElementById('loot-item-list');
+      const div = document.createElement('div');
+      div.className = 'bg-slate-900/60 p-2 rounded-lg border border-amber-500/40 flex items-center justify-between text-xs animate-pulse';
+      div.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span>✨</span>
+          <span class="text-amber-300 font-semibold">${itemName}</span>
+        </div>
+        <span class="font-mono text-amber-400 font-bold">x${count}</span>
+      `;
+      list.prepend(div);
+      
+      const badge = document.getElementById('loot-count-badge');
+      badge.innerText = `${list.children.length} Items`;
+    }
+
+    function claimAdventureLoot() {
+      const btn = document.getElementById('btn-claim-stash');
+      btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-200"></i> Deposited to Web Stash!`;
+      btn.className = 'w-full py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 pointer-events-none';
+      lucide.createIcons();
+
+      appendStoryEntry(`<strong>📦 Web Stash Synchronized!</strong> All earned items (+32.4k EXP, 8.9k Zeny, and 4 items) have been safely deposited to your account's web stash. You can claim them in-game via the Web Stash tab anytime.`);
+      
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="archive-restore" class="w-4 h-4"></i> Deposit All to Web Stash`;
+        btn.className = 'w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2';
+        lucide.createIcons();
+      }, 3000);
+    }
+
+    function clearAdventureChat() {
+      const feed = document.getElementById('story-feed');
+      feed.innerHTML = `
+        <div class="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800 text-slate-300 text-xs flex items-start gap-3">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-amber-300 block mb-0.5">Chronicle Cleared</span>
+            Ready for your next adventure command.
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function toggleAudioFx() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('btn-audio');
+      btn.innerHTML = audioEnabled ? `<i data-lucide="volume-2" class="w-4 h-4"></i>` : `<i data-lucide="volume-x" class="w-4 h-4 text-rose-400"></i>`;
+      lucide.createIcons();
+    }
+
+    // Admin Modal Logic
+    function openAdminModal() {
+      document.getElementById('admin-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').classList.add('hidden');
+    }
+
+    function handleProviderChange(provider) {
+      const modelInput = document.getElementById('llm-model');
+      const baseUrlGroup = document.getElementById('base-url-group');
+      const apiKeyGroup = document.getElementById('api-key-group');
+
+      if (provider === 'gemini') {
+        modelInput.value = 'gemini-2.0-flash';
+        baseUrlGroup.classList.add('hidden');
+        apiKeyGroup.classList.remove('hidden');
+      } else if (provider === 'openai') {
+        modelInput.value = 'gpt-4o-mini';
+        baseUrlGroup.classList.add('hidden');
+        apiKeyGroup.classList.remove('hidden');
+      } else if (provider === 'anthropic') {
+        modelInput.value = 'claude-3-5-haiku-20241022';
+        baseUrlGroup.classList.add('hidden');
+        apiKeyGroup.classList.remove('hidden');
+      } else if (provider === 'ollama') {
+        modelInput.value = 'llama3.2:latest';
+        baseUrlGroup.classList.remove('hidden');
+        apiKeyGroup.classList.add('hidden');
+      }
+    }
+
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('llm-api-key');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function testLLMConnection() {
+      const btn = document.getElementById('btn-test-llm');
+      btn.innerHTML = `<span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span> Pinging...`;
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> <span class="text-emerald-400 font-bold">200 OK (38ms)</span>`;
+        lucide.createIcons();
+        setTimeout(() => {
+          btn.innerHTML = `<i data-lucide="wifi" class="w-3.5 h-3.5 text-emerald-400"></i> <span>Test Ping</span>`;
+          lucide.createIcons();
+        }, 2500);
+      }, 600);
+    }
+
+    function saveAdminSettings() {
+      closeAdminModal();
+      appendStoryEntry(`<strong>⚙️ Admin Config Updated:</strong> LLM provider set to <code>${document.getElementById('llm-provider').value}</code> with model <code>${document.getElementById('llm-model').value}</code>.`);
+    }
+
+    // Initialize Lucide Icons on load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

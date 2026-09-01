@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { formatZeny } from "../../lib/assets";
 import { CharacterSummary } from "@rathena/shared";
 import { PieChart, Filter, Landmark, Coins, Wallet, ShieldCheck, TrendingUp, ChevronDown, Sparkles } from "lucide-react";
@@ -33,6 +33,16 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [hoveredPct, setHoveredPct] = useState<number>(0);
   const [isLiquidExpanded, setIsLiquidExpanded] = useState(false);
+
+  const handleHoverEnter = useCallback((label: string, pct: number) => {
+    setHoveredCategory((prev) => (prev !== label ? label : prev));
+    setHoveredPct((prev) => (prev !== pct ? pct : prev));
+  }, []);
+
+  const handleHoverLeave = useCallback(() => {
+    setHoveredCategory((prev) => (prev !== null ? null : prev));
+    setHoveredPct((prev) => (prev !== 0 ? 0 : prev));
+  }, []);
 
   const safeChars = Array.isArray(characters) ? characters : [];
   const calculatedLiquid =
@@ -223,14 +233,8 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
                     strokeDashoffset={s.strokeDashoffset}
                     className="transition-all duration-300 hover:opacity-100 opacity-90 cursor-pointer"
                     onClick={() => s.isFilterable && handleCategoryClick(s.category)}
-                    onMouseEnter={() => {
-                      setHoveredCategory(s.label);
-                      setHoveredPct(s.pct);
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredCategory(null);
-                      setHoveredPct(0);
-                    }}
+                    onMouseEnter={() => handleHoverEnter(s.label, s.pct)}
+                    onMouseLeave={handleHoverLeave}
                   >
                     <title>{`${s.label}: ${s.pct.toFixed(1)}% (${formatZeny(s.value)} Z)`}</title>
                   </circle>
@@ -290,15 +294,9 @@ export const AssetAllocationPie: React.FC<AssetAllocationPieProps> = ({
                   }
                 }
               }}
-              onMouseEnter={() => {
-                setHoveredCategory(a.label);
-                setHoveredPct(a.pct);
-              }}
-              onMouseLeave={() => {
-                setHoveredCategory(null);
-                setHoveredPct(0);
-              }}
-              className={`p-2 rounded-xl border transition-all ${
+              onMouseEnter={() => handleHoverEnter(a.label, a.pct)}
+              onMouseLeave={handleHoverLeave}
+              className={`bento-list-item p-2 rounded-xl border transition-colors ${
                 isSelected
                   ? `${a.activeClass} font-bold shadow-sm ring-1 ring-accent/40 cursor-pointer`
                   : isClickable

@@ -171,7 +171,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
 
       {/* Filter Toolbar: Dual Compact Bento Dropdowns */}
       {!tickerFilter && (
-        <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md flex items-center gap-2 mb-2.5 pb-1 text-xs">
+        <div className="sticky top-0 z-10 bg-surface border-b border-border/60 flex items-center gap-2 mb-2.5 pb-2 text-xs">
           <div className="flex items-center gap-1 text-muted shrink-0" title="Filter ledger transactions">
             <Filter className="w-3.5 h-3.5 text-muted/70" />
           </div>
@@ -255,7 +255,7 @@ export const StockTransactionHistory: React.FC<StockTransactionHistoryProps> = (
               return (
                 <div
                   key={tx.id}
-                  className="bento-list-item p-2.5 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/30 transition-all flex flex-col gap-1.5"
+                  className="bento-list-item p-2.5 rounded-xl bg-surface2/40 hover:bg-surface2/80 border border-border/80 hover:border-accent/30 transition-colors duration-150 flex flex-col gap-1.5"
                 >
                   {/* Top Row: Action Badge + Ticker + Crypto Tag + Stock Name (Left) & Total Amount Zeny (Right) */}
                   <div className="flex items-center justify-between gap-2 min-w-0">

@@ -198,7 +198,33 @@ To prevent AI context bloat and ensure fast, modular access, detailed designs an
 | **Portfolio Intel Action & Category Badge** | ✅ [DONE] | Distinguish `SOVEREIGN ETF` from `SPOT ETF`, and label non-tradable holding action button as `[View Intel]` · [`StockPortfolio.tsx`](../web/apps/client/src/components/economy/StockPortfolio.tsx) |
 | **Active Filter Tab State Preservation** | ✅ [DONE] | Prevent opening or closing ticker detail modals from mutating or resetting the user's active `portfolioAssetFilter` tab · [`App.tsx`](../web/apps/client/src/App.tsx) |
 
+
+### Phase 25: Dynamic Target Yield Calibration & Pure In-Memory Stock Valuation Model
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Anti-Cyclical Dynamic Target Yield Tilt** | ✅ [DONE] | Scale target dividend yields anti-cyclically in 4h `processMidnightDrip()` (1.25x on valuation dips <80z to attract value capital, 0.75x on bubbles >300z to curb Zeny inflation) + market mood multiplier · [`marketSimulation.service.ts`](../web/apps/server/src/services/marketSimulation.service.ts) |
+| **Pure In-Memory Valuation Model** | ✅ [DONE] | Pure functional derivation in `@rathena/shared` of Fair Value ($V_{\text{fair}} = \frac{\text{Div} \times 1000}{\text{BPS}}$), Valuation Gap %, P/D Multiple, and Strategic Badges (`DEEP_VALUE`, `UNDERVALUED`, `FAIR_VALUE`, `OVERVALUED`, `BUBBLE`) with 0 database overhead · [`economy.ts`](../web/packages/shared/src/types/economy.ts) |
+| **Exchange Order Book & Position Badges** | ✅ [DONE] | Display color-coded valuation rating badges and Fair Value metrics in `MarketWatch.tsx` and `StockPortfolio.tsx` · [`MarketWatch.tsx`](../web/apps/client/src/components/economy/MarketWatch.tsx) & [`StockPortfolio.tsx`](../web/apps/client/src/components/economy/StockPortfolio.tsx) |
+| **Ticker Detail Fundamental Valuation Card** | ✅ [DONE] | Render dedicated fundamental valuation panel with Fair Value, Current APY %, P/D multiple, and valuation gap spread · [`TickerDetailModal.tsx`](../web/apps/client/src/components/economy/TickerDetailModal.tsx) |
+| **Monorepo Test Suite & Container Build** | ✅ [DONE] | Verified 260 unit tests pass and Docker Compose `web-portal` container builds cleanly · [`marketSimulation.test.ts`](../web/apps/server/test/marketSimulation.test.ts) |
+
+
+### Phase 26: Accumulating Black Swan Tension & Threshold-Triggered Boundary Events
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Accumulating PRD Hazard Tension** | ✅ [DONE] | Replaced flat random roll with dynamic pseudo-random distribution (PRD) hazard tension ($P = \min(30\%, 0.5\% + \text{hours} \times 0.15\%)$) based on `LatestEventTime`, guaranteeing organic event pacing without dry spells or clustering · [`marketSimulation.service.ts`](../web/apps/server/src/services/marketSimulation.service.ts) |
+| **Threshold Boundary Event Detection** | ✅ [DONE] | Evaluate distress floor ($\le 20\text{z}$) and hyper-bubble peaks ($\ge 750\text{z}$) in 10-min `processHourlyShift()` to trigger contextual realm interventions (bailouts/restructuring vs antitrust/regulation) · [`marketSimulation.service.ts`](../web/apps/server/src/services/marketSimulation.service.ts) |
+| **Anti-Spam Active Event & 24h Log Cooldown Lock** | ✅ [DONE] | Gated threshold events with active event lock (`solo_stock_events_active`) and 24-hour log cooldown (`solo_stock_events_log`), preventing duplicate trigger cascades · [`marketSimulation.service.ts`](../web/apps/server/src/services/marketSimulation.service.ts) |
+### Phase 27: Gacha Altar Item ID Alignment & Rate/Pity Persistence Guardrail
+| Feature | Status | Details & Specification |
+|:---|:---|:---|
+| **Exact rAthena Item ID Alignment** | ✅ [DONE] | Replaced placeholder and mismatched item IDs in `solo_gacha_pool` with exact Renewal item database IDs from rAthena (`item_db_equip.yml` / `ItemNames`). Fixed Drake hat Corsair (`5019` -> `2213` Kitty Band), Marionette Doll (`20017` -> `19710` Wings of Victory), Panda Hat (`5030` -> `5288` Red Glasses), etc. · [`solo_gacha_schema.sql`](../sql-files/custom/solo_gacha_schema.sql) & [`gacha_items.json`](../sql-files/custom/gacha_items.json) |
+| **Migration Rate/Pity Overwrite Protection** | ✅ [DONE] | Guarded `solo_gacha_banners` upsert to preserve customized `ssr_rate`, `sr_rate`, `r_rate`, `pity_threshold`, and `base_price` on migration re-execution; removed destructive `DELETE FROM solo_gacha_pool` on container restart · [`solo_gacha_schema.sql`](../sql-files/custom/solo_gacha_schema.sql) |
+| **Existing Stash & Pool Data Remediation** | ✅ [DONE] | Executed live primary SQL remediation to align existing stash records (`solo_gacha_stash`) and master pool items (`solo_gacha_pool`) with canonical item IDs and titles · Primary DB :3306 |
+| **Container Build & Verification** | ✅ [DONE] | Verified all 265 unit tests pass and rebuilt `web-portal` Docker Compose container · Docker Compose |
+
 ---
+
 
 
 ## 🏛️ Core Philosophy & The Four Pillars

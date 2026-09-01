@@ -23,6 +23,56 @@ export interface StockIndex {
   constituents: StockIndexConstituent[];
 }
 
+export type StockValuationRating = "DEEP_VALUE" | "UNDERVALUED" | "FAIR_VALUE" | "OVERVALUED" | "BUBBLE";
+
+export interface StockValuationResult {
+  fairValue: number;
+  valuationGapPct: number;
+  pdRatio: number | null;
+  valuationRating: StockValuationRating;
+}
+
+export function calculateStockValuation(
+  price: number,
+  dividend: number,
+  targetYieldBps: number,
+  assetType?: string
+): StockValuationResult {
+  const safePrice = Math.max(1, Number(price) || 100);
+  const safeDiv = Math.max(0, Number(dividend) || 0);
+  const safeBps = Math.max(0, Number(targetYieldBps) || 0);
+
+  // Gordon Growth Model / Dividend Discount Model for dividend-paying assets:
+  // Fair Value = (Dividend * 1000) / target_yield_bps
+  // Fallback to baseline par value (100z) if targetYieldBps is 0 (crypto / zero-yield growth)
+  const fairValue = safeBps > 0 && safeDiv > 0
+    ? Math.max(10, Math.round((safeDiv * 1000) / safeBps))
+    : 100;
+
+  const valuationGapPct = Number((((safePrice - fairValue) / fairValue) * 100).toFixed(1));
+  const pdRatio = safeDiv > 0 ? Number((safePrice / safeDiv).toFixed(1)) : null;
+
+  let valuationRating: StockValuationRating = "FAIR_VALUE";
+  if (valuationGapPct <= -25) {
+    valuationRating = "DEEP_VALUE";
+  } else if (valuationGapPct < -5) {
+    valuationRating = "UNDERVALUED";
+  } else if (valuationGapPct <= 15) {
+    valuationRating = "FAIR_VALUE";
+  } else if (valuationGapPct <= 50) {
+    valuationRating = "OVERVALUED";
+  } else {
+    valuationRating = "BUBBLE";
+  }
+
+  return {
+    fairValue,
+    valuationGapPct,
+    pdRatio,
+    valuationRating,
+  };
+}
+
 export interface StockHolding {
   ticker: string;
   name: string;
@@ -45,6 +95,11 @@ export interface StockHolding {
   pendingDividends: number;
   dripEnabled: boolean;
   dripCarryover: number;
+  targetYieldBps?: number;
+  fairValue?: number;
+  valuationGapPct?: number;
+  pdRatio?: number | null;
+  valuationRating?: StockValuationRating;
 }
 
 export interface StockMarketQuote {
@@ -63,6 +118,11 @@ export interface StockMarketQuote {
   dividend: number;
   divAcc: number;
   splitCount: number;
+  targetYieldBps?: number;
+  fairValue?: number;
+  valuationGapPct?: number;
+  pdRatio?: number | null;
+  valuationRating?: StockValuationRating;
 }
 
 export interface BankConfig {

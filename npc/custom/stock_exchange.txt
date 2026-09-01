@@ -485,7 +485,10 @@ L_MenuSell:
 	if (.@qty == .@s) {
 		query_sql "UPDATE `solo_stock_player` SET shares = 0, total_cost = 0, pending_div = 0 WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	} else {
-		query_sql "UPDATE `solo_stock_player` SET total_cost = total_cost - ROUND((total_cost * " + .@qty + ") / " + .@s + "), shares = shares - " + .@qty + ", pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
+		.@rem_s = .@s - .@qty;
+		.@new_tc = (.@tc > 0 && .@rem_s > 0) ? ((.@tc * .@rem_s) / .@s) : 0;
+		if (.@new_tc == 0 && .@tc > 0 && .@rem_s > 0) .@new_tc = 1;
+		query_sql "UPDATE `solo_stock_player` SET total_cost = " + .@new_tc + ", shares = " + .@rem_s + ", pending_div = pending_div - " + .@payout_gross + " WHERE account_id = " + .@account_id + " AND ticker = '" + .@cn$ + "'";
 	}
 
 	.@dest_label$ = (.@dest == 2) ? "BANK" : "WALLET";
@@ -543,16 +546,30 @@ L_MenuPort:
 			query_sql "SELECT name, price, dividend FROM `solo_stock_market` WHERE ticker = '" + .@cn$ + "'", .@sname$, .@price, .@div;
 
 			.@avg = .@tc / .@s;
-			.@pl = .@price - .@avg;
-			if (.@pl > 0) .@pl$ = "^00FF00+" + .@pl + "z^000000";
-			else if (.@pl < 0) .@pl$ = "^FF0000" + .@pl + "z^000000";
-			else .@pl$ = "0z";
+			if (.@tc == 0) {
+				.@avg$ = "0z (Grant)";
+				.@pl$ = "^00FF00+" + .@price + "z (Grant)^000000";
+				.@yoc$ = "^777777N/A (Grant)^000000";
+			} else if (.@avg == 0) {
+				.@avg$ = "<1z";
+				.@pl = .@price - 1;
+				if (.@pl > 0) .@pl$ = "^00FF00+" + .@pl + "z^000000";
+				else .@pl$ = "0z";
+				.@yoc$ = "^00FF00High^000000";
+			} else {
+				.@avg$ = .@avg + "z";
+				.@pl = .@price - .@avg;
+				if (.@pl > 0) .@pl$ = "^00FF00+" + .@pl + "z^000000";
+				else if (.@pl < 0) .@pl$ = "^FF0000" + .@pl + "z^000000";
+				else .@pl$ = "0z";
+				.@yoc_p = (.@div * 1000) / .@avg;
+				.@yoc$ = (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%";
+			}
 			
-			if (.@avg > 0) { .@yoc_p = (.@div * 1000) / .@avg; .@yoc$ = (.@yoc_p/10) + "." + (.@yoc_p % 10) + "%"; } else .@yoc$ = "0.0%";
 			if (.@price > 0) { .@cur_p = (.@div * 1000) / .@price; .@cur$ = (.@cur_p/10) + "." + (.@cur_p % 10) + "%"; } else .@cur$ = "0.0%";
 			
 			mes "- " + .@cn$ + " (" + .@sname$ + "): " + .@s + " shares";
-			mes "  Avg: " + .@avg + "z | Market: " + .@price + "z | P/L: " + .@pl$;
+			mes "  Avg: " + .@avg$ + " | Market: " + .@price + "z | P/L: " + .@pl$;
 			mes "  ^777777Yield: ^000000" + .@cur$ + " | ^0000FFYoC: " + .@yoc$ + "^000000 | Pending: ^0000FF" + .@pending + "z^000000";
 		}
 		next;

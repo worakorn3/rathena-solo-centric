@@ -330,7 +330,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
                     <tr
                       key={idx.indexId}
                       onClick={() => handleSelectIndex(idx)}
-                      className="hover:bg-surface2/60 cursor-pointer transition-colors group"
+                      className="bento-table-row hover:bg-surface2/60 cursor-pointer transition-colors group"
                       title="Click to view index lore, publisher authority, and constituent breakdown"
                     >
                       <td className="py-2.5 font-sans">
@@ -375,7 +375,7 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
                   <th className="pb-2 font-bold">Ticker & Organization</th>
                   <th className="pb-2 font-bold text-right">Price</th>
                   <th className="pb-2 font-bold text-right">24h Change</th>
-                  <th className="pb-2 font-bold text-center">Trend</th>
+                  <th className="pb-2 font-bold text-center">Valuation</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60 font-mono">
@@ -387,8 +387,8 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
                     <tr
                       key={q.ticker}
                       onClick={() => handleSelectQuote(q)}
-                      className="hover:bg-surface2/60 cursor-pointer transition-colors group"
-                      title="Click to view lore, live OHLC candles, and Black Swan intelligence"
+                      className="bento-table-row hover:bg-surface2/60 cursor-pointer transition-colors group"
+                      title={`Click to view lore, live OHLC candles, and Black Swan intelligence (Fair Value: ${formatZeny(q.fairValue ?? 100)} Z)`}
                     >
                       <td className="py-2.5 font-sans">
                         <div className="font-bold text-primary text-xs flex items-center gap-1.5 group-hover:text-accent transition-colors">
@@ -420,15 +420,34 @@ export const MarketWatch: React.FC<MarketWatchProps> = ({
                         <span>{Math.abs(q.changePercent).toFixed(1)}%</span>
                       </td>
                       <td className="py-2.5 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                            isUp
-                              ? "bg-success/10 text-success"
-                              : "bg-danger/10 text-danger"
-                          }`}
-                        >
-                          {isUp ? "▲ Bullish" : "▼ Bearish"}
-                        </span>
+                        {q.valuationRating ? (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider border ${
+                              q.valuationRating === "DEEP_VALUE"
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : q.valuationRating === "UNDERVALUED"
+                                ? "bg-info/15 text-info border-info/30"
+                                : q.valuationRating === "FAIR_VALUE"
+                                ? "bg-surface2 text-muted border-border"
+                                : q.valuationRating === "OVERVALUED"
+                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                : "bg-danger/15 text-danger border-danger/30"
+                            }`}
+                            title={`Valuation: ${q.valuationRating.replace(/_/g, " ")} (${q.valuationGapPct && q.valuationGapPct > 0 ? "+" : ""}${q.valuationGapPct ?? 0}% vs Fair Value ${formatZeny(q.fairValue ?? 100)} Z)`}
+                          >
+                            {q.valuationRating.replace(/_/g, " ")}
+                          </span>
+                        ) : (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                              isUp
+                                ? "bg-success/10 text-success"
+                                : "bg-danger/10 text-danger"
+                            }`}
+                          >
+                            {isUp ? "▲ Bullish" : "▼ Bearish"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

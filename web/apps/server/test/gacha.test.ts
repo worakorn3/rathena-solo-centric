@@ -208,6 +208,7 @@ describe("Web Gacha System (Midgard Egg Spinner Altar)", () => {
 
     expect(res.success).toBe(true);
     expect(res.rewards.length).toBe(1);
+    expect(res.rewards[0].stashId).toBe(1);
 
     const zenyDeductCall = executedSql.find((s) => s.includes("UPDATE `char` SET `zeny`"));
     expect(zenyDeductCall).toBeDefined();

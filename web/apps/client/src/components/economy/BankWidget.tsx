@@ -158,7 +158,7 @@ export const BankWidget: React.FC<BankWidgetProps> = ({
               setDepositAmount("");
               setWithdrawAmount("");
             }}
-            className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-all ${
+            className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-colors duration-150 ${
               activeTab === tab
                 ? "bg-surface text-primary shadow-sm border border-border"
                 : "text-muted hover:text-primary hover:bg-surface2/80"

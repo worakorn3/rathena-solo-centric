@@ -556,11 +556,14 @@ export class GachaService {
 
     // Insert won items into Dedicated Web Stash and History Log
     for (const rew of rewards) {
-      await primaryExecute(
+      const stashRes = await primaryExecute(
         `INSERT INTO \`solo_gacha_stash\` (\`account_id\`, \`nameid\`, \`item_name\`, \`amount\`, \`refine\`, \`tier\`, \`status\`)
          VALUES (?, ?, ?, ?, ?, ?, 'STASHED')`,
         [accountId, rew.nameId, rew.itemName, rew.amount, rew.refine, rew.tier]
       );
+      if (stashRes && stashRes.insertId) {
+        rew.stashId = Number(stashRes.insertId);
+      }
 
       await primaryExecute(
         `INSERT INTO \`solo_gacha_log\` (\`account_id\`, \`char_id\`, \`banner_id\`, \`nameid\`, \`item_name\`, \`amount\`, \`refine\`, \`tier\`, \`zeny_spent\`)
